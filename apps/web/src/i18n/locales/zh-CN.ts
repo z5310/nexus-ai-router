@@ -1,0 +1,54 @@
+export default {
+  common: {
+    home: '首页', models: '模型广场', rankings: '模型排名', docs: '说明文档', console: '控制台', login: '登录',
+    search: '搜索', reset: '重置', all: '全部', try: '体验', details: '查看详情', stable: '稳定', mainNav: '主导航', openNav: '打开导航', loading: '正在同步服务数据…', liveData: '实时数据', fallbackData: '后端暂未连接，当前展示本地演示数据',
+    types: { all: '全部', text: '文本', image: '图像', video: '视频', audio: '音频', embedding: '向量' }, providers: { all: '全部', alibaba: '阿里云', bytedance: '字节跳动' },
+  },
+  language: { label: '语言', zhCN: '简体中文', enUS: 'English' },
+  home: {
+    badge: '多模型智能路由 2.0', title1: '用一个接口，', title2: '调用所有 AI 模型',
+    subtitle: '文本、图像、视频与语音模型一次接入。Nexus 为每次请求选择更快、更稳、更省的渠道。',
+    start: '免费开始', viewDocs: '查看文档', sdk: 'OpenAI SDK 兼容', usageBilling: '按量计费', noCard: '免绑卡体验',
+    deals: '当前模型优惠', searchModel: '搜索模型', viewAll: '查看全部模型', save: '立省', input: '输入', output: '输出', perMillion: '每百万 Token', viewModel: '查看模型', noDeals: '没有找到匹配的优惠模型',
+    production: '为生产环境而生', simpleTitle1: '模型越多，', simpleTitle2: '接入反而越简单。', simpleDesc: '不用再维护不同 SDK、鉴权和账单。通过统一协议管理整个模型栈，把时间留给真正的产品能力。',
+    feature1: '智能路由', feature1Desc: '按价格、延迟与可用率动态选择渠道，让请求自动走最优路径。', availability: '路由可用性',
+    feature2: '统一观测', feature2Desc: '实时查看调用量、Token、耗时和错误，异常链路快速定位。', refresh: '数据刷新',
+    feature3: '企业安全', feature3Desc: '项目级密钥、角色权限、预算限制和完整审计日志开箱即用。', encryption: '凭证加密',
+    feature4: '精确计费', feature4Desc: '把上游成本、渠道折扣与终端售价记录到每一次请求。', traceable: '账单可追溯',
+    marketplace: '模型广场', compare1: '先比较，', compare2: '再决定。', compareDesc: '统一查看模型能力、首字延迟、上下文和真实价格。排行榜让选型有数据可依。', browse: '浏览全部模型', weeklyRank: '查看本周模型排名',
+    ctaTitle: '五分钟，完成第一次模型调用。', ctaDesc: '注册送体验额度。无需信用卡，兼容现有 OpenAI SDK。', createAccount: '创建免费账户', footerLine: '让每次模型调用都有更优解。', rankTags: { gpt: '推理 · 编码 · Agent', claude: '长文本 · 编码 · 分析', deepseek: '推理 · 中文 · 高并发' },
+  },
+  catalog: {
+    kicker: '模型目录', title: '模型广场', subtitle: '一个 API 调用全球领先模型，价格透明，即开即用。', compatible: 'OpenAI 协议兼容', official: '官方渠道透明计费', sla: '99.99% SLA',
+    featured: '本周精选 · 多模态旗舰', featuredDesc: '复杂推理、专业编码和多步骤智能体任务，一次调用即可完成。', startNow: '立即体验', score: '综合评分', routingVisualLabel: 'Nexus 智能模型路由拓扑', routingLive: '智能路由在线', routingAuto: '自动选择', requestIn: '新请求', routerCore: '路由核心', selectedRoute: '已选择 · 主路由', routeLatency: '首字延迟',
+    placeholder: '搜索模型、API ID 或供应商...', recommended: '推荐排序', highestScore: '评分最高', fastest: '速度最快', lowestPrice: '价格最低', ranking: '模型排名', filter: '筛选',
+    provider: '供应商', capability: '能力标签', streaming: '流式输出', tools: '工具调用', vision: '视觉理解', found: '找到 {count} 个模型', cny: '价格均按人民币结算',
+    inputPrice: '输入 / 1M tokens', outputPrice: '输出 / 1M tokens', firstToken: '首字延迟', call: '调用', noMatch: '没有匹配的模型', noMatchDesc: '调整关键词或清空筛选条件后再试。',
+  },
+  modelDesc: {
+    gpt: '兼顾复杂推理、编码与多步骤 Agent 任务的通用旗舰模型。', claude: '长上下文理解、代码重构与专业内容生成的稳定选择。', deepseek: '面向高并发场景优化的快速推理模型，中文能力突出。', qwen: '强大的中文知识、工具调用和超长上下文处理能力。', gemini: '低成本多模态模型，适合实时交互与大规模批处理。', seedream: '高质量中文海报、商品图与风格化视觉生成模型。', seedance: '面向叙事短片的高一致性视频生成，支持镜头运动控制。', speech: '自然中文语音合成，支持情绪、音色与多角色控制。', bge: '多语言、多粒度向量模型，适合检索增强与知识库。',
+  },
+  tags: { new: '新上线', hot: '热门', lowLatency: '低延迟', value: '高性价比', creator: '创作精选' },
+  ranking: {
+    kicker: 'NEXUS 基准测试', title: '模型排名', subtitle: '用真实调用数据评估模型能力、成本和速度。每天更新，不受厂商宣传影响。', overall: '综合能力', coding: '编码能力', cost: '成本效率', speed: '响应速度',
+    overallLeader: '综合能力领先', costLeader: '成本效率领先', speedLeader: '响应速度领先', overallScore: '综合评分', taskCost: '单任务均价', firstLatency: '首字延迟',
+    snapshot: '数据快照', today: '今日', categoryLabel: '模型分类', categoryTop: 'CATEGORY TOP', categoryTitle: '{category}模型 Top 5', updatedDaily: '每日更新', categorySingle: '该分类已接入 1 个模型，更多模型评测正在加入。',
+    points: '分', usageLeader: '7 日使用冠军', calls7d: '次调用', specialtyKicker: 'SPECIALTY RANKINGS', specialtyTitle: '专项排行榜', specialtyDesc: '从能力、真实使用率与增长速度三个维度观察模型表现。', overallBoard: '综合评分', usageBoard: '使用率 Top', heatBoard: '近 7 日热度', usageUnit: '%', growthUnit: '%',
+    methodTitle: '排名如何计算？', methodDesc: '我们使用统一测试集，并结合过去 7 天真实请求的成功率、延迟和成本数据。', methodLink: '查看评测方法', full: '完整指标榜单', allVendors: '全部供应商', allStatuses: '全部状态', observing: '观察中',
+    rank: '排名', model: '模型', status: '状态', score: '综合评分', costTask: '单任务成本', latency: '首字延迟', context: '上下文', trend: '趋势', updated: '数据更新于 12 分钟前', total: '共 {count} 个模型',
+  },
+  docs: {
+    search: '搜索文档、API、示例...', openConsole: '控制台', apiReference: 'API 参考', useLight: '切换到白天模式', useDark: '切换到夜间模式', start: '开始使用', quickstart: '快速开始', apiKeys: 'API 密钥', sdk: 'SDK 与客户端', core: '核心能力', text: '文本生成', image: '图像生成', video: '视频生成', routing: '智能路由', platform: '平台', pricing: '模型与定价', billing: '用量与账单', errors: '错误码', security: '安全与治理', rateLimits: '限速策略',
+    help: '需要帮助？', helpDesc: '查看常见问题或联系技术支持。', support: '获取支持', breadcrumb: '文档', lead: '用 OpenAI SDK 在几分钟内完成第一次 Nexus API 调用。', compatible: '完全兼容 OpenAI SDK', compatibleDesc: '只需替换 API Key 和 Base URL，不必重写现有业务代码。', install: '安装 SDK', installDesc: '使用你熟悉的包管理器安装官方 OpenAI 客户端。', configure: '配置客户端', configureDesc: '在控制台创建密钥后，将客户端指向 Nexus API。', copy: '复制', copied: '已复制', toc: '本页内容', send: '发送请求', next: '下一步', samplePrompt: '你好',
+  },
+  dashboard: {
+    workspace: '工作区', currentWorkspace: '当前工作区', overview: '概览', models: '模型', routes: '路由规则', keys: 'API 密钥', operations: '运营', logs: '调用日志', billing: '账单与余额', members: '成员权限', system: '系统', settings: '设置', balance: '账户余额', used: '本月已用 ¥171.58', usedValue: '本月已用 ¥{amount}', recharge: '充值', search: '搜索请求 ID、模型...', greeting: '下午好，林宇', title: '工作区概览', createKey: '创建 API 密钥', requests: '今日请求', tokens: 'Token 用量', latency: '平均延迟', spending: '今日消费', vsYesterday: '较昨日', improved: '性能提升', requestTrend: '请求趋势', requestTrendDesc: '过去 24 小时的 API 调用量', last24h: '最近 24 小时', last7d: '最近 7 天', now: '现在', recent: '最近请求', realtime: '实时更新的模型调用记录', viewAll: '查看全部', requestId: '请求 ID', model: '模型', status: '状态', tokenCount: 'Tokens', cost: '费用', success: '成功', failed: '失败', notifications: '通知', chartLabel: '请求趋势图',
+  },
+  auth: { backHome: '返回首页', title: '登录工作区', description: '管理模型、路由、密钥和团队用量。', email: '邮箱', password: '密码', togglePassword: '显示或隐藏密码', remember: '保持登录', forgot: '忘记密码？', or: '或', sso: '使用企业 SSO 登录', demoHint: '当前为演示工作区，可直接登录查看。' },
+  modelDetail: { back: '返回模型广场', capabilities: '模型能力', viewApi: '查看完整 API 文档', capability: { streaming: '流式输出', tools: '工具调用', vision: '视觉理解', embedding: '向量嵌入' } },
+  consoleSections: {
+    models: { title: '模型管理', description: '查看工作区可调用的模型、价格和运行状态。', action: '添加模型' }, routes: { title: '路由规则', description: '按场景、成本和可用性管理模型流量。', action: '新建路由' }, keys: { title: 'API 密钥', description: '创建和撤销项目凭证，控制服务访问。', action: '创建密钥' }, logs: { title: '调用日志', description: '检索请求、耗时、Token 和费用明细。', action: '导出日志' }, billing: { title: '账单与余额', description: '查看余额、消费趋势和交易记录。', action: '账户充值' }, members: { title: '成员权限', description: '管理团队成员及其工作区角色。', action: '邀请成员' }, settings: { title: '系统设置', description: '配置工作区、通知和安全策略。', action: '保存设置' },
+    modelAccess: '可用模型', modelAccessDesc: '价格与状态由模型服务同步。', type: '类型', price: '输入价格', routeDefault: '默认处理文本、推理和工具调用请求', routeBudget: '预算敏感且要求低延迟的请求', routeMedia: '图像、视频和语音创作请求', primaryModel: '主模型', fallbackModel: '故障转移', traffic: '当前流量', enabled: '已启用', keySafety: '密钥只会完整显示一次', keySafetyDesc: '请将密钥保存在服务端环境变量中，不要写入浏览器代码。', name: '名称', created: '创建时间', lastUsed: '最后使用', minutesAgo: '{count} 分钟前', hoursAgo: '{count} 小时前', newKey: '新测试密钥', billingHint: '可用余额', nextInvoice: '下次出账', autoInvoice: '自动生成电子发票', transactions: '交易记录', date: '日期', item: '项目', amount: '金额', settled: '已结算', completed: '已完成', member: '成员', email: '邮箱', role: '角色', owner: '所有者', developer: '开发者', finance: '财务', invited: '待接受', workspaceSettings: '工作区设置', workspaceSettingsDesc: '用于账单、日志和团队协作。', workspaceName: '工作区名称', defaultCurrency: '默认币种', securitySettings: '安全设置', securitySettingsDesc: '限制访问来源并记录敏感操作。', auditLog: '审计日志', auditLogDesc: '保留管理员操作记录', save: '保存更改',
+  },
+  pageTitles: { home: 'Nexus API · 多模型智能路由', models: '模型广场 · Nexus API', modelDetail: '模型详情 · Nexus API', rankings: '模型排名 · Nexus API', docs: '开发文档 · Nexus API', console: '控制台 · Nexus API', consoleModels: '模型管理 · Nexus API', consoleRoutes: '路由规则 · Nexus API', consoleKeys: 'API 密钥 · Nexus API', consoleLogs: '调用日志 · Nexus API', consoleBilling: '账单余额 · Nexus API', consoleMembers: '成员权限 · Nexus API', consoleSettings: '系统设置 · Nexus API', login: '登录 · Nexus API' },
+}
