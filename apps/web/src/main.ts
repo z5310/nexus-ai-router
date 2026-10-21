@@ -4,6 +4,8 @@ import App from './App.vue'
 import router from './router'
 import { i18n } from './i18n'
 import scrollReveal from './directives/reveal'
-import './style.css'
+import 'virtual:uno.css'
+import '@gateway/ui/tokens.css'
+import './styles/index.css'
 
 createApp(App).use(VueQueryPlugin).use(router).use(i18n).directive('reveal', scrollReveal).mount('#app')

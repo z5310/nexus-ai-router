@@ -1,6 +1,6 @@
 # nexus-ai-router
 
-多模型 API 聚合平台。当前仓库包含 Vue 3 控制台、NestJS API、PostgreSQL、Redis/BullMQ 与本地对象存储基础设施。
+多模型 API 聚合平台。仓库采用 Turbo 单仓库多项目结构，包含客户控制台、平台管理后台、NestJS API、共享 UI/契约、PostgreSQL、Redis/BullMQ 与本地对象存储基础设施。
 
 ## 本地启动
 
@@ -13,6 +13,7 @@ npm run dev
 ```
 
 - Web: http://localhost:5173
+- Admin: http://localhost:5174
 - API: http://localhost:3000
 - API 文档: http://localhost:3000/docs
 - MinIO 控制台: http://localhost:9001
@@ -21,6 +22,9 @@ npm run dev
 
 ```bash
 npm run dev
+npm run dev:web
+npm run dev:admin
+npm run dev:api
 npm run build
 npm run typecheck
 npm run db:migrate
@@ -41,10 +45,15 @@ npm run db:migrate
 | `POST` | `/api/auth/refresh` | 轮换刷新会话并签发新的访问令牌 |
 | `POST` | `/api/auth/logout` | 撤销当前刷新会话 |
 | `GET` | `/api/auth/me` | 获取当前登录用户 |
+| `GET` | `/api/auth/oauth/github` | 发起 GitHub OAuth 登录 |
+| `GET` | `/api/auth/oauth/google` | 发起 Google OAuth 登录 |
 | `GET` | `/api/admin/users` | 管理员搜索、筛选和分页查看用户 |
 | `GET` | `/api/admin/users/summary` | 用户状态与角色统计 |
 | `POST` | `/api/admin/users` | 创建用户 |
 | `PATCH` | `/api/admin/users/:id` | 修改用户资料、角色、状态或密码 |
+| `GET` | `/api/admin/models` | 管理员检索、筛选和分页查看模型配置 |
+| `GET` | `/api/admin/models/summary` | 模型、供应商和运行状态统计 |
+| `PATCH` | `/api/admin/models/:id` | 修改模型上架、推荐和运行状态 |
 | `GET` | `/v1/models` | OpenAI 兼容模型列表 |
 
 查询示例：
@@ -66,8 +75,8 @@ Swagger 文档位于 `http://localhost:3000/docs`。接口错误统一返回 Pro
 | `/models/:provider/:model` | 模型详情，已接详情 API并支持演示数据回退 |
 | `/rankings` | 分类 Top 5、综合/使用率/7 日热度专项榜与四种完整指标排行，已接排行 API |
 | `/docs` | 独立开发文档页 |
-| `/login` | 真实登录、会话恢复和角色分流；表单字号按统一字体层级优化 |
-| `/admin` | 独立用户管理后台，包含统计、检索、角色/状态筛选、新建与编辑用户 |
+| `/login` | 邮箱密码、GitHub 和 Google 登录，会话恢复与角色分流 |
+| `/admin` | 管理员入口，验证角色后跳转独立的 5174 管理端 |
 | `/console` | 用量概览、趋势和最近请求，已接控制台 API |
 | `/console/models` | 模型管理，已接模型目录 API |
 | `/console/logs` | 调用日志，已接请求日志 API |
@@ -79,15 +88,37 @@ Swagger 文档位于 `http://localhost:3000/docs`。接口错误统一返回 Pro
 
 ## 工程结构
 
+- `apps/web`：面向付费客户的官网、文档和工作区控制台，可用 `npm run dev:web` 独立运行。
+- `apps/admin`：面向开发、运营和平台管理员的独立管理端，可用 `npm run dev:admin` 独立运行。
+- `apps/api`：NestJS API，可用 `npm run dev:api` 独立运行。
 - `packages/contracts`：前后端共享的接口字段与枚举，避免页面和 API 各自定义一套数据结构。
+- `packages/ui`：Web 与 Admin 共用的品牌组件、模型 Logo 和设计变量。
 - `apps/api/src/*/*.controller.ts`：HTTP 输入输出，只负责协议适配。
 - `apps/api/src/*/*.service.ts`：业务编排和领域映射。
 - `apps/api/src/*/*.repository.ts`：数据库查询与排序规则。
-- `apps/web/src/lib/api-client.ts`：统一处理 API 地址、JSON 和错误。
-- `apps/web/src/components/ModelLogo.vue`：统一映射模型厂商标识，品牌 SVG 来自 Lobe Icons。
+- `apps/*/src/lib/http.ts`：各应用独立的 Axios 实例，统一处理 API 地址、访问令牌、刷新会话、重试和标准错误。
+- `apps/*/src/pages/<domain>/api`：按页面领域放置 `types.ts`、`endpoints.ts` 与 `index.ts`，页面只消费自身所需接口。
+- `apps/*/src/pages/<domain>/cmp`：页面私有组件与页面目录共置，避免与跨应用共享组件混杂。
+- `packages/ui`：统一映射品牌、模型厂商标识和设计变量，Web 与 Admin 共同消费。
+- `uno.config.ts`：Web 与 Admin 共用的 UnoCSS 主题、快捷规则和转换器；页面特殊视觉规则保留在各自目录，不再集中到单体样式文件。
 - 页面通过 Vue Query 管理加载、缓存和失败状态；后端未启动时回退为标注清晰的演示数据。
 
 新增字段时，先修改 `@gateway/contracts`，再修改迁移、实体、服务映射与页面消费，保证字段含义在整个链路一致。
+
+Turbo 负责跨项目依赖顺序、并行运行和构建缓存。根目录 `npm run dev` 会同时启动 API、Web 和 Admin；每个应用仍保留独立运行命令。
+
+## 第三方登录配置
+
+GitHub OAuth App 的回调地址配置为 `http://localhost:3000/api/auth/oauth/github/callback`，Google OAuth Client 的回调地址配置为 `http://localhost:3000/api/auth/oauth/google/callback`。在 `.env` 中设置：
+
+```bash
+GITHUB_CLIENT_ID=...
+GITHUB_CLIENT_SECRET=...
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+```
+
+未配置的登录方式会安全返回登录页并显示配置提示。第三方登录首次使用时创建普通 `viewer` 用户，不会自动获得平台管理权限。
 
 ## 本地演示身份
 

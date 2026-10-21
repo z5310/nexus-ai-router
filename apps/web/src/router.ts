@@ -1,13 +1,14 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import HomeView from './views/HomeView.vue'
-import ModelsView from './views/ModelsView.vue'
-import RankingsView from './views/RankingsView.vue'
-import DocsView from './views/DocsView.vue'
-import ConsoleView from './views/ConsoleView.vue'
-import ConsoleSectionView from './views/ConsoleSectionView.vue'
-import LoginView from './views/LoginView.vue'
-import ModelDetailView from './views/ModelDetailView.vue'
-import AdminView from './views/AdminView.vue'
+import HomeView from './pages/home/index.vue'
+import ModelsView from './pages/models/index.vue'
+import RankingsView from './pages/rankings/index.vue'
+import DocsView from './pages/docs/index.vue'
+import ConsoleView from './pages/console/index.vue'
+import ConsoleSectionView from './pages/console/section.vue'
+import LoginView from './pages/login/index.vue'
+import OAuthCallbackView from './pages/login/oauth-callback.vue'
+import ModelDetailView from './pages/models/detail.vue'
+import AdminRedirectView from './pages/admin-redirect/index.vue'
 import { authState, restoreSession } from './lib/auth'
 
 const router = createRouter({
@@ -27,8 +28,9 @@ const router = createRouter({
     { path: '/console/billing', component: ConsoleSectionView, meta: { titleKey: 'pageTitles.consoleBilling', section: 'billing', requiresAuth: true } },
     { path: '/console/members', component: ConsoleSectionView, meta: { titleKey: 'pageTitles.consoleMembers', section: 'members', requiresAuth: true } },
     { path: '/console/settings', component: ConsoleSectionView, meta: { titleKey: 'pageTitles.consoleSettings', section: 'settings', requiresAuth: true } },
-    { path: '/admin', component: AdminView, meta: { titleKey: 'pageTitles.admin', requiresAuth: true, requiresAdmin: true } },
+    { path: '/admin/:pathMatch(.*)*', component: AdminRedirectView, meta: { titleKey: 'pageTitles.admin', requiresAuth: true, requiresAdmin: true } },
     { path: '/login', component: LoginView, meta: { titleKey: 'pageTitles.login' } },
+    { path: '/auth/callback', component: OAuthCallbackView, meta: { titleKey: 'pageTitles.login' } },
   ],
 })
 

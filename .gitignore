@@ -5,6 +5,7 @@
 # Build output and tool caches.
 **/dist/
 **/.vite/
+**/.turbo/
 **/coverage/
 **/*.tsbuildinfo
 

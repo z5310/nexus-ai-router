@@ -1,0 +1,30 @@
+{
+  "name": "@gateway/admin",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port 5174",
+    "build": "vue-tsc -b && vite build",
+    "typecheck": "vue-tsc -b",
+    "lint": "eslint \"src/**/*.{ts,vue}\""
+  },
+  "dependencies": {
+    "@gateway/contracts": "*",
+    "@gateway/ui": "*",
+    "@tanstack/vue-query": "^5.90.7",
+    "axios": "^1.20.0",
+    "lucide-vue-next": "^0.553.0",
+    "vue": "^3.5.24",
+    "vue-router": "^4.6.3"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.0",
+    "@vitejs/plugin-vue": "^6.0.2",
+    "eslint": "^9.39.1",
+    "typescript": "^5.9.3",
+    "unocss": "^66.11.0",
+    "vite": "^7.2.2",
+    "vue-tsc": "^3.1.4"
+  }
+}

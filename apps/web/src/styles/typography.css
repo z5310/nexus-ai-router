@@ -1,0 +1,45 @@
+/* Typography scale — shared Tailwind tokens with surface-level semantic roles */
+.main-nav a,.login-button { font-size: var(--text-body-sm); }
+.section-kicker,.confidence-chips span { font-size: var(--text-caption); }
+
+.catalog-tools :is(input,select,a,button),.type-tabs button { font-size: var(--text-label); }
+.filter-title { font-size: var(--text-body-sm); }.filter-title button { font-size: var(--text-caption); }
+.filter-group > span { font-size: var(--text-label); }.filter-group > button,.filter-group.compact label { font-size: var(--text-body-sm); }
+.results-meta { font-size: var(--text-caption); }.model-tag { font-size: var(--text-micro); }
+.model-card h3 { font-size: var(--text-heading-sm); }.provider-line { font-size: var(--text-label); }
+.model-description { font-size: var(--text-body-sm); line-height: 1.65; }
+.model-specs small { font-size: var(--text-micro); }.model-specs b { font-size: var(--text-label); }
+.card-bottom code { font-size: var(--text-micro); }.card-bottom a { font-size: var(--text-label); }
+
+.metric-switcher button { font-size: var(--text-label); }.leader-cards small { font-size: var(--text-caption); }
+.leader-cards h2 { font-size: var(--text-heading-sm); }.leader-cards p { font-size: 1.75rem; }.leader-cards p span { font-size: var(--text-micro); }
+.benchmark-note b { font-size: var(--text-body-sm); }.benchmark-note p { font-size: var(--text-caption); }.benchmark-note a { font-size: var(--text-label); }
+.leaderboard-heading span { font-size: var(--text-micro); }.leaderboard-heading h2 { font-size: var(--text-heading-md); }
+.table-filters select { font-size: var(--text-label); }
+.table-wrap th,.table-wrap td { font-size: var(--text-label); line-height: 1.35; }
+.table-model b { font-size: var(--text-body-sm); }.table-model small,.status-pill,.table-foot { font-size: var(--text-micro); }
+.table-wrap td:last-child a { font-size: var(--text-caption); }
+
+.docs-header input { font-size: var(--text-label); }.docs-header kbd { font-size: var(--text-micro); }.docs-header > div { font-size: var(--text-label); }
+.docs-sidebar nav > span { font-size: var(--text-micro); }.docs-sidebar nav a { font-size: var(--text-body-sm); }
+.docs-help b { font-size: var(--text-label); }.docs-help p,.docs-help a { font-size: var(--text-caption); }
+.docs-breadcrumb { font-size: var(--text-caption); }.docs-tag { font-size: var(--text-micro); }
+.docs-lead { font-size: var(--text-ui); line-height: 1.7; }
+.docs-callout b { font-size: var(--text-body-sm); }.docs-callout p { font-size: var(--text-label); }
+.docs-content article h2 { font-size: 1.5rem; }.docs-content article h2 span { font-size: var(--text-caption); }
+.docs-content article > p { font-size: var(--text-body); line-height: 1.7; }
+.code-block > div { font-size: var(--text-caption); }.code-block button { font-size: var(--text-micro); }.code-block pre { font-size: var(--text-label); }
+.docs-toc span,.docs-toc a { font-size: var(--text-caption); }
+
+.workspace-switch small,.console-sidebar nav > span,.balance-card small,.balance-card p { font-size: var(--text-micro); }
+.workspace-switch b,.console-sidebar nav a,.balance-card button { font-size: var(--text-label); }
+.console-header input,.console-header > div a,.user-avatar { font-size: var(--text-label); }
+.console-title p { font-size: var(--text-label); }.console-title h1 { font-size: var(--text-heading-lg); }.console-title button,.console-primary-action { font-size: var(--text-label); }
+.stat-grid article > div { font-size: var(--text-caption); }.stat-grid strong { font-size: 1.625rem; }.stat-grid p { font-size: var(--text-micro); }
+.panel-heading h2 { font-size: var(--text-heading-sm); }.panel-heading p,.panel-heading button { font-size: var(--text-caption); }
+.usage-panel select { font-size: var(--text-label); }.usage-chart .axis,.chart-labels { font-size: var(--text-micro); }
+.request-table th,.request-table td,.console-data-table th,.console-data-table td { font-size: var(--text-caption); line-height: 1.4; }
+.console-section-title > div > span { font-size: var(--text-label); }
+.route-rule h2 { font-size: var(--text-heading-sm); }.route-rule > p { font-size: var(--text-label); }.route-rule :is(dt,dd),.route-rule footer button { font-size: var(--text-caption); }
+.security-note b,.settings-card h2 { font-size: var(--text-label); }.security-note p,.billing-grid :is(span,p),.settings-card p,.settings-card > label:not(.setting-toggle) { font-size: var(--text-caption); }
+.setting-toggle b { font-size: var(--text-label); }.setting-toggle small { font-size: var(--text-micro); }

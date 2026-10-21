@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common'
-import type { CatalogModel, ModelFacets, ModelListResponse, OpenAIModelList, RankingListResponse, RankingMetric } from '@gateway/contracts'
+import type { AdminModel, AdminModelListResponse, AdminModelSummaryResponse, CatalogModel, ModelFacets, ModelListResponse, OpenAIModelList, RankingListResponse, RankingMetric } from '@gateway/contracts'
 import type { ModelEntity } from '../database/entities/model.entity'
 import type { ListModelsQuery, ListRankingsQuery } from './dto/list-models.query'
 import { ModelsRepository } from './models.repository'
@@ -59,6 +59,22 @@ export class ModelsService {
     }
   }
 
+  async adminList(query: string | undefined, page: number, pageSize: number): Promise<AdminModelListResponse> {
+    const [entities, total] = await this.models.adminList(query, page, pageSize)
+    return { data: entities.map((entity) => this.mapAdminModel(entity)), pagination: { page, pageSize, total, totalPages: Math.ceil(total / pageSize) } }
+  }
+
+  adminSummary(): Promise<AdminModelSummaryResponse> { return this.models.adminSummary() }
+
+  async updateAdminModel(id: string, input: { enabled?: boolean; featured?: boolean; status?: 'stable' | 'observing' }): Promise<AdminModel> {
+    const model = await this.models.findAdmin(id)
+    if (!model) throw new NotFoundException('模型不存在')
+    if (input.enabled !== undefined) model.isEnabled = input.enabled
+    if (input.featured !== undefined) model.isFeatured = input.featured
+    if (input.status !== undefined) model.status = input.status
+    return this.mapAdminModel(await this.models.save(model))
+  }
+
   private metricScore(model: ModelEntity, metric: RankingMetric): number {
     return Number({
       overall: model.overallScore,
@@ -94,5 +110,9 @@ export class ModelsService {
       trend: model.trend,
       featured: model.isFeatured,
     }
+  }
+
+  private mapAdminModel(model: ModelEntity): AdminModel {
+    return { ...this.mapModel(model), enabled: model.isEnabled, updatedAt: model.updatedAt.toISOString() }
   }
 }

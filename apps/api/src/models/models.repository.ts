@@ -45,6 +45,28 @@ export class ModelsRepository {
       .getManyAndCount()
   }
 
+  async adminList(query: string | undefined, page: number, pageSize: number): Promise<[ModelEntity[], number]> {
+    const builder = this.repository.createQueryBuilder('model')
+    if (query?.trim()) {
+      builder.where('(model.name ILIKE :query OR model.publicId ILIKE :query OR model.provider ILIKE :query)', { query: `%${query.trim()}%` })
+    }
+    return builder.orderBy('model.updatedAt', 'DESC').addOrderBy('model.name', 'ASC').skip((page - 1) * pageSize).take(pageSize).getManyAndCount()
+  }
+
+  async adminSummary(): Promise<{ total: number; enabled: number; featured: number; observing: number; providers: number }> {
+    const row = await this.repository.createQueryBuilder('model')
+      .select('COUNT(*)::int', 'total')
+      .addSelect('COUNT(*) FILTER (WHERE model.isEnabled = true)::int', 'enabled')
+      .addSelect('COUNT(*) FILTER (WHERE model.isFeatured = true)::int', 'featured')
+      .addSelect("COUNT(*) FILTER (WHERE model.status = 'observing')::int", 'observing')
+      .addSelect('COUNT(DISTINCT model.provider)::int', 'providers')
+      .getRawOne<{ total: number; enabled: number; featured: number; observing: number; providers: number }>()
+    return row ?? { total: 0, enabled: 0, featured: 0, observing: 0, providers: 0 }
+  }
+
+  findAdmin(id: string): Promise<ModelEntity | null> { return this.repository.findOne({ where: { id } }) }
+  save(model: ModelEntity): Promise<ModelEntity> { return this.repository.save(model) }
+
   async facets(): Promise<ModelFacetsResult> {
     const [types, providers] = await Promise.all([
       this.repository.createQueryBuilder('model')

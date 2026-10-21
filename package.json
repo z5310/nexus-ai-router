@@ -2,15 +2,19 @@
   "name": "model-gateway",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "npm@11.13.0",
   "workspaces": [
     "apps/*",
     "packages/*"
   ],
   "scripts": {
-    "dev": "concurrently -n WEB,API -c cyan,magenta \"npm run dev -w @gateway/web\" \"npm run start:dev -w @gateway/api\"",
-    "build": "npm run build -w @gateway/contracts && npm run build -w @gateway/api && npm run build -w @gateway/web",
-    "typecheck": "npm run typecheck -w @gateway/contracts && npm run typecheck -w @gateway/api && npm run typecheck -w @gateway/web",
-    "lint": "npm run lint -w @gateway/api && npm run lint -w @gateway/web",
+    "dev": "turbo run dev",
+    "dev:web": "npm run dev -w @gateway/web",
+    "dev:admin": "npm run dev -w @gateway/admin",
+    "dev:api": "npm run start:dev -w @gateway/api",
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "lint": "turbo run lint",
     "db:migrate": "npm run migration:run -w @gateway/api",
     "docker:up": "docker compose up -d postgres redis minio",
     "docker:down": "docker compose down"
@@ -20,7 +24,8 @@
     "@typescript-eslint/parser": "^8.72.0",
     "concurrently": "^9.2.1",
     "eslint-plugin-vue": "^10.11.1",
-    "globals": "^17.13.0"
+    "globals": "^17.13.0",
+    "turbo": "^2.5.8"
   },
   "engines": {
     "node": ">=22"

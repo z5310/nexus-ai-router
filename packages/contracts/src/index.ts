@@ -65,6 +65,24 @@ export interface ModelListResponse {
   facets: ModelFacets
 }
 
+export interface AdminModel extends CatalogModel {
+  enabled: boolean
+  updatedAt: string
+}
+
+export interface AdminModelListResponse {
+  data: AdminModel[]
+  pagination: PaginationMeta
+}
+
+export interface AdminModelSummaryResponse {
+  total: number
+  enabled: number
+  featured: number
+  observing: number
+  providers: number
+}
+
 export interface RankingEntry extends CatalogModel {
   rank: number
   metric: RankingMetric

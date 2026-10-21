@@ -23,7 +23,7 @@ async function bootstrap() {
   await app.register(helmet as never)
   await app.register(cookie as never)
   app.enableCors({
-    origin: [config.getOrThrow<string>('WEB_ORIGIN')],
+    origin: [config.getOrThrow<string>('WEB_ORIGIN'), config.getOrThrow<string>('ADMIN_ORIGIN')],
     credentials: true,
   })
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true, errorHttpStatusCode: 422 }))

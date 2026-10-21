@@ -21,6 +21,6 @@ import { UsersService } from './users.service'
   ],
   controllers: [AuthController, AdminUsersController],
   providers: [AuthService, UsersService, UsersRepository, SessionsRepository, PasswordService, JwtAuthGuard, RolesGuard],
-  exports: [JwtAuthGuard, RolesGuard, UsersService],
+  exports: [JwtModule, JwtAuthGuard, RolesGuard, UsersService],
 })
 export class IdentityModule {}

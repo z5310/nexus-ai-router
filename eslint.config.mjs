@@ -17,7 +17,7 @@ export default [
     },
   },
   {
-    files: ['apps/web/src/**/*.ts', 'apps/web/src/**/*.vue'],
+    files: ['apps/web/src/**/*.ts', 'apps/web/src/**/*.vue', 'apps/admin/src/**/*.ts', 'apps/admin/src/**/*.vue', 'packages/ui/src/**/*.ts', 'packages/ui/src/**/*.vue'],
     languageOptions: { parser: vueParser, parserOptions: { parser: tsParser, sourceType: 'module', ecmaVersion: 'latest', extraFileExtensions: ['.vue'] }, globals: globals.browser },
     plugins: { vue: vuePlugin, '@typescript-eslint': tsPlugin },
     rules: {
