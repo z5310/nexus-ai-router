@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common'
+import { resolve } from 'node:path'
 import { ConfigModule, ConfigService } from '@nestjs/config'
 import { BullModule } from '@nestjs/bullmq'
 import { TypeOrmModule } from '@nestjs/typeorm'
@@ -15,7 +16,11 @@ import { ModelsModule } from './models/models.module'
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true, validate: validateEnvironment }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: [resolve(__dirname, '../../../.env'), '.env'],
+      validate: validateEnvironment,
+    }),
     LoggerModule.forRoot({
       pinoHttp: {
         genReqId: (req) => req.headers['x-request-id']?.toString() ?? crypto.randomUUID(),

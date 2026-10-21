@@ -57,7 +57,7 @@ export class ModelEntity {
   @Column({ length: 20, default: '#63e495' })
   accent: string
 
-  @Column({ name: 'tag_key', length: 60, nullable: true })
+  @Column({ name: 'tag_key', type: 'varchar', length: 60, nullable: true })
   tagKey: string | null
 
   @Column({ type: 'text', array: true, default: '{}' })
