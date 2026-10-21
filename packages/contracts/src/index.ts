@@ -122,3 +122,36 @@ export interface DashboardOverviewResponse {
 export interface RequestLogListResponse {
   data: RequestLogItem[]
 }
+
+export type UserRole = 'admin' | 'manager' | 'viewer'
+export type UserStatus = 'active' | 'suspended' | 'invited'
+
+export interface AuthUser {
+  id: string
+  name: string
+  email: string
+  role: UserRole
+  status: UserStatus
+  lastLoginAt: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface AuthResponse {
+  accessToken: string
+  expiresIn: number
+  user: AuthUser
+}
+
+export interface UserListResponse {
+  data: AuthUser[]
+  pagination: PaginationMeta
+}
+
+export interface UserSummaryResponse {
+  total: number
+  active: number
+  suspended: number
+  invited: number
+  admins: number
+}

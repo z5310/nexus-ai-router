@@ -2,7 +2,10 @@
   "name": "model-gateway",
   "version": "0.1.0",
   "private": true,
-  "workspaces": ["apps/*", "packages/*"],
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
     "dev": "concurrently -n WEB,API -c cyan,magenta \"npm run dev -w @gateway/web\" \"npm run start:dev -w @gateway/api\"",
     "build": "npm run build -w @gateway/contracts && npm run build -w @gateway/api && npm run build -w @gateway/web",
@@ -13,7 +16,13 @@
     "docker:down": "docker compose down"
   },
   "devDependencies": {
-    "concurrently": "^9.2.1"
+    "@typescript-eslint/eslint-plugin": "^8.72.0",
+    "@typescript-eslint/parser": "^8.72.0",
+    "concurrently": "^9.2.1",
+    "eslint-plugin-vue": "^10.11.1",
+    "globals": "^17.13.0"
   },
-  "engines": { "node": ">=22" }
+  "engines": {
+    "node": ">=22"
+  }
 }

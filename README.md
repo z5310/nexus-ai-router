@@ -37,6 +37,14 @@ npm run db:migrate
 | `GET` | `/api/rankings` | 按综合、编码、成本、速度指标排行 |
 | `GET` | `/api/dashboard/overview` | 用量指标、24 小时趋势、余额和最近请求 |
 | `GET` | `/api/dashboard/requests` | 按请求 ID 或模型检索调用记录 |
+| `POST` | `/api/auth/login` | 邮箱密码登录，返回短时访问令牌并写入 HttpOnly 刷新会话 |
+| `POST` | `/api/auth/refresh` | 轮换刷新会话并签发新的访问令牌 |
+| `POST` | `/api/auth/logout` | 撤销当前刷新会话 |
+| `GET` | `/api/auth/me` | 获取当前登录用户 |
+| `GET` | `/api/admin/users` | 管理员搜索、筛选和分页查看用户 |
+| `GET` | `/api/admin/users/summary` | 用户状态与角色统计 |
+| `POST` | `/api/admin/users` | 创建用户 |
+| `PATCH` | `/api/admin/users/:id` | 修改用户资料、角色、状态或密码 |
 | `GET` | `/v1/models` | OpenAI 兼容模型列表 |
 
 查询示例：
@@ -58,14 +66,15 @@ Swagger 文档位于 `http://localhost:3000/docs`。接口错误统一返回 Pro
 | `/models/:provider/:model` | 模型详情，已接详情 API并支持演示数据回退 |
 | `/rankings` | 分类 Top 5、综合/使用率/7 日热度专项榜与四种完整指标排行，已接排行 API |
 | `/docs` | 独立开发文档页 |
-| `/login` | 登录界面与演示工作区跳转；待接认证会话 API |
+| `/login` | 真实登录、会话恢复和角色分流；表单字号按统一字体层级优化 |
+| `/admin` | 独立用户管理后台，包含统计、检索、角色/状态筛选、新建与编辑用户 |
 | `/console` | 用量概览、趋势和最近请求，已接控制台 API |
 | `/console/models` | 模型管理，已接模型目录 API |
 | `/console/logs` | 调用日志，已接请求日志 API |
 | `/console/routes` | 路由规则 UI；待接规则 CRUD API |
 | `/console/keys` | 密钥管理 UI与本地演示交互；待接密钥 CRUD API |
 | `/console/billing` | 账单与余额 UI；待接账单 API |
-| `/console/members` | 成员权限 UI；待接成员与 RBAC API |
+| `/console/members` | 工作区成员 UI；平台级账号与 RBAC 由 `/admin` 管理 |
 | `/console/settings` | 工作区与安全设置 UI；待接设置 API |
 
 ## 工程结构
@@ -79,3 +88,12 @@ Swagger 文档位于 `http://localhost:3000/docs`。接口错误统一返回 Pro
 - 页面通过 Vue Query 管理加载、缓存和失败状态；后端未启动时回退为标注清晰的演示数据。
 
 新增字段时，先修改 `@gateway/contracts`，再修改迁移、实体、服务映射与页面消费，保证字段含义在整个链路一致。
+
+## 本地演示身份
+
+迁移会写入仅供本地开发的演示账号：
+
+- 普通工作区：`demo@nexus.cn` / `nexus-demo`
+- 平台管理员：`admin@nexus.cn` / `Nexus@123456`
+
+生产部署前必须替换演示身份与 `JWT_SECRET`。访问令牌保存在浏览器内存中，刷新令牌仅通过 `HttpOnly + SameSite=Lax` Cookie 传递。

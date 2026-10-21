@@ -1,5 +1,6 @@
 import 'reflect-metadata'
 import helmet from '@fastify/helmet'
+import cookie from '@fastify/cookie'
 import { ValidationPipe } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { NestFactory } from '@nestjs/core'
@@ -20,6 +21,7 @@ async function bootstrap() {
   // Nest's Fastify adapter owns its Fastify version; the cast prevents the
   // plugin peer package from introducing a duplicate nominal instance type.
   await app.register(helmet as never)
+  await app.register(cookie as never)
   app.enableCors({
     origin: [config.getOrThrow<string>('WEB_ORIGIN')],
     credentials: true,
