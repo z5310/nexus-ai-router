@@ -3,6 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "test:members": "node test/member-management.integration.cjs",
+    "test:session-rotation": "node test/session-rotation.integration.cjs",
     "dev": "nest start --watch",
     "start:dev": "nest start --watch",
     "start:prod": "node dist/main.js",

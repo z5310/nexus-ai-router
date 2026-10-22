@@ -1,10 +1,13 @@
 <script setup lang="ts">
-import { Check, MoreHorizontal, Pencil, Plus, Route as RouteIcon, ShieldCheck, SlidersHorizontal, Trash2 } from 'lucide-vue-next'
+import { Pencil, Plus, Route as RouteIcon, ShieldCheck, Trash2 } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import type { CreateApiKeyResponse, RequestLogListResponse, RouteRule, WorkspaceModelConfig } from './api'
+import WorkspaceMembers from './cmp/WorkspaceMembers.vue'
+import WorkspaceIpPolicy from './cmp/WorkspaceIpPolicy.vue'
+import WorkspaceSettings from './cmp/WorkspaceSettings.vue'
 import ConsoleShell from './cmp/ConsoleShell.vue'
 import { models as fallbackModels } from '../../data/models'
 import ApiKeyModal from './cmp/ApiKeyModal.vue'
@@ -42,11 +45,6 @@ const filteredRoutes = computed(() => {
   const keyword = search.value.toLowerCase()
   return (routeQuery.data.value?.data ?? []).filter((item) => !keyword || `${item.name} ${item.primaryModelName} ${item.fallbackModelName ?? ''}`.toLowerCase().includes(keyword))
 })
-const members = [
-  { name: '林宇', email: 'linyu@nexus.cn', role: t('consoleSections.owner'), status: t('common.stable') },
-  { name: '陈晓', email: 'chenxiao@nexus.cn', role: t('consoleSections.developer'), status: t('common.stable') },
-  { name: '王宁', email: 'wangning@nexus.cn', role: t('consoleSections.finance'), status: t('consoleSections.invited') },
-]
 const title = computed(() => t(`consoleSections.${section.value}.title`))
 const description = computed(() => t(`consoleSections.${section.value}.description`))
 const isFallback = computed(() => section.value === 'models' ? modelQuery.isError.value : section.value === 'routes' ? routeQuery.isError.value : section.value === 'logs' ? logQuery.isError.value : false)
@@ -108,9 +106,9 @@ const shortDate = (value: string | null) => value ? new Intl.DateTimeFormat(unde
 
     <template v-else-if="section === 'billing'"><section class="billing-grid"><article class="console-surface"><span>{{ t('dashboard.balance') }}</span><strong>¥328.42</strong><p>{{ t('consoleSections.billingHint') }}</p></article><article class="console-surface"><span>{{ t('dashboard.spending') }}</span><strong>¥171.58</strong><p>34% / ¥500.00</p></article><article class="console-surface"><span>{{ t('consoleSections.nextInvoice') }}</span><strong>11 / 01</strong><p>{{ t('consoleSections.autoInvoice') }}</p></article></section><section class="console-surface"><h2>{{ t('consoleSections.transactions') }}</h2><div class="request-table console-data-table"><table><thead><tr><th>{{ t('consoleSections.date') }}</th><th>{{ t('consoleSections.item') }}</th><th>{{ t('dashboard.status') }}</th><th>{{ t('consoleSections.amount') }}</th></tr></thead><tbody><tr><td>2026-10-18</td><td>API Usage</td><td><span class="success-dot"><i />{{ t('consoleSections.settled') }}</span></td><td>¥42.18</td></tr><tr><td>2026-10-01</td><td>{{ t('dashboard.recharge') }}</td><td><span class="success-dot"><i />{{ t('consoleSections.completed') }}</span></td><td>+¥500.00</td></tr></tbody></table></div></section></template>
 
-    <section v-else-if="section === 'members'" class="console-surface"><div class="request-table console-data-table"><table><thead><tr><th>{{ t('consoleSections.member') }}</th><th>{{ t('consoleSections.email') }}</th><th>{{ t('consoleSections.role') }}</th><th>{{ t('dashboard.status') }}</th><th /></tr></thead><tbody><tr v-for="member in members" :key="member.email"><td><b>{{ member.name }}</b></td><td>{{ member.email }}</td><td>{{ member.role }}</td><td><span class="success-dot"><i />{{ member.status }}</span></td><td><button class="icon-action"><MoreHorizontal :size="14" /></button></td></tr></tbody></table></div></section>
+    <WorkspaceMembers v-else-if="section === 'members'" />
 
-    <section v-else class="settings-grid"><article class="console-surface settings-card"><div><SlidersHorizontal :size="19" /><div><h2>{{ t('consoleSections.workspaceSettings') }}</h2><p>{{ t('consoleSections.workspaceSettingsDesc') }}</p></div></div><label>{{ t('consoleSections.workspaceName') }}<input value="Nexus Demo" /></label><label>{{ t('consoleSections.defaultCurrency') }}<select><option>CNY · ¥</option><option>USD · $</option></select></label><button class="console-primary-action"><Check :size="14" />{{ t('consoleSections.save') }}</button></article><article class="console-surface settings-card"><div><ShieldCheck :size="19" /><div><h2>{{ t('consoleSections.securitySettings') }}</h2><p>{{ t('consoleSections.securitySettingsDesc') }}</p></div></div><label class="setting-toggle"><span><b>IP Allowlist</b><small>0.0.0.0/0</small></span><input type="checkbox" /></label><label class="setting-toggle"><span><b>{{ t('consoleSections.auditLog') }}</b><small>{{ t('consoleSections.auditLogDesc') }}</small></span><input type="checkbox" checked /></label></article></section>
+    <section v-else class="settings-grid"><WorkspaceSettings /><WorkspaceIpPolicy /></section>
 
     <ApiKeyModal :open="keyModalOpen" :busy="keyMutation.isPending.value" :secret="createdKey?.key" :error="keyError" @close="closeKeyModal" @submit="keyMutation.mutate" />
     <ModelConfigModal :open="modelModalOpen" :busy="modelMutation.isPending.value || removeModelMutation.isPending.value" :models="modalModels" :editing="editingModel" :error="modelError" @close="modelModalOpen = false" @submit="modelMutation.mutate" @remove="removeModel" />

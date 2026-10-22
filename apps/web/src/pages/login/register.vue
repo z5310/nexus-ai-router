@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { Eye, EyeOff, LoaderCircle, LockKeyhole, Mail, UserRound } from 'lucide-vue-next'
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+import { safeRedirect } from '../../lib/redirect'
 import { signUp } from '../../lib/auth'
 import AuthShell from './cmp/AuthShell.vue'
 
 const router = useRouter()
+const route = useRoute()
 const name = ref('')
 const email = ref('')
 const password = ref('')
@@ -18,7 +20,7 @@ async function submit() {
   loading.value = true
   try {
     await signUp(name.value, email.value, password.value, true)
-    await router.replace('/console')
+    await router.replace(safeRedirect(route.query.redirect))
   } catch (reason) {
     error.value = reason instanceof Error ? reason.message : '注册失败，请稍后重试'
   } finally {
@@ -37,6 +39,6 @@ async function submit() {
       <p v-if="error" class="login-error" role="alert">{{ error }}</p>
       <button class="login-submit" type="submit" :disabled="loading"><LoaderCircle v-if="loading" class="spin" :size="18" />{{ loading ? '正在创建…' : '创建并登录' }}</button>
     </form>
-    <div class="auth-switch">已有账户？<RouterLink to="/login">返回登录</RouterLink></div>
+    <div class="auth-switch">已有账户？<RouterLink :to="{ path: '/login', query: { redirect: safeRedirect(route.query.redirect) } }">返回登录</RouterLink></div>
   </AuthShell>
 </template>

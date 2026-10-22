@@ -4,6 +4,7 @@ import { DataSource, IsNull, Repository } from 'typeorm'
 import { ApiKeyEntity } from '../database/entities/api-key.entity'
 import { RequestLogEntity } from '../database/entities/request-log.entity'
 import { WorkspaceModelEntity } from '../database/entities/workspace-model.entity'
+import { WorkspaceEntity } from '../database/entities/workspace.entity'
 
 export interface RecordedInference {
   workspaceId: string
@@ -27,6 +28,10 @@ export class InferenceRepository {
 
   findActiveKey(keyHash: string): Promise<ApiKeyEntity | null> {
     return this.keys.findOne({ where: { keyHash, revokedAt: IsNull() } })
+  }
+
+  workspacePolicy(id: string) {
+    return this.dataSource.getRepository(WorkspaceEntity).findOneBy({ id })
   }
 
   async touchKey(id: string): Promise<void> {

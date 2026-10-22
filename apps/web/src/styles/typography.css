@@ -38,7 +38,10 @@
 .stat-grid article > div { font-size: var(--text-caption); }.stat-grid strong { font-size: 1.625rem; }.stat-grid p { font-size: var(--text-micro); }
 .panel-heading h2 { font-size: var(--text-heading-sm); }.panel-heading p,.panel-heading button { font-size: var(--text-caption); }
 .usage-panel select { font-size: var(--text-label); }.usage-chart .axis,.chart-labels { font-size: var(--text-micro); }
-.request-table th,.request-table td,.console-data-table th,.console-data-table td { font-size: var(--text-caption); line-height: 1.4; }
+.request-table th,.request-table td,.console-data-table th,.console-data-table td { font-size: var(--text-body-sm); line-height: 1.6; }
+.console-page .request-table th { color: #a6b5ab; }
+.console-page .request-table td { color: #c3d0c7; }
+.console-page .request-table code { font-size: var(--text-label); line-height: 1.6; color: #94e5b0; }
 .console-section-title > div > span { font-size: var(--text-label); }
 .route-rule h2 { font-size: var(--text-heading-sm); }.route-rule > p { font-size: var(--text-label); }.route-rule :is(dt,dd),.route-rule footer button { font-size: var(--text-caption); }
 .security-note b,.settings-card h2 { font-size: var(--text-label); }.security-note p,.billing-grid :is(span,p),.settings-card p,.settings-card > label:not(.setting-toggle) { font-size: var(--text-caption); }

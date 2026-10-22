@@ -20,7 +20,7 @@ export class InferenceService {
     @Inject(PROVIDER_GATEWAY) private readonly provider: ProviderGateway,
   ) {}
 
-  async chat(input: ChatCompletionDto, key: ApiKeyEntity, requestId: string = randomUUID()): Promise<OpenAIChatCompletionResponse> {
+  async chat(input: ChatCompletionDto, key: Pick<ApiKeyEntity, 'workspaceId' | 'userId'>, requestId: string = randomUUID()): Promise<OpenAIChatCompletionResponse> {
     const config = await this.inference.findRoutableModel(key.workspaceId, input.model)
     if (!config) throw new NotFoundException('模型未在当前工作区启用')
 
@@ -73,7 +73,7 @@ export class InferenceService {
 
   async streamChat(
     input: ChatCompletionDto,
-    key: ApiKeyEntity,
+    key: Pick<ApiKeyEntity, 'workspaceId' | 'userId'>,
     signal: AbortSignal,
     requestId: string = randomUUID(),
   ): Promise<InferenceChatStream> {
@@ -122,7 +122,7 @@ export class InferenceService {
 
   private async *trackStream(
     chunks: AsyncIterable<OpenAIChatCompletionChunk>,
-    key: ApiKeyEntity,
+    key: Pick<ApiKeyEntity, 'workspaceId' | 'userId'>,
     requestId: string,
     modelPublicId: string,
     inputPrice: number,

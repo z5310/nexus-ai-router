@@ -4,6 +4,7 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useQuery } from '@tanstack/vue-query'
+import TextModelDetail from './cmp/TextModelDetail.vue'
 import SiteHeader from '../../components/SiteHeader.vue'
 import ModelLogo from '../../components/ModelLogo.vue'
 import { models } from '../../data/models'
@@ -19,7 +20,7 @@ const price = (value: number | null) => value === null ? '—' : `¥${value.toFi
 </script>
 
 <template>
-  <div class="catalog-page"><SiteHeader /><main class="model-detail-main">
+  <div class="catalog-page"><SiteHeader /><TextModelDetail v-if="['text', 'image', 'video'].includes(model.type)" :key="slug" :model="model" :demo="modelQuery.isError.value" /><main v-else class="model-detail-main">
     <RouterLink class="detail-back" to="/models"><ArrowLeft :size="14" />{{ t('modelDetail.back') }}</RouterLink>
     <div v-if="modelQuery.isError.value" class="data-state-banner warning">{{ t('common.fallbackData') }}</div>
     <section class="model-detail-hero"><div><ModelLogo :owner="model.owner" :provider="model.provider" :name="model.name" :accent="model.accent" :size="48" /><p>{{ model.provider }} · {{ t(`common.types.${model.type}`) }}</p><h1>{{ model.name }}</h1><code>{{ model.slug }}</code><p class="detail-description">{{ t(model.descriptionKey) }}</p><div class="detail-actions"><a href="/console" target="_blank" rel="noopener noreferrer" class="button button-light">{{ t('catalog.startNow') }}</a><a href="/docs" target="_blank" rel="noopener noreferrer" class="button button-dark"><Code2 :size="15" />{{ t('common.docs') }}</a></div></div><div class="detail-score"><Gauge :size="24" /><strong>{{ model.score }}</strong><span>{{ t('catalog.score') }}</span></div></section>

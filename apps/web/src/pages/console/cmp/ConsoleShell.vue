@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { Activity, Bell, Blocks, ChevronDown, CircleDollarSign, Code2, KeyRound, LayoutDashboard, Menu, Plus, Route, Search, Settings, Users, X } from 'lucide-vue-next'
+import { useQuery } from '@tanstack/vue-query'
+import { getWorkspaceSettings } from '../api'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import BrandLogo from '../../../components/BrandLogo.vue'
@@ -7,6 +9,7 @@ import UserMenu from './UserMenu.vue'
 
 defineProps<{ search?: string }>()
 const emit = defineEmits<{ 'update:search': [value: string] }>()
+const workspaceQuery = useQuery({ queryKey: ['workspace-settings'], queryFn: ({ signal }) => getWorkspaceSettings(signal) })
 const sideOpen = ref(false)
 const { t } = useI18n()
 
@@ -32,7 +35,7 @@ const navigation = [
   <div class="console-page">
     <aside :class="['console-sidebar', { open: sideOpen }]">
       <div class="console-logo"><BrandLogo /><button @click="sideOpen = false"><X :size="18" /></button></div>
-      <div class="workspace-switch"><span>N</span><div><small>{{ t('dashboard.currentWorkspace') }}</small><b>Nexus Demo</b></div><ChevronDown :size="15" /></div>
+      <div class="workspace-switch"><span>N</span><div><small>{{ t('dashboard.currentWorkspace') }}</small><b>{{ workspaceQuery.data.value?.name ?? (workspaceQuery.isError.value ? '加载失败' : '加载中…') }}</b></div><ChevronDown :size="15" /></div>
       <nav v-for="group in navigation" :key="group.groupKey">
         <span>{{ t(group.groupKey) }}</span>
         <RouterLink v-for="link in group.links" :key="link.to" :to="link.to" :active-class="link.exact ? '' : 'active'" :class="{ active: link.exact && $route.path === link.to }" @click="sideOpen = false"><component :is="link.icon" :size="17" /> {{ t(link.labelKey) }}</RouterLink>

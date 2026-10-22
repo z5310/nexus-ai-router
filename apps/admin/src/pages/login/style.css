@@ -1,12 +1,19 @@
 .admin-login {
   min-height: 100vh;
-  padding: 22px 24px;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 86px 24px;
   background:
     radial-gradient(circle at 78% 4%, rgba(52, 180, 98, 0.13), transparent 38%),
     #070d09;
 }
 
 .admin-login > header {
+  position: absolute;
+  top: 22px;
+  left: 24px;
+  right: 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -14,13 +21,13 @@
 
 .admin-login > header > span {
   color: #536359;
-  font-size: 9px;
+  font-size: 13px;
   letter-spacing: 0.16em;
 }
 
 .admin-login form {
   width: min(430px, 100%);
-  margin: clamp(34px, 6vh, 58px) auto 0;
+  margin: 0 auto;
   padding: 29px 32px 27px;
   border: 1px solid var(--nexus-line);
   border-radius: 18px;
@@ -47,7 +54,7 @@
   display: block;
   margin-top: 20px;
   color: #63e495;
-  font-size: 9px;
+  font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.16em;
 }
@@ -61,8 +68,8 @@
 
 .admin-login form > p {
   margin: 0 0 19px;
-  color: #718078;
-  font-size: 12px;
+  color: #a6b5ab;
+  font-size: 13px;
   line-height: 1.65;
 }
 
@@ -70,7 +77,7 @@
   display: block;
   margin-top: 12px;
   color: #9ba9a0;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .admin-login label div {
@@ -92,11 +99,11 @@
 
 .admin-login input {
   width: 100%;
-  color: #e6f1e9;
+  color: #ffffff;
   border: 0;
   outline: 0;
   background: transparent;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .admin-login form > button {
@@ -111,7 +118,7 @@
   border: 0;
   border-radius: 10px;
   background: var(--nexus-button);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
 }
 
@@ -122,20 +129,20 @@
 .admin-login form > small {
   display: block;
   margin-top: 14px;
-  color: #536158;
-  font-size: 10px;
+  color: #a6b5ab;
+  font-size: 13px;
   text-align: center;
 }
 
 .admin-login .login-error {
   margin: 10px 0 -5px;
   color: #ef9999;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 @media (max-width: 720px) {
   .admin-login {
-    padding: 16px;
+    padding: 76px 16px;
   }
 
   .admin-login > header > span {
@@ -143,7 +150,7 @@
   }
 
   .admin-login form {
-    margin-top: 4vh;
+    margin-top: 0;
     padding: 25px 22px 23px;
   }
 }

@@ -1,10 +1,16 @@
-import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common'
-import type { WorkspaceContext, WorkspaceListResponse } from '@gateway/contracts'
-import { DataSource, Repository } from 'typeorm'
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common'
+import { ApiKeyEntity } from '../database/entities/api-key.entity'
+import type { UpdateWorkspaceMemberInput } from '@gateway/contracts'
+import type { WorkspaceContext, WorkspaceListResponse, WorkspaceMemberListResponse } from '@gateway/contracts'
+import { UserEntity } from '../database/entities/user.entity'
+import { DataSource, IsNull, Repository } from 'typeorm'
 import { InjectRepository } from '@nestjs/typeorm'
 import { ProjectEntity } from '../database/entities/project.entity'
 import { WorkspaceMemberEntity } from '../database/entities/workspace-member.entity'
 import { WorkspaceEntity } from '../database/entities/workspace.entity'
+import type { UpdateWorkspaceDto } from './update-workspace.dto'
+import type { UpdateIpPolicyDto } from './update-ip-policy.dto'
+import { parseNetwork } from './ip-policy'
 
 @Injectable()
 export class WorkspacesService {
@@ -53,6 +59,63 @@ export class WorkspacesService {
       order: { createdAt: 'ASC' },
     })
     return { data: memberships.filter((item) => item.workspace.status === 'active').map((item) => this.map(item)) }
+  }
+
+  async listMembers(workspaceId: string): Promise<WorkspaceMemberListResponse> {
+    const data = await this.members.createQueryBuilder('member')
+      .innerJoin(UserEntity, 'user', 'user.id = member.user_id')
+      .select('member.id', 'id')
+      .addSelect('user.name', 'name')
+      .addSelect('user.email', 'email')
+      .addSelect('member.role', 'role')
+      .addSelect('member.status', 'status')
+      .where('member.workspace_id = :workspaceId', { workspaceId })
+      .orderBy('member.created_at', 'ASC')
+      .addOrderBy('member.id', 'ASC')
+      .getRawMany<WorkspaceMemberListResponse['data'][number]>()
+    return { data }
+  }
+
+  async manageMember(actorId: string, workspaceId: string, memberId: string, role: UpdateWorkspaceMemberInput['role'] | null): Promise<void> {
+    await this.dataSource.transaction(async (manager) => {
+      const workspace = await manager.getRepository(WorkspaceEntity).findOne({ where: { id: workspaceId, status: 'active' }, lock: { mode: 'pessimistic_write' } })
+      if (!workspace) throw new ForbiddenException('工作区不可用')
+      const members = manager.getRepository(WorkspaceMemberEntity)
+      const actor = await members.findOneBy({ workspaceId, userId: actorId, status: 'active' })
+      if (!actor || !['owner', 'admin'].includes(actor.role)) throw new ForbiddenException('无权管理成员')
+      const target = await members.findOneBy({ id: memberId, workspaceId })
+      if (!target) throw new NotFoundException('成员不存在')
+      if (target.role === 'owner' || target.userId === actorId) throw new ForbiddenException('不能通过此操作变更所有者或自身权限')
+      if (actor.role === 'admin' && (target.role === 'admin' || role === 'admin')) throw new ForbiddenException('仅所有者可管理管理员')
+      if (role) {
+        await members.update(target.id, { role })
+      } else {
+        await manager.getRepository(ApiKeyEntity).update({ workspaceId, userId: target.userId, revokedAt: IsNull() }, { revokedAt: new Date() })
+        await members.delete(target.id)
+      }
+    })
+  }
+
+  async ipPolicy(workspaceId: string) {
+    const workspace = await this.workspaces.findOneByOrFail({ id: workspaceId })
+    return { enabled: workspace.ipAllowlistEnabled, networks: workspace.ipAllowlist }
+  }
+
+  async updateIpPolicy(userId: string, workspaceId: string, input: UpdateIpPolicyDto) {
+    const context = await this.resolve(userId, workspaceId)
+    if (!['owner', 'admin'].includes(context.role)) throw new ForbiddenException('仅所有者或管理员可修改 IP 规则')
+    const networks = [...new Set(input.networks.map((value) => value.trim()))]
+    try { networks.forEach(parseNetwork) } catch { throw new BadRequestException('请输入有效的 IPv4、IPv6 或 CIDR 网段') }
+    if (input.enabled && !networks.length) throw new BadRequestException('启用时至少填写一个允许的 IP 或网段')
+    await this.workspaces.update(workspaceId, { ipAllowlistEnabled: input.enabled, ipAllowlist: networks })
+    return { enabled: input.enabled, networks }
+  }
+
+  async updateSettings(userId: string, workspaceId: string, input: UpdateWorkspaceDto): Promise<WorkspaceContext> {
+    const context = await this.resolve(userId, workspaceId)
+    if (context.role !== 'owner' && context.role !== 'admin') throw new ForbiddenException('仅工作区所有者或管理员可修改设置')
+    await this.workspaces.update(workspaceId, { name: input.name, defaultCurrency: input.defaultCurrency })
+    return { ...context, name: input.name, defaultCurrency: input.defaultCurrency }
   }
 
   async resolve(userId: string, requestedWorkspaceId?: string): Promise<WorkspaceContext> {

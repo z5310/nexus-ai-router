@@ -16,6 +16,12 @@ export class WorkspaceEntity {
   @Column({ name: 'default_currency', type: 'varchar', length: 3, default: 'CNY' })
   defaultCurrency: string
 
+  @Column({ name: 'ip_allowlist_enabled', type: 'boolean', default: false })
+  ipAllowlistEnabled: boolean
+
+  @Column({ name: 'ip_allowlist', type: 'jsonb', default: () => "'[]'::jsonb" })
+  ipAllowlist: string[]
+
   @Column({ type: 'varchar', length: 20, default: 'active' })
   status: WorkspaceStatus
 

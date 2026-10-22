@@ -1,9 +1,10 @@
+import { createSessionRefresh } from '@gateway/ui'
 import axios, { AxiosError, type AxiosRequestConfig, type InternalAxiosRequestConfig } from 'axios'
 import type { AuthResponse } from '@gateway/contracts'
 
 const baseURL = import.meta.env.VITE_API_BASE_URL ?? ''
 let accessToken: string | null = null
-let refreshPromise: Promise<AuthResponse> | null = null
+
 
 type RetryConfig = InternalAxiosRequestConfig & { _retry?: boolean }
 
@@ -23,15 +24,18 @@ http.interceptors.request.use((config) => {
   return config
 })
 
-export async function refreshAccess(): Promise<AuthResponse> {
-  if (!refreshPromise) {
-    refreshPromise = axios.post<AuthResponse>('/api/auth/refresh', undefined, { baseURL, withCredentials: true })
-      .then(({ data }) => { setAccessToken(data.accessToken); return data })
-      .finally(() => { refreshPromise = null })
+export const refreshAccess = createSessionRefresh(async (): Promise<AuthResponse> => {
+  try {
+    const { data } = await axios.post<AuthResponse>('/api/auth/refresh', undefined, {
+      baseURL, withCredentials: true, timeout: 15_000,
+    })
+    setAccessToken(data.accessToken)
+    return data
+  } catch (error) {
+    setAccessToken(null)
+    throw error
   }
-  return refreshPromise
-}
-
+})
 http.interceptors.response.use((response) => response, async (reason: AxiosError<{ detail?: string | string[] }>) => {
   const config = reason.config as RetryConfig | undefined
   if (reason.response?.status === 401 && config && !config._retry && !config.url?.startsWith('/api/auth/')) {

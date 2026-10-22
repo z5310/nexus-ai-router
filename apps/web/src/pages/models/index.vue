@@ -92,7 +92,7 @@ const providerCount = (provider: string) => provider === 'all' ? catalogModels.v
               <div class="card-top"><ModelLogo :owner="model.owner" :provider="model.provider" :name="model.name" :accent="model.accent" :size="32" /><span v-if="model.tagKey" class="model-tag">{{ t(model.tagKey) }}</span><button aria-label="Compare model">+</button></div>
               <RouterLink :to="`/models/${model.slug}`"><h3>{{ model.name }}</h3></RouterLink><p class="provider-line">{{ providerLabel(model.provider) }} · {{ typeLabel(model.type) }}</p><p class="model-description">{{ t(model.descriptionKey) }}</p>
               <div class="model-specs"><span><small>{{ t('catalog.inputPrice') }}</small><b>{{ displayPrice(model.inputPrice, model.priceUnit) }}</b></span><span><small>{{ t('catalog.outputPrice') }}</small><b>{{ displayPrice(model.outputPrice, model.priceUnit) }}</b></span><span><small>{{ t('catalog.firstToken') }}</small><b>{{ model.latencyMs > 1000 ? `${(model.latencyMs / 1000).toFixed(1)}s` : `${model.latencyMs}ms` }}</b></span></div>
-              <div class="card-bottom"><code>{{ model.slug }}</code><a href="/console" target="_blank" rel="noopener noreferrer">{{ t('catalog.call') }} <ArrowRight :size="13" /></a></div>
+              <div class="card-bottom"><code>{{ model.slug }}</code><RouterLink :to="`/models/${model.slug}`">{{ t('catalog.call') }} <ArrowRight :size="13" /></RouterLink></div>
             </article>
           </div>
           <div v-if="filteredModels.length === 0" class="empty-state"><Search :size="26" /><h3>{{ t('catalog.noMatch') }}</h3><p>{{ t('catalog.noMatchDesc') }}</p></div>

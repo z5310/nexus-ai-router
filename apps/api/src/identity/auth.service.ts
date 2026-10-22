@@ -183,14 +183,12 @@ export class AuthService {
 
   async refresh(refreshToken: string | undefined, metadata: SessionMetadata): Promise<IssuedAuth> {
     if (!refreshToken) throw new UnauthorizedException('登录会话已失效')
-    const session = await this.sessions.findActive(this.hashToken(refreshToken))
+    const nextToken = randomBytes(48).toString('base64url')
+    const session = await this.sessions.rotate(this.hashToken(refreshToken), this.hashToken(nextToken), metadata)
     if (!session || session.user.status !== 'active') throw new UnauthorizedException('登录会话已失效')
-    await this.sessions.revoke(session.tokenHash)
-    return this.issue(
-      session.userId,
-      Math.max(1, Math.ceil((session.expiresAt.getTime() - Date.now()) / 86_400_000)),
-      { userAgent: metadata.userAgent ?? session.userAgent ?? undefined, ipAddress: metadata.ipAddress ?? session.ipAddress ?? undefined },
-    )
+    const user = session.user
+    const accessToken = await this.jwt.signAsync({ sub: user.id, email: user.email, role: user.role, sid: session.id }, { expiresIn: this.accessTokenTtl })
+    return { accessToken, expiresIn: this.accessTokenTtl, user: this.userService.toAuthUser(user), refreshToken: nextToken, refreshExpiresAt: session.expiresAt }
   }
 
   async logout(refreshToken: string | undefined): Promise<void> {
@@ -246,7 +244,9 @@ export class AuthService {
       this.fetchJson<{ email: string | null; login: string; name: string | null }>('https://api.github.com/user', { headers }),
       this.fetchJson<Array<{ email: string; primary: boolean; verified: boolean }>>('https://api.github.com/user/emails', { headers }),
     ])
-    const email = profile.email ?? emails.find((item) => item.primary && item.verified)?.email ?? emails.find((item) => item.verified)?.email
+    const email = emails.find((item) => item.primary && item.verified)?.email
+      ?? emails.find((item) => item.verified && item.email === profile.email)?.email
+      ?? emails.find((item) => item.verified)?.email
     if (!email) throw new UnauthorizedException('GitHub 账户没有已验证的邮箱')
     return { email, name: profile.name?.trim() || profile.login }
   }
@@ -267,7 +267,7 @@ export class AuthService {
   }
 
   private async fetchJson<T>(url: string, init: RequestInit): Promise<T> {
-    const response = await fetch(url, init)
+    const response = await fetch(url, { ...init, signal: AbortSignal.timeout(15_000) })
     if (!response.ok) throw new BadGatewayException(`第三方授权服务响应异常 (${response.status})`)
     return response.json() as Promise<T>
   }

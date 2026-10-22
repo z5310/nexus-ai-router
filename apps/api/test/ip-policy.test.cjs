@@ -1,0 +1,15 @@
+require('ts-node').register({ project: require('node:path').join(__dirname, '../tsconfig.json') })
+const { test } = require('node:test')
+const assert = require('node:assert/strict')
+const { allowsIp, parseNetwork } = require('../src/workspaces/ip-policy')
+test('IPv4, IPv6, mapped IPv4 and CIDR boundaries', () => {
+  assert.ok(allowsIp(['192.0.2.0/24'], '192.0.2.255'))
+  assert.ok(allowsIp(['127.0.0.1'], '::ffff:127.0.0.1'))
+  assert.ok(allowsIp(['2001:db8::/32'], '2001:db8::1'))
+  assert.equal(allowsIp(['192.0.2.0/24'], '192.0.3.0'), false)
+  assert.equal(allowsIp([], '127.0.0.1'), false)
+  assert.equal(allowsIp(['::/0'], 'invalid'), false)
+})
+test('invalid policies rejected', () => {
+  for (const value of ['*', '192.0.2.1/33', '::1/129', '::1/-1', '127.0.0.1/', '127.0.0.1/24/1']) assert.throws(() => parseNetwork(value))
+})

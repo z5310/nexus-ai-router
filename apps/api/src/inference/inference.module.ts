@@ -11,10 +11,12 @@ import { InferenceService } from './inference.service'
 import { OpenAICompatibleProviderAdapter } from './openai-compatible-provider.adapter'
 import { PROVIDER_GATEWAY } from './provider-gateway'
 import { OpenAIErrorFilter } from './openai-error.filter'
+import { IdentityModule } from '../identity/identity.module'
+import { PlaygroundController } from './playground.controller'
 
 @Module({
-  imports: [TypeOrmModule.forFeature([ApiKeyEntity, WorkspaceModelEntity, RequestLogEntity, UsageBucketEntity])],
-  controllers: [ChatCompletionsController],
+  imports: [IdentityModule, TypeOrmModule.forFeature([ApiKeyEntity, WorkspaceModelEntity, RequestLogEntity, UsageBucketEntity])],
+  controllers: [ChatCompletionsController, PlaygroundController],
   providers: [
     InferenceRepository,
     InferenceService,

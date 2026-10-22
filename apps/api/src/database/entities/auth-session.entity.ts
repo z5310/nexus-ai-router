@@ -17,6 +17,12 @@ export class AuthSessionEntity {
   @Column({ name: 'token_hash', length: 64 })
   tokenHash: string
 
+  @Column({ name: 'family_id', type: 'uuid' })
+  familyId: string
+
+  @Column({ name: 'rotated_at', type: 'timestamptz', nullable: true })
+  rotatedAt: Date | null
+
   @Column({ name: 'expires_at', type: 'timestamptz' })
   expiresAt: Date
 

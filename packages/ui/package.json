@@ -8,7 +8,8 @@
     "./tokens.css": "./src/tokens.css"
   },
   "scripts": {
-    "build": "vue-tsc --noEmit -p tsconfig.json && mkdir -p dist && touch dist/.build",
+    "test:refresh": "node --test scripts/refresh-session.test.cjs",
+    "build": "vue-tsc --noEmit -p tsconfig.json && node scripts/build-marker.mjs",
     "typecheck": "vue-tsc --noEmit -p tsconfig.json",
     "lint": "eslint \"src/**/*.{ts,vue}\""
   },

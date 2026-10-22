@@ -182,6 +182,17 @@ export interface WorkspaceContext {
 }
 
 export interface WorkspaceListResponse { data: WorkspaceContext[] }
+export interface WorkspaceIpPolicy { enabled: boolean; networks: string[] }
+
+export interface WorkspaceMemberSummary {
+  id: string
+  name: string
+  email: string
+  role: WorkspaceRole
+  status: WorkspaceMemberStatus
+}
+export interface WorkspaceMemberListResponse { data: WorkspaceMemberSummary[] }
+export interface UpdateWorkspaceMemberInput { role: Exclude<WorkspaceRole, 'owner'> }
 
 export interface WorkspaceModelConfig {
   id: string

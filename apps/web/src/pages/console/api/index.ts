@@ -19,3 +19,14 @@ export const revokeApiKey = (id: string) => request<void>({ method: 'DELETE', ur
 export const getRequestLogs = (signal?: AbortSignal) => request<RequestLogListResponse>({ url: consoleEndpoints.requests, params: { limit: 50 }, signal })
 export { consoleEndpoints }
 export type * from './types'
+
+export const getWorkspaceSettings = (signal?: AbortSignal) => request<import('@gateway/contracts').WorkspaceContext>({ url: '/api/workspaces/current', signal })
+export const saveWorkspaceSettings = (data: { name: string; defaultCurrency: string }) => request<import('@gateway/contracts').WorkspaceContext>({ method: 'PATCH', url: '/api/workspaces/current', data })
+
+export const getWorkspaceMembers = (signal?: AbortSignal) => request<import('@gateway/contracts').WorkspaceMemberListResponse>({ url: '/api/workspaces/current/members', signal })
+
+export const getWorkspaceIpPolicy = (signal?: AbortSignal) => request<import('@gateway/contracts').WorkspaceIpPolicy>({ url: '/api/workspaces/current/ip-policy', signal })
+export const saveWorkspaceIpPolicy = (data: import('@gateway/contracts').WorkspaceIpPolicy) => request<import('@gateway/contracts').WorkspaceIpPolicy>({ method: 'PATCH', url: '/api/workspaces/current/ip-policy', data })
+
+export const changeWorkspaceMember = (id: string, data: import('@gateway/contracts').UpdateWorkspaceMemberInput) => request<void>({ method: 'PATCH', url: '/api/workspaces/current/members/' + id, data })
+export const removeWorkspaceMember = (id: string) => request<void>({ method: 'DELETE', url: '/api/workspaces/current/members/' + id })
