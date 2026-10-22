@@ -69,7 +69,7 @@ npm run db:migrate
 | `GET` | `/api/admin/models/summary` | 模型、供应商和运行状态统计 |
 | `PATCH` | `/api/admin/models/:id` | 修改模型上架、推荐和运行状态 |
 | `GET` | `/v1/models` | API Key 鉴权的当前工作区 OpenAI 兼容模型列表 |
-| `POST` | `/v1/chat/completions` | API Key 鉴权的 OpenAI 兼容非流式模型调用 |
+| `POST` | `/v1/chat/completions` | API Key 鉴权的 OpenAI 兼容模型调用，支持 JSON 与 SSE 流式响应 |
 
 查询示例：
 
@@ -77,6 +77,10 @@ npm run db:migrate
 curl 'http://localhost:3000/api/models?type=text&sort=speed&page=1&pageSize=20'
 curl 'http://localhost:3000/api/rankings?metric=cost&limit=10'
 curl 'http://localhost:3000/api/dashboard/requests?query=deepseek&limit=20'
+curl -N 'http://localhost:3000/v1/chat/completions' \
+  -H 'Authorization: Bearer nxs_live_your_key' \
+  -H 'Content-Type: application/json' \
+  -d '{"model":"openai/gpt-6.1-sol","messages":[{"role":"user","content":"你好"}],"stream":true}'
 ```
 
 Swagger 文档位于 `http://localhost:3000/docs`。接口错误统一返回 Problem Details，包含 `status`、`detail`、`instance` 和 `request_id`。

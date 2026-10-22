@@ -1,10 +1,15 @@
-import { BadRequestException, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common'
+import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common'
 import { randomUUID } from 'node:crypto'
-import type { OpenAIChatCompletionResponse } from '@gateway/contracts'
+import type { OpenAIChatCompletionChunk, OpenAIChatCompletionResponse } from '@gateway/contracts'
 import type { ApiKeyEntity } from '../database/entities/api-key.entity'
 import type { ChatCompletionDto } from './dto/chat-completion.dto'
 import { InferenceRepository } from './inference.repository'
-import { PROVIDER_GATEWAY, type ProviderGateway } from './provider-gateway'
+import { PROVIDER_GATEWAY, type ProviderChatStream, type ProviderGateway } from './provider-gateway'
+
+export interface InferenceChatStream {
+  chunks: AsyncIterable<OpenAIChatCompletionChunk>
+  cancel(): void
+}
 
 @Injectable()
 export class InferenceService {
@@ -16,7 +21,6 @@ export class InferenceService {
   ) {}
 
   async chat(input: ChatCompletionDto, key: ApiKeyEntity, requestId: string = randomUUID()): Promise<OpenAIChatCompletionResponse> {
-    if (input.stream) throw new BadRequestException('当前版本暂不支持流式响应')
     const config = await this.inference.findRoutableModel(key.workspaceId, input.model)
     if (!config) throw new NotFoundException('模型未在当前工作区启用')
 
@@ -65,6 +69,95 @@ export class InferenceService {
       costCny,
     })
     return { ...response, model: config.model.publicId }
+  }
+
+  async streamChat(
+    input: ChatCompletionDto,
+    key: ApiKeyEntity,
+    signal: AbortSignal,
+    requestId: string = randomUUID(),
+  ): Promise<InferenceChatStream> {
+    const config = await this.inference.findRoutableModel(key.workspaceId, input.model)
+    if (!config) throw new NotFoundException('模型未在当前工作区启用')
+
+    const startedAt = performance.now()
+    let providerStream: ProviderChatStream
+    try {
+      providerStream = await this.provider.streamChat(input, {
+        provider: config.model.owner.toLowerCase(),
+        model: this.upstreamModelId(config.model.publicId),
+      }, signal)
+    } catch (error) {
+      try {
+        await this.inference.record({
+          workspaceId: key.workspaceId,
+          userId: key.userId,
+          requestId,
+          modelPublicId: config.model.publicId,
+          status: 'failed',
+          latencyMs: Math.max(0, Math.round(performance.now() - startedAt)),
+          inputTokens: 0,
+          outputTokens: 0,
+          costCny: 0,
+        })
+      } catch (recordError) {
+        this.logger.error('记录流式模型连接失败时发生错误', recordError instanceof Error ? recordError.stack : undefined)
+      }
+      throw error
+    }
+
+    return {
+      chunks: this.trackStream(
+        providerStream.chunks,
+        key,
+        requestId,
+        config.model.publicId,
+        Number(config.model.inputPrice),
+        Number(config.model.outputPrice ?? 0),
+        startedAt,
+      ),
+      cancel: providerStream.cancel,
+    }
+  }
+
+  private async *trackStream(
+    chunks: AsyncIterable<OpenAIChatCompletionChunk>,
+    key: ApiKeyEntity,
+    requestId: string,
+    modelPublicId: string,
+    inputPrice: number,
+    outputPrice: number,
+    startedAt: number,
+  ): AsyncGenerator<OpenAIChatCompletionChunk> {
+    let inputTokens = 0
+    let outputTokens = 0
+    let completed = false
+    try {
+      for await (const chunk of chunks) {
+        if (chunk.usage) {
+          inputTokens = chunk.usage.prompt_tokens
+          outputTokens = chunk.usage.completion_tokens
+        }
+        yield { ...chunk, model: modelPublicId }
+      }
+      completed = true
+    } finally {
+      try {
+        await this.inference.record({
+          workspaceId: key.workspaceId,
+          userId: key.userId,
+          requestId,
+          modelPublicId,
+          status: completed ? 'success' : 'failed',
+          latencyMs: Math.max(0, Math.round(performance.now() - startedAt)),
+          inputTokens,
+          outputTokens,
+          costCny: completed ? this.cost(inputTokens, outputTokens, inputPrice, outputPrice) : 0,
+        })
+      } catch (recordError) {
+        this.logger.error('记录流式模型调用时发生错误', recordError instanceof Error ? recordError.stack : undefined)
+      }
+    }
   }
 
   private upstreamModelId(publicId: string): string {

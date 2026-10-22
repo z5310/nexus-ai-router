@@ -1,17 +1,23 @@
-import { BadGatewayException, GatewayTimeoutException, Injectable, ServiceUnavailableException } from '@nestjs/common'
+import { BadGatewayException, GatewayTimeoutException, Injectable, RequestTimeoutException, ServiceUnavailableException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { randomUUID } from 'node:crypto'
-import type { OpenAIChatCompletionRequest, OpenAIChatCompletionResponse } from '@gateway/contracts'
-import type { ProviderGateway, ProviderTarget } from './provider-gateway'
+import type { OpenAIChatCompletionChunk, OpenAIChatCompletionRequest, OpenAIChatCompletionResponse } from '@gateway/contracts'
+import type { ProviderChatStream, ProviderGateway, ProviderTarget } from './provider-gateway'
+
+interface StreamControl {
+  controller: AbortController
+  timedOut(): boolean
+  clientAborted(): boolean
+  refresh(): void
+  cleanup(): void
+}
 
 @Injectable()
 export class OpenAICompatibleProviderAdapter implements ProviderGateway {
   constructor(private readonly config: ConfigService) {}
 
   async chat(input: OpenAIChatCompletionRequest, target: ProviderTarget): Promise<OpenAIChatCompletionResponse> {
-    const baseUrl = this.config.get<string>('PROVIDER_GATEWAY_URL')?.replace(/\/$/, '')
-    if (!baseUrl) throw new ServiceUnavailableException('模型数据面尚未配置')
-
+    const baseUrl = this.baseUrl()
     const controller = new AbortController()
     const timer = setTimeout(() => controller.abort(), this.config.get<number>('PROVIDER_GATEWAY_TIMEOUT_MS', 60_000))
     try {
@@ -51,5 +57,147 @@ export class OpenAICompatibleProviderAdapter implements ProviderGateway {
     } finally {
       clearTimeout(timer)
     }
+  }
+
+  async streamChat(input: OpenAIChatCompletionRequest, target: ProviderTarget, signal: AbortSignal): Promise<ProviderChatStream> {
+    const control = this.streamControl(signal)
+    try {
+      const response = await fetch(`${this.baseUrl()}/chat/completions`, {
+        method: 'POST',
+        headers: this.headers(target),
+        body: JSON.stringify({ ...input, model: target.model, stream: true, stream_options: { include_usage: true } }),
+        signal: control.controller.signal,
+      })
+      if (!response.ok) {
+        await response.body?.cancel()
+        control.cleanup()
+        throw new BadGatewayException(`模型供应商调用失败 (${response.status})`)
+      }
+      if (!response.body) {
+        control.cleanup()
+        throw new BadGatewayException('模型供应商未返回流式响应')
+      }
+      return {
+        chunks: this.readStream(response.body, control),
+        cancel: () => control.controller.abort(),
+      }
+    } catch (error) {
+      control.cleanup()
+      throw this.abortError(error, control.timedOut(), signal.aborted)
+    }
+  }
+
+  private async *readStream(body: ReadableStream<Uint8Array>, control: StreamControl): AsyncGenerator<OpenAIChatCompletionChunk> {
+    const reader = body.getReader()
+    const decoder = new TextDecoder()
+    let buffer = ''
+    try {
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        control.refresh()
+        buffer += decoder.decode(value, { stream: true })
+        const events = this.takeEvents(buffer)
+        buffer = events.remainder
+        for (const event of events.values) {
+          const chunk = this.parseEvent(event)
+          if (chunk === 'done') return
+          if (chunk) yield chunk
+        }
+      }
+      buffer += decoder.decode()
+      const trailing = this.parseEvent(buffer)
+      if (trailing && trailing !== 'done') yield trailing
+    } catch (error) {
+      throw this.abortError(error, control.timedOut(), control.clientAborted())
+    } finally {
+      control.cleanup()
+      reader.releaseLock()
+    }
+  }
+
+  private parseEvent(event: string): OpenAIChatCompletionChunk | 'done' | null {
+    const data = event.split(/\r?\n/)
+      .filter((line) => line.startsWith('data:'))
+      .map((line) => line.slice(5).trimStart())
+      .join('\n')
+      .trim()
+    if (!data) return null
+    if (data === '[DONE]') return 'done'
+
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(data)
+    } catch {
+      throw new BadGatewayException('模型供应商返回了无效的流式数据')
+    }
+    if (this.isUpstreamError(parsed)) throw new BadGatewayException('模型供应商流式响应失败')
+    return parsed as OpenAIChatCompletionChunk
+  }
+
+  private takeEvents(buffer: string): { values: string[]; remainder: string } {
+    const values: string[] = []
+    let remainder = buffer
+    while (true) {
+      const match = /\r?\n\r?\n/.exec(remainder)
+      if (!match || match.index === undefined) break
+      values.push(remainder.slice(0, match.index))
+      remainder = remainder.slice(match.index + match[0].length)
+    }
+    return { values, remainder }
+  }
+
+  private streamControl(externalSignal: AbortSignal): StreamControl {
+    const controller = new AbortController()
+    const timeoutMs = this.config.get<number>('PROVIDER_GATEWAY_TIMEOUT_MS', 60_000)
+    let timeout: NodeJS.Timeout
+    let didTimeout = false
+    const abortFromClient = () => controller.abort()
+    const refresh = () => {
+      clearTimeout(timeout)
+      timeout = setTimeout(() => {
+        didTimeout = true
+        controller.abort()
+      }, timeoutMs)
+    }
+    externalSignal.addEventListener('abort', abortFromClient, { once: true })
+    if (externalSignal.aborted) abortFromClient()
+    refresh()
+    return {
+      controller,
+      timedOut: () => didTimeout,
+      clientAborted: () => externalSignal.aborted,
+      refresh,
+      cleanup: () => {
+        clearTimeout(timeout)
+        externalSignal.removeEventListener('abort', abortFromClient)
+      },
+    }
+  }
+
+  private abortError(error: unknown, timedOut: boolean, clientAborted: boolean): unknown {
+    if (!(error instanceof Error) || error.name !== 'AbortError') return error
+    if (timedOut) return new GatewayTimeoutException('模型供应商响应超时')
+    if (clientAborted) return new RequestTimeoutException('客户端已取消请求')
+    return new BadGatewayException('模型供应商流式响应中断')
+  }
+
+  private baseUrl(): string {
+    const baseUrl = this.config.get<string>('PROVIDER_GATEWAY_URL')?.replace(/\/$/, '')
+    if (!baseUrl) throw new ServiceUnavailableException('模型数据面尚未配置')
+    return baseUrl
+  }
+
+  private headers(target: ProviderTarget): Record<string, string> {
+    const apiKey = this.config.get<string>('PROVIDER_GATEWAY_API_KEY')
+    return {
+      'content-type': 'application/json',
+      ...(apiKey ? { authorization: `Bearer ${apiKey}` } : {}),
+      'x-portkey-provider': target.provider,
+    }
+  }
+
+  private isUpstreamError(value: unknown): value is { error: unknown } {
+    return typeof value === 'object' && value !== null && 'error' in value
   }
 }

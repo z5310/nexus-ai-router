@@ -1,4 +1,5 @@
 import 'reflect-metadata'
+import type { IncomingHttpHeaders } from 'node:http'
 import helmet from '@fastify/helmet'
 import cookie from '@fastify/cookie'
 import { ValidationPipe } from '@nestjs/common'
@@ -13,7 +14,16 @@ import { ProblemDetailsFilter } from './common/filters/problem-details.filter'
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
-    new FastifyAdapter({ trustProxy: true }),
+    new FastifyAdapter({
+      trustProxy: true,
+      genReqId: (request: { headers: IncomingHttpHeaders }) => {
+        const correlationId = request.headers['x-request-id']
+        const prefix = typeof correlationId === 'string' && /^[A-Za-z0-9_.:-]{1,32}$/.test(correlationId)
+          ? `${correlationId}-`
+          : ''
+        return `${prefix}${crypto.randomUUID()}`
+      },
+    }),
     { bufferLogs: true },
   )
   const config = app.get(ConfigService)

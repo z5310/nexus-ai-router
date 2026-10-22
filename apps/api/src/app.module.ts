@@ -41,7 +41,7 @@ import { InferenceModule } from './inference/inference.module'
     }),
     LoggerModule.forRoot({
       pinoHttp: {
-        genReqId: (req) => req.headers['x-request-id']?.toString() ?? crypto.randomUUID(),
+        genReqId: (req) => req.id ?? crypto.randomUUID(),
         redact: ['req.headers.authorization', 'req.headers.cookie'],
       },
     }),

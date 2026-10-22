@@ -51,6 +51,26 @@ export interface OpenAIChatCompletionResponse {
   }
 }
 
+export interface OpenAIChatCompletionChunk {
+  id: string
+  object: 'chat.completion.chunk'
+  created: number
+  model: string
+  choices: Array<{
+    index: number
+    delta: {
+      role?: OpenAIChatRole
+      content?: string
+    }
+    finish_reason: string | null
+  }>
+  usage?: {
+    prompt_tokens: number
+    completion_tokens: number
+    total_tokens: number
+  } | null
+}
+
 export type ModelType = 'text' | 'image' | 'video' | 'audio' | 'embedding'
 export type ModelStatus = 'stable' | 'observing'
 export type RankingMetric = 'overall' | 'coding' | 'cost' | 'speed'
