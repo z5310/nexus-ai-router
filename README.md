@@ -123,7 +123,7 @@ Swagger 文档位于 `http://localhost:3000/docs`。接口错误统一返回 Pro
 
 Turbo 负责跨项目依赖顺序、并行运行和构建缓存。根目录 `npm run dev` 会同时启动 API、Web 和 Admin；每个应用仍保留独立运行命令。
 
-完整的能力盘点、接口状态与 P0/P1/P2 规划见 [产品路线图](docs/product-roadmap.md)。
+完整的能力盘点、接口状态与 P0/P1/P2 规划见 [产品路线图](docs/product-roadmap.md)。面向高并发、安全、性能、高可用和长期维护的技术演进方案见 [架构审计与演进方案](docs/architecture-evolution-plan.md)。
 
 ## 第三方登录配置
 
