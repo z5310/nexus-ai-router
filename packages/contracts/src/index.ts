@@ -137,6 +137,23 @@ export interface AdminModelSummaryResponse {
   providers: number
 }
 
+export type ProviderEnvironment = 'development' | 'staging' | 'production'
+
+export interface ProviderCredential {
+  id: string
+  provider: string
+  environment: ProviderEnvironment
+  name: string
+  maskedKey: string
+  enabled: boolean
+  keyVersion: string
+  rotatedAt: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ProviderCredentialListResponse { data: ProviderCredential[] }
+
 export type ApiKeyStatus = 'active' | 'revoked'
 
 export interface ApiKeyRecord {

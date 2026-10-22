@@ -17,6 +17,7 @@ import { RouteRuleEntity } from './database/entities/route-rule.entity'
 import { WorkspaceEntity } from './database/entities/workspace.entity'
 import { WorkspaceMemberEntity } from './database/entities/workspace-member.entity'
 import { ProjectEntity } from './database/entities/project.entity'
+import { ProviderCredentialEntity } from './database/entities/provider-credential.entity'
 import { CreateModels1760000000000 } from './database/migrations/1760000000000-CreateModels'
 import { ExpandCatalogAndUsage1760000001000 } from './database/migrations/1760000001000-ExpandCatalogAndUsage'
 import { CreateIdentity1760000002000 } from './database/migrations/1760000002000-CreateIdentity'
@@ -24,6 +25,7 @@ import { HardenIdentity1760000003000 } from './database/migrations/1760000003000
 import { CreateWorkspaceConfiguration1760000004000 } from './database/migrations/1760000004000-CreateWorkspaceConfiguration'
 import { CreateRouteRulesAndScopeUsage1760000005000 } from './database/migrations/1760000005000-CreateRouteRulesAndScopeUsage'
 import { CreateWorkspaceTenancy1760000006000 } from './database/migrations/1760000006000-CreateWorkspaceTenancy'
+import { CreateProviderCredentials1760000007000 } from './database/migrations/1760000007000-CreateProviderCredentials'
 import { DashboardModule } from './dashboard/dashboard.module'
 import { HealthController } from './health/health.controller'
 import { ModelsModule } from './models/models.module'
@@ -31,6 +33,7 @@ import { IdentityModule } from './identity/identity.module'
 import { ApiKeysModule } from './api-keys/api-keys.module'
 import { RoutingModule } from './routing/routing.module'
 import { InferenceModule } from './inference/inference.module'
+import { ProvidersModule } from './providers/providers.module'
 
 @Module({
   imports: [
@@ -42,7 +45,13 @@ import { InferenceModule } from './inference/inference.module'
     LoggerModule.forRoot({
       pinoHttp: {
         genReqId: (req) => req.id ?? crypto.randomUUID(),
-        redact: ['req.headers.authorization', 'req.headers.cookie'],
+        redact: [
+          'req.headers.authorization',
+          'req.headers.cookie',
+          'req.headers.x-api-key',
+          'req.headers.x-portkey-api-key',
+          'req.headers.x-portkey-virtual-key',
+        ],
       },
     }),
     TypeOrmModule.forRootAsync({
@@ -50,8 +59,8 @@ import { InferenceModule } from './inference/inference.module'
       useFactory: (config: ConfigService) => ({
         type: 'postgres',
         url: config.getOrThrow<string>('DATABASE_URL'),
-        entities: [ModelEntity, RequestLogEntity, UsageBucketEntity, UserEntity, AuthSessionEntity, AuthActionTokenEntity, ApiKeyEntity, WorkspaceModelEntity, RouteRuleEntity, WorkspaceEntity, WorkspaceMemberEntity, ProjectEntity],
-        migrations: [CreateModels1760000000000, ExpandCatalogAndUsage1760000001000, CreateIdentity1760000002000, HardenIdentity1760000003000, CreateWorkspaceConfiguration1760000004000, CreateRouteRulesAndScopeUsage1760000005000, CreateWorkspaceTenancy1760000006000],
+        entities: [ModelEntity, RequestLogEntity, UsageBucketEntity, UserEntity, AuthSessionEntity, AuthActionTokenEntity, ApiKeyEntity, WorkspaceModelEntity, RouteRuleEntity, WorkspaceEntity, WorkspaceMemberEntity, ProjectEntity, ProviderCredentialEntity],
+        migrations: [CreateModels1760000000000, ExpandCatalogAndUsage1760000001000, CreateIdentity1760000002000, HardenIdentity1760000003000, CreateWorkspaceConfiguration1760000004000, CreateRouteRulesAndScopeUsage1760000005000, CreateWorkspaceTenancy1760000006000, CreateProviderCredentials1760000007000],
         synchronize: false,
         migrationsRun: false,
         retryAttempts: 10,
@@ -69,6 +78,7 @@ import { InferenceModule } from './inference/inference.module'
     IdentityModule,
     ApiKeysModule,
     RoutingModule,
+    ProvidersModule,
     InferenceModule,
   ],
   controllers: [HealthController],

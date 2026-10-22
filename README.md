@@ -148,6 +148,17 @@ GOOGLE_CLIENT_SECRET=...
 
 密码登录连续失败 5 次后会锁定 15 分钟。密码重置凭证有效期为 15 分钟、只能使用一次；重置或修改密码会撤销该账户的全部刷新会话。开发环境的找回密码响应会包含 `debugToken` 方便本地联调，生产环境不会返回该字段，部署时应将重置凭证交给邮件服务发送。
 
+## 供应商凭证管理
+
+平台管理员通过 `/api/admin/provider-credentials` 管理各环境的供应商 API Key：
+
+- `GET /api/admin/provider-credentials`：按供应商或环境查询凭证元数据。
+- `POST /api/admin/provider-credentials`：新增凭证并立即使用 AES-256-GCM 加密。
+- `PATCH /api/admin/provider-credentials/:id`：重命名、轮换、启用或停用凭证。
+- `DELETE /api/admin/provider-credentials/:id`：删除凭证。
+
+接口只返回 `••••末四位`、密钥版本和轮换时间，不会返回明文或数据库密文。同一环境下每个供应商只允许启用一个凭证。`ENCRYPTION_KEY` 建议使用 32 字节随机值的 Base64，`ENCRYPTION_KEY_VERSION` 用于轮换识别，`PROVIDER_CREDENTIAL_ENV` 决定数据面读取哪个环境的凭证。生产环境应将本地加密实现替换为云 KMS envelope encryption，并为轮换和删除补充不可变审计日志。
+
 ## 本地演示身份
 
 迁移会写入仅供本地开发的演示账号：
