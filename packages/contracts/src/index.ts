@@ -161,6 +161,26 @@ export interface AuthResponse {
   user: AuthUser
 }
 
+export interface AuthSession {
+  id: string
+  current: boolean
+  userAgent: string | null
+  ipAddress: string | null
+  lastSeenAt: string
+  createdAt: string
+  expiresAt: string
+}
+
+export interface AuthSessionListResponse {
+  data: AuthSession[]
+}
+
+export interface PasswordResetRequestResponse {
+  accepted: true
+  expiresIn: number
+  debugToken?: string
+}
+
 export interface UserListResponse {
   data: AuthUser[]
   pagination: PaginationMeta

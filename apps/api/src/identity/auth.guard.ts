@@ -3,7 +3,7 @@ import { JwtService } from '@nestjs/jwt'
 import type { FastifyRequest } from 'fastify'
 import type { UserRole } from '@gateway/contracts'
 
-export interface AuthPrincipal { sub: string; email: string; role: UserRole }
+export interface AuthPrincipal { sub: string; email: string; role: UserRole; sid: string }
 export type AuthenticatedRequest = FastifyRequest & { user: AuthPrincipal }
 
 @Injectable()

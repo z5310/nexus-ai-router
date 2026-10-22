@@ -1,11 +1,23 @@
-import { BadGatewayException, Injectable, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common'
+import {
+  BadGatewayException,
+  BadRequestException,
+  ConflictException,
+  HttpException,
+  HttpStatus,
+  Injectable,
+  NotFoundException,
+  ServiceUnavailableException,
+  UnauthorizedException,
+} from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { JwtService } from '@nestjs/jwt'
 import { createHash, randomBytes } from 'node:crypto'
-import type { AuthResponse } from '@gateway/contracts'
+import type { AuthResponse, AuthSessionListResponse, PasswordResetRequestResponse } from '@gateway/contracts'
+import type { ChangePasswordDto, ForgotPasswordDto, RegisterDto, ResetPasswordDto } from './dto/auth-account.dto'
 import type { LoginDto } from './dto/login.dto'
+import { ActionTokensRepository } from './action-tokens.repository'
 import { PasswordService } from './password.service'
-import { SessionsRepository } from './sessions.repository'
+import { SessionsRepository, type SessionMetadata } from './sessions.repository'
 import { UsersRepository } from './users.repository'
 import { UsersService } from './users.service'
 
@@ -24,23 +36,109 @@ interface OauthProfile {
 @Injectable()
 export class AuthService {
   private readonly accessTokenTtl = 15 * 60
+  private readonly passwordResetTtl = 15 * 60
+  private readonly maxLoginFailures = 5
+  private readonly lockMinutes = 15
 
   constructor(
     private readonly users: UsersRepository,
     private readonly userService: UsersService,
     private readonly passwords: PasswordService,
     private readonly sessions: SessionsRepository,
+    private readonly actionTokens: ActionTokensRepository,
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
   ) {}
 
-  async login(input: LoginDto): Promise<IssuedAuth> {
+  async register(input: RegisterDto, metadata: SessionMetadata): Promise<IssuedAuth> {
+    const email = input.email.trim().toLowerCase()
+    if (await this.users.findByEmail(email)) throw new ConflictException('该邮箱已被使用')
+    const user = this.users.create({
+      name: input.name.trim(),
+      email,
+      passwordHash: await this.passwords.hash(input.password),
+      passwordChangedAt: new Date(),
+      role: 'viewer',
+      status: 'active',
+      lastLoginAt: new Date(),
+    })
+    await this.users.save(user)
+    return this.issue(user.id, input.remember ? 30 : 7, metadata)
+  }
+
+  async login(input: LoginDto, metadata: SessionMetadata): Promise<IssuedAuth> {
     const user = await this.users.findByEmail(input.email)
-    if (!user || !(await this.passwords.verify(input.password, user.passwordHash))) throw new UnauthorizedException('邮箱或密码错误')
+    if (user?.lockedUntil && user.lockedUntil.getTime() > Date.now()) throw new HttpException('登录尝试次数过多，请稍后再试', HttpStatus.TOO_MANY_REQUESTS)
+    const valid = user ? await this.passwords.verify(input.password, user.passwordHash) : false
+    if (!user || !valid) {
+      if (user) await this.recordLoginFailure(user)
+      throw new UnauthorizedException('邮箱或密码错误')
+    }
     if (user.status !== 'active') throw new UnauthorizedException('账户暂不可登录，请联系管理员')
+    user.failedLoginCount = 0
+    user.lockedUntil = null
     user.lastLoginAt = new Date()
     await this.users.save(user)
-    return this.issue(user.id, input.remember ? 30 : 7)
+    return this.issue(user.id, input.remember ? 30 : 7, metadata)
+  }
+
+  async requestPasswordReset(input: ForgotPasswordDto): Promise<PasswordResetRequestResponse> {
+    const token = randomBytes(48).toString('base64url')
+    const user = await this.users.findByEmail(input.email)
+    if (user?.status === 'active') {
+      await this.actionTokens.invalidate(user.id, 'password_reset')
+      await this.actionTokens.create(user.id, 'password_reset', this.hashToken(token), new Date(Date.now() + this.passwordResetTtl * 1000))
+    }
+    const response: PasswordResetRequestResponse = { accepted: true, expiresIn: this.passwordResetTtl }
+    if (user?.status === 'active' && this.config.get<string>('NODE_ENV') !== 'production') response.debugToken = token
+    return response
+  }
+
+  async resetPassword(input: ResetPasswordDto): Promise<void> {
+    const action = await this.actionTokens.findActive(this.hashToken(input.token), 'password_reset')
+    if (!action || action.user.status !== 'active') throw new BadRequestException('重置链接无效或已过期')
+    action.user.passwordHash = await this.passwords.hash(input.password)
+    action.user.passwordChangedAt = new Date()
+    action.user.failedLoginCount = 0
+    action.user.lockedUntil = null
+    await this.users.save(action.user)
+    await this.actionTokens.consume(action.id)
+    await this.sessions.revokeAll(action.userId)
+  }
+
+  async changePassword(userId: string, input: ChangePasswordDto): Promise<void> {
+    const user = await this.userService.require(userId)
+    if (!(await this.passwords.verify(input.currentPassword, user.passwordHash))) throw new UnauthorizedException('当前密码不正确')
+    if (await this.passwords.verify(input.password, user.passwordHash)) throw new BadRequestException('新密码不能与当前密码相同')
+    user.passwordHash = await this.passwords.hash(input.password)
+    user.passwordChangedAt = new Date()
+    user.failedLoginCount = 0
+    user.lockedUntil = null
+    await this.users.save(user)
+    await this.sessions.revokeAll(user.id)
+  }
+
+  async listSessions(userId: string, currentSessionId: string): Promise<AuthSessionListResponse> {
+    const sessions = await this.sessions.listActive(userId)
+    return {
+      data: sessions.map((session) => ({
+        id: session.id,
+        current: session.id === currentSessionId,
+        userAgent: session.userAgent,
+        ipAddress: session.ipAddress,
+        lastSeenAt: session.lastSeenAt.toISOString(),
+        createdAt: session.createdAt.toISOString(),
+        expiresAt: session.expiresAt.toISOString(),
+      })),
+    }
+  }
+
+  async revokeSession(userId: string, sessionId: string): Promise<void> {
+    if (!(await this.sessions.revokeById(userId, sessionId))) throw new NotFoundException('登录会话不存在')
+  }
+
+  revokeAllSessions(userId: string): Promise<void> {
+    return this.sessions.revokeAll(userId)
   }
 
   createOauthStart(provider: OauthProvider): { state: string; url: string } {
@@ -57,7 +155,7 @@ export class AuthService {
     return { state, url: `https://accounts.google.com/o/oauth2/v2/auth?${parameters}` }
   }
 
-  async oauthLogin(provider: OauthProvider, code: string): Promise<IssuedAuth> {
+  async oauthLogin(provider: OauthProvider, code: string, metadata: SessionMetadata): Promise<IssuedAuth> {
     const profile = provider === 'github' ? await this.githubProfile(code) : await this.googleProfile(code)
     let user = await this.users.findByEmail(profile.email)
     if (!user) {
@@ -65,6 +163,7 @@ export class AuthService {
         email: profile.email.toLowerCase(),
         name: profile.name,
         passwordHash: await this.passwords.hash(randomBytes(32).toString('base64url')),
+        passwordChangedAt: new Date(),
         role: 'viewer',
         status: 'active',
         lastLoginAt: new Date(),
@@ -72,18 +171,24 @@ export class AuthService {
     } else {
       if (user.status !== 'active') throw new UnauthorizedException('账户暂不可登录，请联系管理员')
       user.lastLoginAt = new Date()
+      user.failedLoginCount = 0
+      user.lockedUntil = null
       if (!user.name.trim()) user.name = profile.name
     }
     await this.users.save(user)
-    return this.issue(user.id, 30)
+    return this.issue(user.id, 30, metadata)
   }
 
-  async refresh(refreshToken: string | undefined): Promise<IssuedAuth> {
+  async refresh(refreshToken: string | undefined, metadata: SessionMetadata): Promise<IssuedAuth> {
     if (!refreshToken) throw new UnauthorizedException('登录会话已失效')
     const session = await this.sessions.findActive(this.hashToken(refreshToken))
     if (!session || session.user.status !== 'active') throw new UnauthorizedException('登录会话已失效')
     await this.sessions.revoke(session.tokenHash)
-    return this.issue(session.userId, Math.max(1, Math.ceil((session.expiresAt.getTime() - Date.now()) / 86_400_000)))
+    return this.issue(
+      session.userId,
+      Math.max(1, Math.ceil((session.expiresAt.getTime() - Date.now()) / 86_400_000)),
+      { userAgent: metadata.userAgent ?? session.userAgent ?? undefined, ipAddress: metadata.ipAddress ?? session.ipAddress ?? undefined },
+    )
   }
 
   async logout(refreshToken: string | undefined): Promise<void> {
@@ -96,13 +201,24 @@ export class AuthService {
     return this.userService.toAuthUser(user)
   }
 
-  private async issue(userId: string, refreshDays: number): Promise<IssuedAuth> {
+  private async issue(userId: string, refreshDays: number, metadata: SessionMetadata): Promise<IssuedAuth> {
     const user = await this.userService.require(userId)
-    const accessToken = await this.jwt.signAsync({ sub: user.id, email: user.email, role: user.role }, { expiresIn: this.accessTokenTtl })
     const refreshToken = randomBytes(48).toString('base64url')
     const refreshExpiresAt = new Date(Date.now() + refreshDays * 86_400_000)
-    await this.sessions.create(user.id, this.hashToken(refreshToken), refreshExpiresAt)
+    const session = await this.sessions.create(user.id, this.hashToken(refreshToken), refreshExpiresAt, metadata)
+    const accessToken = await this.jwt.signAsync({ sub: user.id, email: user.email, role: user.role, sid: session.id }, { expiresIn: this.accessTokenTtl })
     return { accessToken, expiresIn: this.accessTokenTtl, user: this.userService.toAuthUser(user), refreshToken, refreshExpiresAt }
+  }
+
+  private async recordLoginFailure(user: NonNullable<Awaited<ReturnType<UsersRepository['findByEmail']>>>): Promise<void> {
+    const now = Date.now()
+    if (user.lockedUntil && user.lockedUntil.getTime() <= now) user.failedLoginCount = 0
+    user.failedLoginCount += 1
+    if (user.failedLoginCount >= this.maxLoginFailures) {
+      user.lockedUntil = new Date(now + this.lockMinutes * 60_000)
+      user.failedLoginCount = 0
+    }
+    await this.users.save(user)
   }
 
   private oauthConfig(provider: OauthProvider): { callbackUrl: string; clientId: string; clientSecret: string } {

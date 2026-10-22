@@ -21,6 +21,11 @@
 .oauth-buttons svg { width: 19px; height: 19px; flex: 0 0 auto; }
 .login-card footer { margin-top: 13px; color: #718077; font-size: var(--text-micro); line-height: 1.5; text-align: center; }
 .login-error { margin: -6px 0 14px!important; color: #ff9d9d!important; font-size: var(--text-label)!important; }
+.auth-message { margin: 0 0 14px!important; color: #88dca2!important; font-size: var(--text-label)!important; line-height: 1.5; }
+.auth-hint { display: block; margin: 8px 0 14px; color: #65736a; font-size: var(--text-micro); line-height: 1.5; }
+.auth-switch { margin-top: 14px; color: #718077; font-size: var(--text-label); text-align: center; }
+.auth-switch a,.auth-debug-link { color: #88dca2; }
+.auth-debug-link { display: block; margin-top: 12px; font-size: var(--text-label); text-align: center; }
 .oauth-callback { min-height: 100svh; display: grid; place-items: center; color: #dce9df; background: #07100a; }
 .oauth-callback > div { display: flex; align-items: center; gap: 10px; color: #94a49a; font-size: var(--text-ui); }
 .spin { animation: admin-spin .85s linear infinite; }

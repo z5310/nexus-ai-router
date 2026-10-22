@@ -1,6 +1,6 @@
 import { reactive, readonly } from 'vue'
 import type { AuthResponse, AuthUser } from '@gateway/contracts'
-import { login, logout, refreshSession } from '../pages/login/api'
+import { login, logout, refreshSession, register } from '../pages/login/api'
 import { ApiError, setAccessToken } from './http'
 
 const state = reactive<{ user: AuthUser | null; ready: boolean }>({ user: null, ready: false })
@@ -14,6 +14,7 @@ function apply(result: AuthResponse) {
 }
 
 export async function signIn(email: string, password: string, remember: boolean) { return apply(await login({ email, password, remember })) }
+export async function signUp(name: string, email: string, password: string, remember: boolean) { return apply(await register({ name, email, password, remember })) }
 export async function restoreSession(): Promise<AuthUser | null> {
   if (state.ready) return state.user
   try { return apply(await refreshSession()) } catch (error) {

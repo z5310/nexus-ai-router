@@ -7,6 +7,9 @@ import ConsoleView from './pages/console/index.vue'
 import ConsoleSectionView from './pages/console/section.vue'
 import LoginView from './pages/login/index.vue'
 import OAuthCallbackView from './pages/login/oauth-callback.vue'
+import RegisterView from './pages/login/register.vue'
+import ForgotPasswordView from './pages/login/forgot-password.vue'
+import ResetPasswordView from './pages/login/reset-password.vue'
 import ModelDetailView from './pages/models/detail.vue'
 import AdminRedirectView from './pages/admin-redirect/index.vue'
 import { authState, restoreSession } from './lib/auth'
@@ -30,6 +33,9 @@ const router = createRouter({
     { path: '/console/settings', component: ConsoleSectionView, meta: { titleKey: 'pageTitles.consoleSettings', section: 'settings', requiresAuth: true } },
     { path: '/admin/:pathMatch(.*)*', component: AdminRedirectView, meta: { titleKey: 'pageTitles.admin', requiresAuth: true, requiresAdmin: true } },
     { path: '/login', component: LoginView, meta: { titleKey: 'pageTitles.login' } },
+    { path: '/register', component: RegisterView, meta: { titleKey: 'pageTitles.login' } },
+    { path: '/forgot-password', component: ForgotPasswordView, meta: { titleKey: 'pageTitles.login' } },
+    { path: '/reset-password', component: ResetPasswordView, meta: { titleKey: 'pageTitles.login' } },
     { path: '/auth/callback', component: OAuthCallbackView, meta: { titleKey: 'pageTitles.login' } },
   ],
 })

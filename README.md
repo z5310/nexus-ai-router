@@ -42,9 +42,16 @@ npm run db:migrate
 | `GET` | `/api/dashboard/overview` | 用量指标、24 小时趋势、余额和最近请求 |
 | `GET` | `/api/dashboard/requests` | 按请求 ID 或模型检索调用记录 |
 | `POST` | `/api/auth/login` | 邮箱密码登录，返回短时访问令牌并写入 HttpOnly 刷新会话 |
+| `POST` | `/api/auth/register` | 创建普通客户账户并自动登录 |
 | `POST` | `/api/auth/refresh` | 轮换刷新会话并签发新的访问令牌 |
 | `POST` | `/api/auth/logout` | 撤销当前刷新会话 |
 | `GET` | `/api/auth/me` | 获取当前登录用户 |
+| `POST` | `/api/auth/forgot-password` | 创建 15 分钟有效的一次性密码重置凭证，响应不会暴露账号是否存在 |
+| `POST` | `/api/auth/reset-password` | 使用一次性凭证重置密码并撤销全部旧会话 |
+| `POST` | `/api/auth/change-password` | 校验当前密码后更新密码并撤销全部旧会话 |
+| `GET` | `/api/auth/sessions` | 查看当前账户的活跃登录会话与当前设备标记 |
+| `DELETE` | `/api/auth/sessions/:id` | 撤销指定登录会话 |
+| `DELETE` | `/api/auth/sessions` | 撤销当前账户的全部登录会话 |
 | `GET` | `/api/auth/oauth/github` | 发起 GitHub OAuth 登录 |
 | `GET` | `/api/auth/oauth/google` | 发起 Google OAuth 登录 |
 | `GET` | `/api/admin/users` | 管理员搜索、筛选和分页查看用户 |
@@ -76,6 +83,9 @@ Swagger 文档位于 `http://localhost:3000/docs`。接口错误统一返回 Pro
 | `/rankings` | 分类 Top 5、综合/使用率/7 日热度专项榜与四种完整指标排行，已接排行 API |
 | `/docs` | 独立开发文档页 |
 | `/login` | 邮箱密码、GitHub 和 Google 登录，会话恢复与角色分流 |
+| `/register` | 客户账户注册并自动登录 |
+| `/forgot-password` | 申请一次性密码重置凭证 |
+| `/reset-password` | 使用一次性凭证设置新密码 |
 | `/admin` | 管理员入口，验证角色后跳转独立的 5174 管理端 |
 | `/console` | 用量概览、趋势和最近请求，已接控制台 API |
 | `/console/models` | 模型管理，已接模型目录 API |
@@ -119,6 +129,8 @@ GOOGLE_CLIENT_SECRET=...
 ```
 
 未配置的登录方式会安全返回登录页并显示配置提示。第三方登录首次使用时创建普通 `viewer` 用户，不会自动获得平台管理权限。
+
+密码登录连续失败 5 次后会锁定 15 分钟。密码重置凭证有效期为 15 分钟、只能使用一次；重置或修改密码会撤销该账户的全部刷新会话。开发环境的找回密码响应会包含 `debugToken` 方便本地联调，生产环境不会返回该字段，部署时应将重置凭证交给邮件服务发送。
 
 ## 本地演示身份
 

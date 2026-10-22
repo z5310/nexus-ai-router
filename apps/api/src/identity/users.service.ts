@@ -4,10 +4,15 @@ import { PasswordService } from './password.service'
 import { UsersRepository } from './users.repository'
 import type { CreateUserDto, ListUsersQuery, UpdateUserDto } from './dto/users.dto'
 import type { UserEntity } from '../database/entities/user.entity'
+import { SessionsRepository } from './sessions.repository'
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly users: UsersRepository, private readonly passwords: PasswordService) {}
+  constructor(
+    private readonly users: UsersRepository,
+    private readonly passwords: PasswordService,
+    private readonly sessions: SessionsRepository,
+  ) {}
 
   async list(query: ListUsersQuery): Promise<UserListResponse> {
     const [users, total] = await this.users.list(query)
@@ -21,7 +26,7 @@ export class UsersService {
   async create(input: CreateUserDto): Promise<AuthUser> {
     const email = input.email.trim().toLowerCase()
     if (await this.users.findByEmail(email)) throw new ConflictException('该邮箱已被使用')
-    const user = this.users.create({ ...input, email, name: input.name.trim(), passwordHash: await this.passwords.hash(input.password) })
+    const user = this.users.create({ ...input, email, name: input.name.trim(), passwordHash: await this.passwords.hash(input.password), passwordChangedAt: new Date() })
     return this.toAuthUser(await this.users.save(user))
   }
 
@@ -37,8 +42,13 @@ export class UsersService {
     if (input.name) user.name = input.name.trim()
     if (input.role) user.role = input.role
     if (input.status) user.status = input.status
-    if (input.password) user.passwordHash = await this.passwords.hash(input.password)
-    return this.toAuthUser(await this.users.save(user))
+    if (input.password) {
+      user.passwordHash = await this.passwords.hash(input.password)
+      user.passwordChangedAt = new Date()
+    }
+    const saved = await this.users.save(user)
+    if (input.password || input.status === 'suspended') await this.sessions.revokeAll(user.id)
+    return this.toAuthUser(saved)
   }
 
   async summary(): Promise<UserSummaryResponse> {

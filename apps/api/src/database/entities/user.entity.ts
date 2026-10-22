@@ -26,6 +26,15 @@ export class UserEntity {
   @Column({ name: 'last_login_at', type: 'timestamptz', nullable: true })
   lastLoginAt: Date | null
 
+  @Column({ name: 'failed_login_count', type: 'integer', default: 0 })
+  failedLoginCount: number
+
+  @Column({ name: 'locked_until', type: 'timestamptz', nullable: true })
+  lockedUntil: Date | null
+
+  @Column({ name: 'password_changed_at', type: 'timestamptz', nullable: true })
+  passwordChangedAt: Date | null
+
   @OneToMany(() => AuthSessionEntity, (session) => session.user)
   sessions: AuthSessionEntity[]
 

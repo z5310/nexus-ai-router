@@ -23,6 +23,15 @@ export class AuthSessionEntity {
   @Column({ name: 'revoked_at', type: 'timestamptz', nullable: true })
   revokedAt: Date | null
 
+  @Column({ name: 'user_agent', type: 'text', nullable: true })
+  userAgent: string | null
+
+  @Column({ name: 'ip_address', type: 'varchar', length: 64, nullable: true })
+  ipAddress: string | null
+
+  @Column({ name: 'last_seen_at', type: 'timestamptz' })
+  lastSeenAt: Date
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date
 }
