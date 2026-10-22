@@ -7,17 +7,20 @@ import { UsageBucketEntity } from './entities/usage-bucket.entity'
 import { UserEntity } from './entities/user.entity'
 import { AuthSessionEntity } from './entities/auth-session.entity'
 import { AuthActionTokenEntity } from './entities/auth-action-token.entity'
+import { ApiKeyEntity } from './entities/api-key.entity'
+import { WorkspaceModelEntity } from './entities/workspace-model.entity'
 import { CreateModels1760000000000 } from './migrations/1760000000000-CreateModels'
 import { ExpandCatalogAndUsage1760000001000 } from './migrations/1760000001000-ExpandCatalogAndUsage'
 import { CreateIdentity1760000002000 } from './migrations/1760000002000-CreateIdentity'
 import { HardenIdentity1760000003000 } from './migrations/1760000003000-HardenIdentity'
+import { CreateWorkspaceConfiguration1760000004000 } from './migrations/1760000004000-CreateWorkspaceConfiguration'
 
 config({ path: resolve(__dirname, '../../../../.env') })
 
 export default new DataSource({
   type: 'postgres',
   url: process.env.DATABASE_URL,
-  entities: [ModelEntity, RequestLogEntity, UsageBucketEntity, UserEntity, AuthSessionEntity, AuthActionTokenEntity],
-  migrations: [CreateModels1760000000000, ExpandCatalogAndUsage1760000001000, CreateIdentity1760000002000, HardenIdentity1760000003000],
+  entities: [ModelEntity, RequestLogEntity, UsageBucketEntity, UserEntity, AuthSessionEntity, AuthActionTokenEntity, ApiKeyEntity, WorkspaceModelEntity],
+  migrations: [CreateModels1760000000000, ExpandCatalogAndUsage1760000001000, CreateIdentity1760000002000, HardenIdentity1760000003000, CreateWorkspaceConfiguration1760000004000],
   synchronize: false,
 })

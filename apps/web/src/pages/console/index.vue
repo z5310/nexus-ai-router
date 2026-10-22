@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Activity, ArrowDownRight, ArrowUpRight, BarChart3, CircleDollarSign, Plus, Zap } from 'lucide-vue-next'
+import { Activity, ArrowDownRight, ArrowUpRight, BarChart3, CircleDollarSign, Zap } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useQuery } from '@tanstack/vue-query'
@@ -43,7 +43,7 @@ const chartAreaPath = computed(() => `${chartPath.value} L1000,230 L0,230 Z`)
 
 <template>
   <ConsoleShell v-model:search="search">
-    <div class="console-title"><div><p>{{ t('dashboard.greeting') }}</p><h1>{{ t('dashboard.title') }}</h1></div><RouterLink class="console-primary-action" to="/console/keys"><Plus :size="15" /> {{ t('dashboard.createKey') }}</RouterLink></div>
+    <div class="console-title"><div><p>{{ t('dashboard.greeting') }}</p><h1>{{ t('dashboard.title') }}</h1></div></div>
     <div v-if="overviewQuery.isLoading.value" class="data-state-banner">{{ t('common.loading') }}</div>
     <div v-else-if="overviewQuery.isError.value" class="data-state-banner warning">{{ t('common.fallbackData') }}</div>
     <div v-else class="data-state-banner live">{{ t('common.liveData') }}</div>

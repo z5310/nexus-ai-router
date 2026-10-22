@@ -83,6 +83,40 @@ export interface AdminModelSummaryResponse {
   providers: number
 }
 
+export type ApiKeyStatus = 'active' | 'revoked'
+
+export interface ApiKeyRecord {
+  id: string
+  name: string
+  maskedKey: string
+  status: ApiKeyStatus
+  lastUsedAt: string | null
+  createdAt: string
+}
+
+export interface ApiKeyListResponse { data: ApiKeyRecord[] }
+export interface CreateApiKeyResponse extends ApiKeyRecord { key: string }
+
+export interface WorkspaceModelConfig {
+  id: string
+  modelId: string
+  name: string
+  slug: string
+  provider: string
+  type: ModelType
+  inputPrice: number
+  status: ModelStatus
+  alias: string | null
+  priority: number
+  rateLimitRpm: number
+  dailyBudgetCny: number | null
+  enabled: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export interface WorkspaceModelListResponse { data: WorkspaceModelConfig[] }
+
 export interface RankingEntry extends CatalogModel {
   rank: number
   metric: RankingMetric

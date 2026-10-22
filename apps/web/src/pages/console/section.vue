@@ -1,20 +1,26 @@
 <script setup lang="ts">
-import { Check, Copy, MoreHorizontal, Plus, Route as RouteIcon, ShieldCheck, SlidersHorizontal, Trash2 } from 'lucide-vue-next'
+import { Check, MoreHorizontal, Pencil, Plus, Route as RouteIcon, ShieldCheck, SlidersHorizontal, Trash2 } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { useQuery } from '@tanstack/vue-query'
-import type { RequestLogListResponse } from './api'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
+import type { CreateApiKeyResponse, RequestLogListResponse, WorkspaceModelConfig } from './api'
 import ConsoleShell from './cmp/ConsoleShell.vue'
 import { models as fallbackModels } from '../../data/models'
-import { getConsoleModels, getRequestLogs } from './api'
+import ApiKeyModal from './cmp/ApiKeyModal.vue'
+import ModelConfigModal from './cmp/ModelConfigModal.vue'
+import { createApiKey, createConsoleModel, getApiKeys, getCatalogModels, getConsoleModels, getRequestLogs, removeConsoleModel, revokeApiKey, updateConsoleModel } from './api'
+import type { CreateWorkspaceModelInput } from './api/types'
 
 type ConsoleSection = 'models' | 'routes' | 'keys' | 'logs' | 'billing' | 'members' | 'settings'
 const route = useRoute()
 const { t } = useI18n()
+const queryClient = useQueryClient()
 const search = ref('')
 const section = computed(() => route.meta.section as ConsoleSection)
 const modelQuery = useQuery({ queryKey: ['console-models'], queryFn: ({ signal }) => getConsoleModels(signal), staleTime: 60_000, enabled: computed(() => section.value === 'models'), retry: 1 })
+const catalogQuery = useQuery({ queryKey: ['catalog-models'], queryFn: ({ signal }) => getCatalogModels(signal), staleTime: 60_000, enabled: computed(() => section.value === 'models'), retry: 1 })
+const keyQuery = useQuery({ queryKey: ['api-keys'], queryFn: ({ signal }) => getApiKeys(signal), staleTime: 30_000, enabled: computed(() => section.value === 'keys'), retry: 1 })
 const logQuery = useQuery({ queryKey: ['console-request-logs'], queryFn: ({ signal }) => getRequestLogs(signal), staleTime: 30_000, enabled: computed(() => section.value === 'logs'), retry: 1 })
 
 const fallbackLogs: RequestLogListResponse['data'] = [
@@ -24,7 +30,7 @@ const fallbackLogs: RequestLogListResponse['data'] = [
 ]
 const filteredModels = computed(() => {
   const keyword = search.value.toLowerCase()
-  return (modelQuery.data.value?.data ?? fallbackModels).filter((item) => !keyword || `${item.name} ${item.slug} ${item.provider}`.toLowerCase().includes(keyword))
+  return (modelQuery.data.value?.data ?? []).filter((item) => !keyword || `${item.name} ${item.alias ?? ''} ${item.slug} ${item.provider}`.toLowerCase().includes(keyword))
 })
 const filteredLogs = computed(() => {
   const keyword = search.value.toLowerCase()
@@ -35,10 +41,6 @@ const routingRules = [
   { name: 'Low Cost', condition: t('consoleSections.routeBudget'), primary: 'Gemini 3 Flash', fallback: 'DeepSeek V4.1 Flash', traffic: '12%' },
   { name: 'Creative Media', condition: t('consoleSections.routeMedia'), primary: 'Seedance 2.5', fallback: 'Seedream 5', traffic: '6%' },
 ]
-const apiKeys = ref([
-  { id: 'key_live_01', name: 'Production', preview: 'nxs_live_••••••••4F2A', created: '2026-10-08', lastUsed: t('consoleSections.minutesAgo', { count: 3 }) },
-  { id: 'key_test_01', name: 'Development', preview: 'nxs_test_••••••••9C1D', created: '2026-09-21', lastUsed: t('consoleSections.hoursAgo', { count: 2 }) },
-])
 const members = [
   { name: '林宇', email: 'linyu@nexus.cn', role: t('consoleSections.owner'), status: t('common.stable') },
   { name: '陈晓', email: 'chenxiao@nexus.cn', role: t('consoleSections.developer'), status: t('common.stable') },
@@ -47,20 +49,48 @@ const members = [
 const title = computed(() => t(`consoleSections.${section.value}.title`))
 const description = computed(() => t(`consoleSections.${section.value}.description`))
 const isFallback = computed(() => section.value === 'models' ? modelQuery.isError.value : section.value === 'logs' ? logQuery.isError.value : false)
-const isLoading = computed(() => section.value === 'models' ? modelQuery.isLoading.value : section.value === 'logs' ? logQuery.isLoading.value : false)
-const addKey = () => apiKeys.value.unshift({ id: `key_test_${Date.now()}`, name: t('consoleSections.newKey'), preview: 'nxs_test_••••••••NEW1', created: new Date().toISOString().slice(0, 10), lastUsed: '—' })
+const isLoading = computed(() => section.value === 'models' ? modelQuery.isLoading.value : section.value === 'keys' ? keyQuery.isLoading.value : section.value === 'logs' ? logQuery.isLoading.value : false)
+const keyModalOpen = ref(false)
+const createdKey = ref<CreateApiKeyResponse | null>(null)
+const keyError = ref('')
+const modelModalOpen = ref(false)
+const editingModel = ref<WorkspaceModelConfig | null>(null)
+const modelError = ref('')
+const configuredIds = computed(() => new Set((modelQuery.data.value?.data ?? []).map((item) => item.modelId)))
+const availableCatalogModels = computed(() => (catalogQuery.data.value?.data ?? fallbackModels).filter((model) => !configuredIds.value.has(model.id)))
+const modalModels = computed(() => editingModel.value ? (catalogQuery.data.value?.data ?? fallbackModels).filter((model) => model.id === editingModel.value?.modelId) : availableCatalogModels.value)
+
+const keyMutation = useMutation({
+  mutationFn: (name: string) => createApiKey({ name }),
+  onSuccess: async (key) => { createdKey.value = key; await queryClient.invalidateQueries({ queryKey: ['api-keys'] }) },
+  onError: (error) => { keyError.value = error instanceof Error ? error.message : t('consoleSections.saveFailed') },
+})
+const modelMutation = useMutation({
+  mutationFn: (value: CreateWorkspaceModelInput) => editingModel.value ? updateConsoleModel(editingModel.value.id, value) : createConsoleModel(value),
+  onSuccess: async () => { modelModalOpen.value = false; editingModel.value = null; await queryClient.invalidateQueries({ queryKey: ['console-models'] }) },
+  onError: (error) => { modelError.value = error instanceof Error ? error.message : t('consoleSections.saveFailed') },
+})
+const removeModelMutation = useMutation({ mutationFn: (id: string) => removeConsoleModel(id), onSuccess: async () => { modelModalOpen.value = false; editingModel.value = null; await queryClient.invalidateQueries({ queryKey: ['console-models'] }) } })
+
+function openKeyModal() { createdKey.value = null; keyError.value = ''; keyModalOpen.value = true }
+function closeKeyModal() { keyModalOpen.value = false; createdKey.value = null }
+function openModelModal(model?: WorkspaceModelConfig) { editingModel.value = model ?? null; modelError.value = ''; modelModalOpen.value = true }
+function handleSectionAction() { if (section.value === 'keys') openKeyModal(); else if (section.value === 'models') openModelModal() }
+function revokeKey(id: string) { if (window.confirm(t('consoleSections.revokeKeyConfirm'))) revokeApiKey(id).then(() => queryClient.invalidateQueries({ queryKey: ['api-keys'] })) }
+function removeModel() { if (editingModel.value && window.confirm(t('consoleSections.removeModelConfirm'))) removeModelMutation.mutate(editingModel.value.id) }
+const shortDate = (value: string | null) => value ? new Intl.DateTimeFormat(undefined, { year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(value)) : '—'
 </script>
 
 <template>
   <ConsoleShell v-model:search="search">
-    <div class="console-title console-section-title"><div><p>NEXUS CONSOLE</p><h1>{{ title }}</h1><span>{{ description }}</span></div><button v-if="section !== 'settings'" class="console-primary-action" @click="section === 'keys' ? addKey() : undefined"><Plus :size="15" /> {{ t(`consoleSections.${section}.action`) }}</button></div>
+    <div class="console-title console-section-title"><div><p>NEXUS CONSOLE</p><h1>{{ title }}</h1><span>{{ description }}</span></div><button v-if="section === 'models' || section === 'keys'" class="console-primary-action" @click="handleSectionAction"><Plus :size="15" /> {{ t(`consoleSections.${section}.action`) }}</button></div>
     <div v-if="isLoading" class="data-state-banner">{{ t('common.loading') }}</div><div v-else-if="isFallback" class="data-state-banner warning">{{ t('common.fallbackData') }}</div>
 
-    <section v-if="section === 'models'" class="console-surface"><div class="panel-heading"><div><h2>{{ t('consoleSections.modelAccess') }}</h2><p>{{ t('consoleSections.modelAccessDesc') }}</p></div></div><div class="request-table console-data-table"><table><thead><tr><th>{{ t('dashboard.model') }}</th><th>{{ t('catalog.provider') }}</th><th>{{ t('consoleSections.type') }}</th><th>{{ t('ranking.score') }}</th><th>{{ t('consoleSections.price') }}</th><th>{{ t('dashboard.status') }}</th></tr></thead><tbody><tr v-for="model in filteredModels" :key="model.slug"><td><b>{{ model.name }}</b><code>{{ model.slug }}</code></td><td>{{ model.provider }}</td><td>{{ t(`common.types.${model.type}`) }}</td><td>{{ model.score }}</td><td>¥{{ model.inputPrice.toFixed(2) }}</td><td><span class="success-dot"><i />{{ t('common.stable') }}</span></td></tr></tbody></table></div></section>
+    <section v-if="section === 'models'" class="console-surface"><div class="panel-heading"><div><h2>{{ t('consoleSections.modelAccess') }}</h2><p>{{ t('consoleSections.modelAccessDesc') }}</p></div></div><div class="request-table console-data-table"><table><thead><tr><th>{{ t('dashboard.model') }}</th><th>{{ t('catalog.provider') }}</th><th>{{ t('consoleSections.type') }}</th><th>{{ t('consoleSections.priority') }}</th><th>{{ t('consoleSections.rateLimit') }}</th><th>{{ t('consoleSections.budget') }}</th><th>{{ t('dashboard.status') }}</th><th /></tr></thead><tbody><tr v-if="!filteredModels.length"><td colspan="8" class="empty-row">{{ t('consoleSections.noWorkspaceModels') }}</td></tr><tr v-for="model in filteredModels" :key="model.id"><td><b>{{ model.alias || model.name }}</b><code>{{ model.alias ? model.name + ' · ' : '' }}{{ model.slug }}</code></td><td>{{ model.provider }}</td><td>{{ t(`common.types.${model.type}`) }}</td><td>{{ model.priority }}</td><td>{{ model.rateLimitRpm }} RPM</td><td>{{ model.dailyBudgetCny == null ? t('consoleSections.unlimited') : `¥${model.dailyBudgetCny.toFixed(2)}` }}</td><td><span :class="['success-dot', { muted: !model.enabled }]"><i />{{ model.enabled ? t('consoleSections.enabled') : t('consoleSections.disabled') }}</span></td><td><button class="icon-action" :aria-label="t('consoleSections.configureModel')" @click="openModelModal(model)"><Pencil :size="14" /></button></td></tr></tbody></table></div></section>
 
     <section v-else-if="section === 'routes'" class="route-rule-grid"><article v-for="rule in routingRules" :key="rule.name" class="console-surface route-rule"><div><span><RouteIcon :size="18" /></span><button><MoreHorizontal :size="17" /></button></div><h2>{{ rule.name }}</h2><p>{{ rule.condition }}</p><dl><div><dt>{{ t('consoleSections.primaryModel') }}</dt><dd>{{ rule.primary }}</dd></div><div><dt>{{ t('consoleSections.fallbackModel') }}</dt><dd>{{ rule.fallback }}</dd></div><div><dt>{{ t('consoleSections.traffic') }}</dt><dd>{{ rule.traffic }}</dd></div></dl><footer><span class="success-dot"><i />{{ t('consoleSections.enabled') }}</span><button>{{ t('common.details') }}</button></footer></article></section>
 
-    <section v-else-if="section === 'keys'" class="console-surface"><div class="security-note"><ShieldCheck :size="18" /><div><b>{{ t('consoleSections.keySafety') }}</b><p>{{ t('consoleSections.keySafetyDesc') }}</p></div></div><div class="request-table console-data-table"><table><thead><tr><th>{{ t('consoleSections.name') }}</th><th>{{ t('dashboard.keys') }}</th><th>{{ t('consoleSections.created') }}</th><th>{{ t('consoleSections.lastUsed') }}</th><th /></tr></thead><tbody><tr v-for="key in apiKeys" :key="key.id"><td><b>{{ key.name }}</b></td><td><code>{{ key.preview }}</code></td><td>{{ key.created }}</td><td>{{ key.lastUsed }}</td><td><button class="icon-action"><Copy :size="14" /></button><button class="icon-action danger" @click="apiKeys = apiKeys.filter(item => item.id !== key.id)"><Trash2 :size="14" /></button></td></tr></tbody></table></div></section>
+    <section v-else-if="section === 'keys'" class="console-surface"><div class="security-note"><ShieldCheck :size="18" /><div><b>{{ t('consoleSections.keySafety') }}</b><p>{{ t('consoleSections.keySafetyDesc') }}</p></div></div><div class="request-table console-data-table"><table><thead><tr><th>{{ t('consoleSections.name') }}</th><th>{{ t('dashboard.keys') }}</th><th>{{ t('consoleSections.created') }}</th><th>{{ t('consoleSections.lastUsed') }}</th><th /></tr></thead><tbody><tr v-if="!keyQuery.data.value?.data.length"><td colspan="5" class="empty-row">{{ t('consoleSections.noKeys') }}</td></tr><tr v-for="key in keyQuery.data.value?.data" :key="key.id"><td><b>{{ key.name }}</b></td><td><code>{{ key.maskedKey }}</code></td><td>{{ shortDate(key.createdAt) }}</td><td>{{ shortDate(key.lastUsedAt) }}</td><td><button class="icon-action danger" :aria-label="t('consoleSections.revokeKey')" @click="revokeKey(key.id)"><Trash2 :size="14" /></button></td></tr></tbody></table></div></section>
 
     <section v-else-if="section === 'logs'" class="console-surface"><div class="panel-heading"><div><h2>{{ t('dashboard.recent') }}</h2><p>{{ t('consoleSections.logs.description') }}</p></div></div><div class="request-table console-data-table"><table><thead><tr><th>{{ t('dashboard.requestId') }}</th><th>{{ t('dashboard.model') }}</th><th>{{ t('dashboard.status') }}</th><th>{{ t('dashboard.latency') }}</th><th>{{ t('dashboard.tokenCount') }}</th><th>{{ t('dashboard.cost') }}</th></tr></thead><tbody><tr v-for="item in filteredLogs" :key="item.id"><td><code>{{ item.requestId }}</code></td><td>{{ item.modelName }}</td><td><span :class="['success-dot', { failed: item.status === 'failed' }]"><i />{{ t(`dashboard.${item.status}`) }}</span></td><td>{{ item.latencyMs }} ms</td><td>{{ item.tokenCount.toLocaleString() }}</td><td>¥{{ item.costCny.toFixed(4) }}</td></tr></tbody></table></div></section>
 
@@ -69,5 +99,8 @@ const addKey = () => apiKeys.value.unshift({ id: `key_test_${Date.now()}`, name:
     <section v-else-if="section === 'members'" class="console-surface"><div class="request-table console-data-table"><table><thead><tr><th>{{ t('consoleSections.member') }}</th><th>{{ t('consoleSections.email') }}</th><th>{{ t('consoleSections.role') }}</th><th>{{ t('dashboard.status') }}</th><th /></tr></thead><tbody><tr v-for="member in members" :key="member.email"><td><b>{{ member.name }}</b></td><td>{{ member.email }}</td><td>{{ member.role }}</td><td><span class="success-dot"><i />{{ member.status }}</span></td><td><button class="icon-action"><MoreHorizontal :size="14" /></button></td></tr></tbody></table></div></section>
 
     <section v-else class="settings-grid"><article class="console-surface settings-card"><div><SlidersHorizontal :size="19" /><div><h2>{{ t('consoleSections.workspaceSettings') }}</h2><p>{{ t('consoleSections.workspaceSettingsDesc') }}</p></div></div><label>{{ t('consoleSections.workspaceName') }}<input value="Nexus Demo" /></label><label>{{ t('consoleSections.defaultCurrency') }}<select><option>CNY · ¥</option><option>USD · $</option></select></label><button class="console-primary-action"><Check :size="14" />{{ t('consoleSections.save') }}</button></article><article class="console-surface settings-card"><div><ShieldCheck :size="19" /><div><h2>{{ t('consoleSections.securitySettings') }}</h2><p>{{ t('consoleSections.securitySettingsDesc') }}</p></div></div><label class="setting-toggle"><span><b>IP Allowlist</b><small>0.0.0.0/0</small></span><input type="checkbox" /></label><label class="setting-toggle"><span><b>{{ t('consoleSections.auditLog') }}</b><small>{{ t('consoleSections.auditLogDesc') }}</small></span><input type="checkbox" checked /></label></article></section>
+
+    <ApiKeyModal :open="keyModalOpen" :busy="keyMutation.isPending.value" :secret="createdKey?.key" :error="keyError" @close="closeKeyModal" @submit="keyMutation.mutate" />
+    <ModelConfigModal :open="modelModalOpen" :busy="modelMutation.isPending.value || removeModelMutation.isPending.value" :models="modalModels" :editing="editingModel" :error="modelError" @close="modelModalOpen = false" @submit="modelMutation.mutate" @remove="removeModel" />
   </ConsoleShell>
 </template>
