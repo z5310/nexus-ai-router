@@ -3,10 +3,11 @@ import type { AdminModel, AdminModelListResponse, AdminModelSummaryResponse, Cat
 import type { ModelEntity } from '../database/entities/model.entity'
 import type { ListModelsQuery, ListRankingsQuery } from './dto/list-models.query'
 import { ModelsRepository } from './models.repository'
+import { WorkspaceModelsRepository } from './workspace-models.repository'
 
 @Injectable()
 export class ModelsService {
-  constructor(private readonly models: ModelsRepository) {}
+  constructor(private readonly models: ModelsRepository, private readonly workspaceModels: WorkspaceModelsRepository) {}
 
   async list(query: ListModelsQuery): Promise<ModelListResponse> {
     const [[entities, total], facets] = await Promise.all([this.models.list(query), this.models.facets()])
@@ -46,11 +47,11 @@ export class ModelsService {
     }
   }
 
-  async listOpenAI(): Promise<OpenAIModelList> {
-    const entities = await this.models.listOpenAI()
+  async listOpenAI(workspaceId: string): Promise<OpenAIModelList> {
+    const entities = await this.workspaceModels.listRoutable(workspaceId)
     return {
       object: 'list',
-      data: entities.map((model) => ({
+      data: entities.map(({ model }) => ({
         id: model.publicId,
         object: 'model',
         created: Math.floor(model.createdAt.getTime() / 1000),

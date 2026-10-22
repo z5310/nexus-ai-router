@@ -11,6 +11,17 @@ export class WorkspaceModelsRepository {
     return this.repository.find({ where: { workspaceId }, relations: { model: true }, order: { priority: 'DESC', createdAt: 'ASC' } })
   }
 
+  listRoutable(workspaceId: string): Promise<WorkspaceModelEntity[]> {
+    return this.repository.createQueryBuilder('workspaceModel')
+      .innerJoinAndSelect('workspaceModel.model', 'model')
+      .where('workspaceModel.workspace_id = :workspaceId', { workspaceId })
+      .andWhere('workspaceModel.enabled = true')
+      .andWhere('model.is_enabled = true')
+      .orderBy('workspaceModel.priority', 'DESC')
+      .addOrderBy('workspaceModel.created_at', 'ASC')
+      .getMany()
+  }
+
   find(id: string, workspaceId: string): Promise<WorkspaceModelEntity | null> {
     return this.repository.findOne({ where: { id, workspaceId }, relations: { model: true } })
   }

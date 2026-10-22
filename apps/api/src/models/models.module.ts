@@ -10,9 +10,10 @@ import { ModelsService } from './models.service'
 import { WorkspaceModelsController } from './workspace-models.controller'
 import { WorkspaceModelsRepository } from './workspace-models.repository'
 import { WorkspaceModelsService } from './workspace-models.service'
+import { InferenceModule } from '../inference/inference.module'
 
 @Module({
-  imports: [TypeOrmModule.forFeature([ModelEntity, WorkspaceModelEntity]), IdentityModule],
+  imports: [TypeOrmModule.forFeature([ModelEntity, WorkspaceModelEntity]), IdentityModule, InferenceModule],
   controllers: [ModelsController, CatalogModelsController, RankingsController, AdminModelsController, WorkspaceModelsController],
   providers: [ModelsRepository, ModelsService, WorkspaceModelsRepository, WorkspaceModelsService],
   exports: [ModelsService],

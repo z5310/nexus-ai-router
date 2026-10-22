@@ -1,18 +1,23 @@
-import { Controller, Get, Param, Query } from '@nestjs/common'
-import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger'
+import { Controller, Get, Param, Query, Req, UseFilters, UseGuards } from '@nestjs/common'
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger'
 import type { CatalogModel, ModelListResponse, OpenAIModelList, RankingListResponse } from '@gateway/contracts'
 import { ListModelsQuery, ListRankingsQuery } from './dto/list-models.query'
 import { ModelsService } from './models.service'
+import { ApiKeyAuthGuard, type ApiKeyRequest } from '../inference/api-key-auth.guard'
+import { OpenAIErrorFilter } from '../inference/openai-error.filter'
 
 @ApiTags('openai-compatible')
+@ApiBearerAuth()
+@UseGuards(ApiKeyAuthGuard)
+@UseFilters(OpenAIErrorFilter)
 @Controller('v1/models')
 export class ModelsController {
   constructor(private readonly models: ModelsService) {}
 
   @Get()
   @ApiOperation({ summary: 'List enabled models in OpenAI format' })
-  async list(): Promise<OpenAIModelList> {
-    return this.models.listOpenAI()
+  async list(@Req() request: ApiKeyRequest): Promise<OpenAIModelList> {
+    return this.models.listOpenAI(request.apiKey.workspaceId)
   }
 }
 

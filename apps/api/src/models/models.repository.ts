@@ -89,10 +89,6 @@ export class ModelsRepository {
     return this.repository.findOne({ where: { publicId, isEnabled: true } })
   }
 
-  listOpenAI(): Promise<ModelEntity[]> {
-    return this.repository.find({ where: { isEnabled: true }, order: { createdAt: 'ASC' } })
-  }
-
   rankings(query: ListRankingsQuery): Promise<ModelEntity[]> {
     const scoreColumn: Record<RankingMetric, string> = {
       overall: 'model.overallScore',

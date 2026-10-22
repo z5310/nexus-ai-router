@@ -30,6 +30,7 @@ import { ModelsModule } from './models/models.module'
 import { IdentityModule } from './identity/identity.module'
 import { ApiKeysModule } from './api-keys/api-keys.module'
 import { RoutingModule } from './routing/routing.module'
+import { InferenceModule } from './inference/inference.module'
 
 @Module({
   imports: [
@@ -68,6 +69,7 @@ import { RoutingModule } from './routing/routing.module'
     IdentityModule,
     ApiKeysModule,
     RoutingModule,
+    InferenceModule,
   ],
   controllers: [HealthController],
 })

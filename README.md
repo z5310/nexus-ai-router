@@ -68,7 +68,8 @@ npm run db:migrate
 | `GET` | `/api/admin/models` | 管理员检索、筛选和分页查看模型配置 |
 | `GET` | `/api/admin/models/summary` | 模型、供应商和运行状态统计 |
 | `PATCH` | `/api/admin/models/:id` | 修改模型上架、推荐和运行状态 |
-| `GET` | `/v1/models` | OpenAI 兼容模型列表 |
+| `GET` | `/v1/models` | API Key 鉴权的当前工作区 OpenAI 兼容模型列表 |
+| `POST` | `/v1/chat/completions` | API Key 鉴权的 OpenAI 兼容非流式模型调用 |
 
 查询示例：
 
@@ -80,6 +81,7 @@ curl 'http://localhost:3000/api/dashboard/requests?query=deepseek&limit=20'
 
 Swagger 文档位于 `http://localhost:3000/docs`。接口错误统一返回 Problem Details，包含 `status`、`detail`、`instance` 和 `request_id`。
 工作区接口可通过 `x-workspace-id` 指定目标租户；未传时自动使用当前用户最早加入的有效工作区。
+推理接口使用控制台生成的 `nxs_live_` API Key。调用模型必须已在对应工作区启用；成功和失败请求都会写入工作区请求日志与小时用量桶。
 
 ## 前端页面
 

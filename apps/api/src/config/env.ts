@@ -16,6 +16,9 @@ const envSchema = z.object({
   REDIS_URL: z.string().min(1),
   JWT_SECRET: z.string().min(32),
   ENCRYPTION_KEY: z.string().min(32),
+  PROVIDER_GATEWAY_URL: z.preprocess((value) => value === '' ? undefined : value, z.string().url().optional()),
+  PROVIDER_GATEWAY_API_KEY: optionalSecret,
+  PROVIDER_GATEWAY_TIMEOUT_MS: z.coerce.number().int().min(1_000).max(300_000).default(60_000),
 })
 
 export type Environment = z.infer<typeof envSchema>

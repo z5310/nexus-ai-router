@@ -17,6 +17,40 @@ export interface OpenAIModelList {
   data: OpenAIModel[]
 }
 
+export type OpenAIChatRole = 'system' | 'user' | 'assistant'
+
+export interface OpenAIChatMessage {
+  role: OpenAIChatRole
+  content: string
+}
+
+export interface OpenAIChatCompletionRequest {
+  model: string
+  messages: OpenAIChatMessage[]
+  temperature?: number
+  top_p?: number
+  max_tokens?: number
+  stream?: boolean
+  user?: string
+}
+
+export interface OpenAIChatCompletionResponse {
+  id: string
+  object: 'chat.completion'
+  created: number
+  model: string
+  choices: Array<{
+    index: number
+    message: OpenAIChatMessage
+    finish_reason: string | null
+  }>
+  usage: {
+    prompt_tokens: number
+    completion_tokens: number
+    total_tokens: number
+  }
+}
+
 export type ModelType = 'text' | 'image' | 'video' | 'audio' | 'embedding'
 export type ModelStatus = 'stable' | 'observing'
 export type RankingMetric = 'overall' | 'coding' | 'cost' | 'speed'
