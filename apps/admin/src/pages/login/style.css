@@ -110,9 +110,13 @@
   color: #07100a;
   border: 0;
   border-radius: 10px;
-  background: #84efaa;
+  background: var(--nexus-button);
   font-size: 12px;
   font-weight: 700;
+}
+
+.admin-login form > button:hover:not(:disabled) {
+  filter: brightness(1.06);
 }
 
 .admin-login form > small {
