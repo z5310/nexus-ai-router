@@ -1,10 +1,13 @@
 import { Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
 
 @Entity({ name: 'usage_buckets' })
-@Index(['bucketStart'], { unique: true })
+@Index(['userId', 'bucketStart'], { unique: true })
 export class UsageBucketEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string
+
+  @Column({ name: 'user_id', type: 'uuid' })
+  userId: string
 
   @Column({ name: 'bucket_start', type: 'timestamptz' })
   bucketStart: Date

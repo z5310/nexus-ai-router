@@ -7,6 +7,10 @@ export class RequestLogEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string
 
+  @Column({ name: 'user_id', type: 'uuid' })
+  @Index()
+  userId: string
+
   @Column({ name: 'request_id', length: 80 })
   requestId: string
 

@@ -18,14 +18,15 @@ export class DashboardRepository {
     private readonly requestLogs: Repository<RequestLogEntity>,
   ) {}
 
-  usageTrend(): Promise<UsageBucketEntity[]> {
+  usageTrend(userId: string): Promise<UsageBucketEntity[]> {
     return this.usage.createQueryBuilder('usage')
-      .where('usage.bucketStart >= now() - interval \'24 hours\'')
+      .where('usage.user_id = :userId', { userId })
+      .andWhere('usage.bucketStart >= now() - interval \'24 hours\'')
       .orderBy('usage.bucketStart', 'ASC')
       .getMany()
   }
 
-  async recentRequests(query: ListRequestLogsQuery): Promise<RequestLogRow[]> {
+  async recentRequests(userId: string, query: ListRequestLogsQuery): Promise<RequestLogRow[]> {
     const builder = this.requestLogs.createQueryBuilder('request')
       .leftJoin('models', 'model', 'model.public_id = request.model_public_id')
       .select('request.id', 'id')
@@ -38,9 +39,10 @@ export class DashboardRepository {
       .addSelect('request.cost_cny', 'costCny')
       .addSelect('request.created_at', 'createdAt')
       .addSelect('COALESCE(model.name, request.model_public_id)', 'modelName')
+      .where('request.user_id = :userId', { userId })
 
     if (query.query?.trim()) {
-      builder.where(
+      builder.andWhere(
         '(request.request_id ILIKE :query OR request.model_public_id ILIKE :query OR model.name ILIKE :query)',
         { query: `%${query.query.trim()}%` },
       )

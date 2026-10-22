@@ -117,6 +117,26 @@ export interface WorkspaceModelConfig {
 
 export interface WorkspaceModelListResponse { data: WorkspaceModelConfig[] }
 
+export type RouteMatchType = 'all' | ModelType
+export type RouteStrategy = 'priority' | 'lowest_cost' | 'lowest_latency'
+
+export interface RouteRule {
+  id: string
+  name: string
+  matchType: RouteMatchType
+  strategy: RouteStrategy
+  primaryModelId: string
+  primaryModelName: string
+  fallbackModelId: string | null
+  fallbackModelName: string | null
+  trafficPercent: number
+  enabled: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export interface RouteRuleListResponse { data: RouteRule[] }
+
 export interface RankingEntry extends CatalogModel {
   rank: number
   metric: RankingMetric

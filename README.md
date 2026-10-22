@@ -41,6 +41,12 @@ npm run db:migrate
 | `GET` | `/api/rankings` | 按综合、编码、成本、速度指标排行 |
 | `GET` | `/api/dashboard/overview` | 用量指标、24 小时趋势、余额和最近请求 |
 | `GET` | `/api/dashboard/requests` | 按请求 ID 或模型检索调用记录 |
+| `GET/POST` | `/api/console/models` | 查询或添加当前工作区模型配置 |
+| `PATCH/DELETE` | `/api/console/models/:id` | 修改或移除当前工作区模型配置 |
+| `GET/POST` | `/api/console/routes` | 查询或创建当前工作区路由规则 |
+| `PATCH/DELETE` | `/api/console/routes/:id` | 修改或删除当前工作区路由规则 |
+| `GET/POST` | `/api/keys` | 查询或创建当前账户 API 密钥 |
+| `DELETE` | `/api/keys/:id` | 撤销 API 密钥 |
 | `POST` | `/api/auth/login` | 邮箱密码登录，返回短时访问令牌并写入 HttpOnly 刷新会话 |
 | `POST` | `/api/auth/register` | 创建普通客户账户并自动登录 |
 | `POST` | `/api/auth/refresh` | 轮换刷新会话并签发新的访问令牌 |
@@ -90,8 +96,8 @@ Swagger 文档位于 `http://localhost:3000/docs`。接口错误统一返回 Pro
 | `/console` | 用量概览、趋势和最近请求，已接控制台 API |
 | `/console/models` | 模型管理，已接模型目录 API |
 | `/console/logs` | 调用日志，已接请求日志 API |
-| `/console/routes` | 路由规则 UI；待接规则 CRUD API |
-| `/console/keys` | 密钥管理 UI与本地演示交互；待接密钥 CRUD API |
+| `/console/routes` | 路由规则查询、新建、编辑、启停与删除，已接真实 CRUD API |
+| `/console/keys` | 密钥命名创建、仅显示一次、查询与撤销，已接真实 CRUD API |
 | `/console/billing` | 账单与余额 UI；待接账单 API |
 | `/console/members` | 工作区成员 UI；平台级账号与 RBAC 由 `/admin` 管理 |
 | `/console/settings` | 工作区与安全设置 UI；待接设置 API |
@@ -116,6 +122,8 @@ Swagger 文档位于 `http://localhost:3000/docs`。接口错误统一返回 Pro
 新增字段时，先修改 `@gateway/contracts`，再修改迁移、实体、服务映射与页面消费，保证字段含义在整个链路一致。
 
 Turbo 负责跨项目依赖顺序、并行运行和构建缓存。根目录 `npm run dev` 会同时启动 API、Web 和 Admin；每个应用仍保留独立运行命令。
+
+完整的能力盘点、接口状态与 P0/P1/P2 规划见 [产品路线图](docs/product-roadmap.md)。
 
 ## 第三方登录配置
 
