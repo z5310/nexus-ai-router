@@ -3,6 +3,7 @@ import { Activity, Bell, Blocks, ChevronDown, CircleDollarSign, Code2, KeyRound,
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import BrandLogo from '../../../components/BrandLogo.vue'
+import UserMenu from './UserMenu.vue'
 
 defineProps<{ search?: string }>()
 const emit = defineEmits<{ 'update:search': [value: string] }>()
@@ -42,7 +43,7 @@ const navigation = [
       <header class="console-header">
         <button class="console-menu" :aria-label="t('common.openNav')" @click="sideOpen = true"><Menu :size="19" /></button>
         <label><Search :size="15" /><input :value="search" :placeholder="t('dashboard.search')" @input="emit('update:search', ($event.target as HTMLInputElement).value)" /></label>
-        <div><a href="/docs" target="_blank" rel="noopener noreferrer"><Code2 :size="16" /> {{ t('common.docs') }}</a><button :aria-label="t('dashboard.notifications')"><Bell :size="17" /><i /></button><span class="user-avatar">LY</span></div>
+        <div class="console-actions"><a href="/docs" target="_blank" rel="noopener noreferrer"><Code2 :size="16" /> {{ t('common.docs') }}</a><button class="console-notification" :aria-label="t('dashboard.notifications')"><Bell :size="17" /><i /></button><UserMenu /></div>
       </header>
       <div class="console-content"><slot /></div>
     </main>
