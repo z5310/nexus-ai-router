@@ -9,16 +9,17 @@ import { WorkspaceModelsRepository } from './workspace-models.repository'
 export class WorkspaceModelsService {
   constructor(private readonly configs: WorkspaceModelsRepository, private readonly models: ModelsRepository) {}
 
-  async list(userId: string): Promise<WorkspaceModelListResponse> {
-    return { data: (await this.configs.list(userId)).map((config) => this.map(config)) }
+  async list(workspaceId: string): Promise<WorkspaceModelListResponse> {
+    return { data: (await this.configs.list(workspaceId)).map((config) => this.map(config)) }
   }
 
-  async create(userId: string, input: CreateWorkspaceModelDto): Promise<WorkspaceModelConfig> {
+  async create(workspaceId: string, actorUserId: string, input: CreateWorkspaceModelDto): Promise<WorkspaceModelConfig> {
     const model = await this.models.findAdmin(input.modelId)
     if (!model || !model.isEnabled) throw new NotFoundException('可用模型不存在')
-    if (await this.configs.findByModel(userId, input.modelId)) throw new ConflictException('该模型已经接入工作区')
+    if (await this.configs.findByModel(workspaceId, input.modelId)) throw new ConflictException('该模型已经接入工作区')
     const config = this.configs.create({
-      userId,
+      userId: actorUserId,
+      workspaceId,
       modelId: input.modelId,
       model,
       alias: input.alias?.trim() || null,
@@ -30,8 +31,8 @@ export class WorkspaceModelsService {
     return this.map(await this.configs.save(config))
   }
 
-  async update(userId: string, id: string, input: UpdateWorkspaceModelDto): Promise<WorkspaceModelConfig> {
-    const config = await this.configs.find(id, userId)
+  async update(workspaceId: string, id: string, input: UpdateWorkspaceModelDto): Promise<WorkspaceModelConfig> {
+    const config = await this.configs.find(id, workspaceId)
     if (!config) throw new NotFoundException('工作区模型配置不存在')
     if (input.alias !== undefined) config.alias = input.alias?.trim() || null
     if (input.priority !== undefined) config.priority = input.priority
@@ -43,8 +44,8 @@ export class WorkspaceModelsService {
     return this.map(saved)
   }
 
-  async remove(userId: string, id: string): Promise<void> {
-    const config = await this.configs.find(id, userId)
+  async remove(workspaceId: string, id: string): Promise<void> {
+    const config = await this.configs.find(id, workspaceId)
     if (!config) throw new NotFoundException('工作区模型配置不存在')
     await this.configs.remove(config)
   }

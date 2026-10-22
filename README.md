@@ -41,11 +41,12 @@ npm run db:migrate
 | `GET` | `/api/rankings` | 按综合、编码、成本、速度指标排行 |
 | `GET` | `/api/dashboard/overview` | 用量指标、24 小时趋势、余额和最近请求 |
 | `GET` | `/api/dashboard/requests` | 按请求 ID 或模型检索调用记录 |
+| `GET` | `/api/workspaces` | 查询当前用户可访问的工作区与工作区角色 |
 | `GET/POST` | `/api/console/models` | 查询或添加当前工作区模型配置 |
 | `PATCH/DELETE` | `/api/console/models/:id` | 修改或移除当前工作区模型配置 |
 | `GET/POST` | `/api/console/routes` | 查询或创建当前工作区路由规则 |
 | `PATCH/DELETE` | `/api/console/routes/:id` | 修改或删除当前工作区路由规则 |
-| `GET/POST` | `/api/keys` | 查询或创建当前账户 API 密钥 |
+| `GET/POST` | `/api/keys` | 查询或创建当前工作区 API 密钥 |
 | `DELETE` | `/api/keys/:id` | 撤销 API 密钥 |
 | `POST` | `/api/auth/login` | 邮箱密码登录，返回短时访问令牌并写入 HttpOnly 刷新会话 |
 | `POST` | `/api/auth/register` | 创建普通客户账户并自动登录 |
@@ -78,6 +79,7 @@ curl 'http://localhost:3000/api/dashboard/requests?query=deepseek&limit=20'
 ```
 
 Swagger 文档位于 `http://localhost:3000/docs`。接口错误统一返回 Problem Details，包含 `status`、`detail`、`instance` 和 `request_id`。
+工作区接口可通过 `x-workspace-id` 指定目标租户；未传时自动使用当前用户最早加入的有效工作区。
 
 ## 前端页面
 
@@ -123,7 +125,7 @@ Swagger 文档位于 `http://localhost:3000/docs`。接口错误统一返回 Pro
 
 Turbo 负责跨项目依赖顺序、并行运行和构建缓存。根目录 `npm run dev` 会同时启动 API、Web 和 Admin；每个应用仍保留独立运行命令。
 
-完整的能力盘点、接口状态与 P0/P1/P2 规划见 [产品路线图](docs/product-roadmap.md)。面向高并发、安全、性能、高可用和长期维护的技术演进方案见 [架构审计与演进方案](docs/architecture-evolution-plan.md)。
+完整的能力盘点、接口状态与 P0/P1/P2 规划见 [产品路线图](docs/product-roadmap.md)。面向高并发、安全、性能、高可用和长期维护的技术演进方案见 [架构审计与演进方案](docs/architecture-evolution-plan.md)。本轮实施进度见 [开发清单](docs/development-checklist.md)，多供应商调用层决策见 [多模型供应商网关选型](docs/llm-provider-gateway-selection.md)。
 
 ## 第三方登录配置
 

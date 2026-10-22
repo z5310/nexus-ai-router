@@ -9,16 +9,17 @@ import { RouteRulesRepository } from './route-rules.repository'
 export class RouteRulesService {
   constructor(private readonly rules: RouteRulesRepository, private readonly models: WorkspaceModelsRepository) {}
 
-  async list(userId: string): Promise<RouteRuleListResponse> {
-    return { data: (await this.rules.list(userId)).map((rule) => this.map(rule)) }
+  async list(workspaceId: string): Promise<RouteRuleListResponse> {
+    return { data: (await this.rules.list(workspaceId)).map((rule) => this.map(rule)) }
   }
 
-  async create(userId: string, input: CreateRouteRuleDto): Promise<RouteRule> {
+  async create(workspaceId: string, actorUserId: string, input: CreateRouteRuleDto): Promise<RouteRule> {
     const name = input.name.trim()
-    if (await this.rules.findByName(userId, name)) throw new ConflictException('路由规则名称已存在')
-    await this.validateModels(userId, input.primaryModelId, input.fallbackModelId ?? null)
+    if (await this.rules.findByName(workspaceId, name)) throw new ConflictException('路由规则名称已存在')
+    await this.validateModels(workspaceId, input.primaryModelId, input.fallbackModelId ?? null)
     const saved = await this.rules.save(this.rules.create({
-      userId,
+      userId: actorUserId,
+      workspaceId,
       name,
       matchType: input.matchType,
       strategy: input.strategy,
@@ -27,21 +28,21 @@ export class RouteRulesService {
       trafficPercent: input.trafficPercent,
       enabled: input.enabled,
     }))
-    return this.map((await this.rules.find(saved.id, userId))!)
+    return this.map((await this.rules.find(saved.id, workspaceId))!)
   }
 
-  async update(userId: string, id: string, input: UpdateRouteRuleDto): Promise<RouteRule> {
-    const rule = await this.rules.find(id, userId)
+  async update(workspaceId: string, id: string, input: UpdateRouteRuleDto): Promise<RouteRule> {
+    const rule = await this.rules.find(id, workspaceId)
     if (!rule) throw new NotFoundException('路由规则不存在')
     if (input.name !== undefined) {
       const name = input.name.trim()
-      const duplicate = await this.rules.findByName(userId, name)
+      const duplicate = await this.rules.findByName(workspaceId, name)
       if (duplicate && duplicate.id !== id) throw new ConflictException('路由规则名称已存在')
       rule.name = name
     }
     const primaryModelId = input.primaryModelId ?? rule.primaryModelId
     const fallbackModelId = input.fallbackModelId !== undefined ? input.fallbackModelId : rule.fallbackModelId
-    if (input.primaryModelId !== undefined || input.fallbackModelId !== undefined) await this.validateModels(userId, primaryModelId, fallbackModelId)
+    if (input.primaryModelId !== undefined || input.fallbackModelId !== undefined) await this.validateModels(workspaceId, primaryModelId, fallbackModelId)
     if (input.matchType !== undefined) rule.matchType = input.matchType
     if (input.strategy !== undefined) rule.strategy = input.strategy
     if (input.primaryModelId !== undefined) rule.primaryModelId = input.primaryModelId
@@ -49,21 +50,21 @@ export class RouteRulesService {
     if (input.trafficPercent !== undefined) rule.trafficPercent = input.trafficPercent
     if (input.enabled !== undefined) rule.enabled = input.enabled
     await this.rules.save(rule)
-    return this.map((await this.rules.find(id, userId))!)
+    return this.map((await this.rules.find(id, workspaceId))!)
   }
 
-  async remove(userId: string, id: string): Promise<void> {
-    const rule = await this.rules.find(id, userId)
+  async remove(workspaceId: string, id: string): Promise<void> {
+    const rule = await this.rules.find(id, workspaceId)
     if (!rule) throw new NotFoundException('路由规则不存在')
     await this.rules.remove(rule)
   }
 
-  private async validateModels(userId: string, primaryId: string, fallbackId: string | null): Promise<void> {
+  private async validateModels(workspaceId: string, primaryId: string, fallbackId: string | null): Promise<void> {
     if (primaryId === fallbackId) throw new BadRequestException('主模型和故障转移模型不能相同')
-    const primary = await this.models.find(primaryId, userId)
+    const primary = await this.models.find(primaryId, workspaceId)
     if (!primary || !primary.enabled) throw new BadRequestException('主模型必须是当前工作区中已启用的模型')
     if (fallbackId) {
-      const fallback = await this.models.find(fallbackId, userId)
+      const fallback = await this.models.find(fallbackId, workspaceId)
       if (!fallback || !fallback.enabled) throw new BadRequestException('故障转移模型必须是当前工作区中已启用的模型')
     }
   }

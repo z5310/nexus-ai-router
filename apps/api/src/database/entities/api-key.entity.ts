@@ -1,13 +1,16 @@
 import { Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
 
 @Entity({ name: 'api_keys' })
-@Index(['userId', 'name'])
+@Index(['workspaceId', 'name'])
 export class ApiKeyEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string
 
   @Column({ name: 'user_id', type: 'uuid' })
   userId: string
+
+  @Column({ name: 'workspace_id', type: 'uuid' })
+  workspaceId: string
 
   @Column({ length: 80 })
   name: string

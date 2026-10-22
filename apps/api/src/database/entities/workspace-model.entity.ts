@@ -2,13 +2,16 @@ import { Column, CreateDateColumn, Entity, Index, JoinColumn, ManyToOne, Primary
 import { ModelEntity } from './model.entity'
 
 @Entity({ name: 'workspace_models' })
-@Index(['userId', 'modelId'], { unique: true })
+@Index(['workspaceId', 'modelId'], { unique: true })
 export class WorkspaceModelEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string
 
   @Column({ name: 'user_id', type: 'uuid' })
   userId: string
+
+  @Column({ name: 'workspace_id', type: 'uuid' })
+  workspaceId: string
 
   @Column({ name: 'model_id', type: 'uuid' })
   modelId: string

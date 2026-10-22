@@ -7,16 +7,16 @@ import { WorkspaceModelEntity } from '../database/entities/workspace-model.entit
 export class WorkspaceModelsRepository {
   constructor(@InjectRepository(WorkspaceModelEntity) private readonly repository: Repository<WorkspaceModelEntity>) {}
 
-  list(userId: string): Promise<WorkspaceModelEntity[]> {
-    return this.repository.find({ where: { userId }, relations: { model: true }, order: { priority: 'DESC', createdAt: 'ASC' } })
+  list(workspaceId: string): Promise<WorkspaceModelEntity[]> {
+    return this.repository.find({ where: { workspaceId }, relations: { model: true }, order: { priority: 'DESC', createdAt: 'ASC' } })
   }
 
-  find(id: string, userId: string): Promise<WorkspaceModelEntity | null> {
-    return this.repository.findOne({ where: { id, userId }, relations: { model: true } })
+  find(id: string, workspaceId: string): Promise<WorkspaceModelEntity | null> {
+    return this.repository.findOne({ where: { id, workspaceId }, relations: { model: true } })
   }
 
-  findByModel(userId: string, modelId: string): Promise<WorkspaceModelEntity | null> {
-    return this.repository.findOne({ where: { userId, modelId } })
+  findByModel(workspaceId: string, modelId: string): Promise<WorkspaceModelEntity | null> {
+    return this.repository.findOne({ where: { workspaceId, modelId } })
   }
 
   create(input: Partial<WorkspaceModelEntity>): WorkspaceModelEntity { return this.repository.create(input) }

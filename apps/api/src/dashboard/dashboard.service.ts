@@ -7,10 +7,10 @@ import type { ListRequestLogsQuery } from './dto/list-request-logs.query'
 export class DashboardService {
   constructor(private readonly dashboard: DashboardRepository) {}
 
-  async overview(userId: string): Promise<DashboardOverviewResponse> {
+  async overview(workspaceId: string): Promise<DashboardOverviewResponse> {
     const [trend, requestRows] = await Promise.all([
-      this.dashboard.usageTrend(userId),
-      this.dashboard.recentRequests(userId, { limit: 8 }),
+      this.dashboard.usageTrend(workspaceId),
+      this.dashboard.recentRequests(workspaceId, { limit: 8 }),
     ])
     const requests = trend.reduce((sum, point) => sum + point.requestCount, 0)
     const tokens = trend.reduce((sum, point) => sum + Number(point.tokenCount), 0)
@@ -41,8 +41,8 @@ export class DashboardService {
     }
   }
 
-  async requests(userId: string, query: ListRequestLogsQuery): Promise<RequestLogListResponse> {
-    const rows = await this.dashboard.recentRequests(userId, query)
+  async requests(workspaceId: string, query: ListRequestLogsQuery): Promise<RequestLogListResponse> {
+    const rows = await this.dashboard.recentRequests(workspaceId, query)
     return { data: rows.map((row) => this.mapRequest(row)) }
   }
 

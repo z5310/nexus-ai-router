@@ -3,14 +3,17 @@ import type { RouteMatchType, RouteStrategy } from '@gateway/contracts'
 import { WorkspaceModelEntity } from './workspace-model.entity'
 
 @Entity({ name: 'route_rules' })
-@Index(['userId', 'name'], { unique: true })
-@Index(['userId', 'enabled'])
+@Index(['workspaceId', 'name'], { unique: true })
+@Index(['workspaceId', 'enabled'])
 export class RouteRuleEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string
 
   @Column({ name: 'user_id', type: 'uuid' })
   userId: string
+
+  @Column({ name: 'workspace_id', type: 'uuid' })
+  workspaceId: string
 
   @Column({ type: 'varchar', length: 80 })
   name: string

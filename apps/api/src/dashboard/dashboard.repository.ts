@@ -18,15 +18,15 @@ export class DashboardRepository {
     private readonly requestLogs: Repository<RequestLogEntity>,
   ) {}
 
-  usageTrend(userId: string): Promise<UsageBucketEntity[]> {
+  usageTrend(workspaceId: string): Promise<UsageBucketEntity[]> {
     return this.usage.createQueryBuilder('usage')
-      .where('usage.user_id = :userId', { userId })
+      .where('usage.workspace_id = :workspaceId', { workspaceId })
       .andWhere('usage.bucketStart >= now() - interval \'24 hours\'')
       .orderBy('usage.bucketStart', 'ASC')
       .getMany()
   }
 
-  async recentRequests(userId: string, query: ListRequestLogsQuery): Promise<RequestLogRow[]> {
+  async recentRequests(workspaceId: string, query: ListRequestLogsQuery): Promise<RequestLogRow[]> {
     const builder = this.requestLogs.createQueryBuilder('request')
       .leftJoin('models', 'model', 'model.public_id = request.model_public_id')
       .select('request.id', 'id')
@@ -39,7 +39,7 @@ export class DashboardRepository {
       .addSelect('request.cost_cny', 'costCny')
       .addSelect('request.created_at', 'createdAt')
       .addSelect('COALESCE(model.name, request.model_public_id)', 'modelName')
-      .where('request.user_id = :userId', { userId })
+      .where('request.workspace_id = :workspaceId', { workspaceId })
 
     if (query.query?.trim()) {
       builder.andWhere(

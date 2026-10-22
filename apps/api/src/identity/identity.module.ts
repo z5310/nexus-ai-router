@@ -15,14 +15,17 @@ import { SessionsRepository } from './sessions.repository'
 import { UsersRepository } from './users.repository'
 import { UsersService } from './users.service'
 import { ActionTokensRepository } from './action-tokens.repository'
+import { WorkspacesModule } from '../workspaces/workspaces.module'
+import { WorkspacesController } from '../workspaces/workspaces.controller'
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([UserEntity, AuthSessionEntity, AuthActionTokenEntity]),
+    WorkspacesModule,
     JwtModule.registerAsync({ inject: [ConfigService], useFactory: (config: ConfigService) => ({ secret: config.getOrThrow<string>('JWT_SECRET') }) }),
   ],
-  controllers: [AuthController, AdminUsersController],
+  controllers: [AuthController, AdminUsersController, WorkspacesController],
   providers: [AuthService, UsersService, UsersRepository, SessionsRepository, ActionTokensRepository, PasswordService, JwtAuthGuard, RolesGuard],
-  exports: [JwtModule, JwtAuthGuard, RolesGuard, UsersService],
+  exports: [JwtModule, JwtAuthGuard, RolesGuard, UsersService, WorkspacesModule],
 })
 export class IdentityModule {}

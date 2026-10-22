@@ -8,15 +8,16 @@ import { ApiKeysRepository } from './api-keys.repository'
 export class ApiKeysService {
   constructor(private readonly keys: ApiKeysRepository) {}
 
-  async list(userId: string): Promise<ApiKeyListResponse> {
-    return { data: (await this.keys.list(userId)).map((key) => this.map(key)) }
+  async list(workspaceId: string): Promise<ApiKeyListResponse> {
+    return { data: (await this.keys.list(workspaceId)).map((key) => this.map(key)) }
   }
 
-  async create(userId: string, name: string): Promise<CreateApiKeyResponse> {
-    if (await this.keys.countActive(userId) >= 20) throw new ConflictException('每个账户最多保留 20 个有效密钥')
+  async create(workspaceId: string, actorUserId: string, name: string): Promise<CreateApiKeyResponse> {
+    if (await this.keys.countActive(workspaceId) >= 20) throw new ConflictException('每个工作区最多保留 20 个有效密钥')
     const secret = `nxs_live_${randomBytes(24).toString('base64url')}`
     const key = this.keys.create({
-      userId,
+      userId: actorUserId,
+      workspaceId,
       name: name.trim(),
       keyHash: createHash('sha256').update(secret).digest('hex'),
       keyPrefix: secret.slice(0, 12),
@@ -27,8 +28,8 @@ export class ApiKeysService {
     return { ...this.map(await this.keys.save(key)), key: secret }
   }
 
-  async revoke(userId: string, id: string): Promise<void> {
-    const key = await this.keys.findActive(id, userId)
+  async revoke(workspaceId: string, id: string): Promise<void> {
+    const key = await this.keys.findActive(id, workspaceId)
     if (!key) throw new NotFoundException('API 密钥不存在或已撤销')
     key.revokedAt = new Date()
     await this.keys.save(key)

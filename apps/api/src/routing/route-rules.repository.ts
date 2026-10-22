@@ -7,24 +7,24 @@ import { RouteRuleEntity } from '../database/entities/route-rule.entity'
 export class RouteRulesRepository {
   constructor(@InjectRepository(RouteRuleEntity) private readonly repository: Repository<RouteRuleEntity>) {}
 
-  list(userId: string): Promise<RouteRuleEntity[]> {
+  list(workspaceId: string): Promise<RouteRuleEntity[]> {
     return this.repository.find({
-      where: { userId },
+      where: { workspaceId },
       relations: { primaryModel: { model: true }, fallbackModel: { model: true } },
       order: { enabled: 'DESC', createdAt: 'ASC' },
     })
   }
 
-  find(id: string, userId: string): Promise<RouteRuleEntity | null> {
+  find(id: string, workspaceId: string): Promise<RouteRuleEntity | null> {
     return this.repository.findOne({
-      where: { id, userId },
+      where: { id, workspaceId },
       relations: { primaryModel: { model: true }, fallbackModel: { model: true } },
     })
   }
 
-  findByName(userId: string, name: string): Promise<RouteRuleEntity | null> {
+  findByName(workspaceId: string, name: string): Promise<RouteRuleEntity | null> {
     return this.repository.createQueryBuilder('rule')
-      .where('rule.user_id = :userId', { userId })
+      .where('rule.workspace_id = :workspaceId', { workspaceId })
       .andWhere('lower(rule.name) = lower(:name)', { name })
       .getOne()
   }

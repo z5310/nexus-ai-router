@@ -5,6 +5,7 @@ import { UsersRepository } from './users.repository'
 import type { CreateUserDto, ListUsersQuery, UpdateUserDto } from './dto/users.dto'
 import type { UserEntity } from '../database/entities/user.entity'
 import { SessionsRepository } from './sessions.repository'
+import { WorkspacesService } from '../workspaces/workspaces.service'
 
 @Injectable()
 export class UsersService {
@@ -12,6 +13,7 @@ export class UsersService {
     private readonly users: UsersRepository,
     private readonly passwords: PasswordService,
     private readonly sessions: SessionsRepository,
+    private readonly workspaces: WorkspacesService,
   ) {}
 
   async list(query: ListUsersQuery): Promise<UserListResponse> {
@@ -27,7 +29,9 @@ export class UsersService {
     const email = input.email.trim().toLowerCase()
     if (await this.users.findByEmail(email)) throw new ConflictException('该邮箱已被使用')
     const user = this.users.create({ ...input, email, name: input.name.trim(), passwordHash: await this.passwords.hash(input.password), passwordChangedAt: new Date() })
-    return this.toAuthUser(await this.users.save(user))
+    const saved = await this.users.save(user)
+    await this.workspaces.ensureDefaultForUser(saved.id, saved.name, saved.email)
+    return this.toAuthUser(saved)
   }
 
   async update(id: string, input: UpdateUserDto, actorId: string): Promise<AuthUser> {

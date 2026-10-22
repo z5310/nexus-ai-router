@@ -97,6 +97,21 @@ export interface ApiKeyRecord {
 export interface ApiKeyListResponse { data: ApiKeyRecord[] }
 export interface CreateApiKeyResponse extends ApiKeyRecord { key: string }
 
+export type WorkspaceStatus = 'active' | 'suspended'
+export type WorkspaceRole = 'owner' | 'admin' | 'developer' | 'billing' | 'viewer'
+export type WorkspaceMemberStatus = 'active' | 'invited'
+export type ProjectStatus = 'active' | 'archived'
+
+export interface WorkspaceContext {
+  id: string
+  name: string
+  slug: string
+  role: WorkspaceRole
+  defaultCurrency: string
+}
+
+export interface WorkspaceListResponse { data: WorkspaceContext[] }
+
 export interface WorkspaceModelConfig {
   id: string
   modelId: string

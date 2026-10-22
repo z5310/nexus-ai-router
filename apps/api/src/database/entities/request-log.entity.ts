@@ -11,6 +11,10 @@ export class RequestLogEntity {
   @Index()
   userId: string
 
+  @Column({ name: 'workspace_id', type: 'uuid' })
+  @Index()
+  workspaceId: string
+
   @Column({ name: 'request_id', length: 80 })
   requestId: string
 

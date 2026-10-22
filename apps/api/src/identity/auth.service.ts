@@ -20,6 +20,7 @@ import { PasswordService } from './password.service'
 import { SessionsRepository, type SessionMetadata } from './sessions.repository'
 import { UsersRepository } from './users.repository'
 import { UsersService } from './users.service'
+import { WorkspacesService } from '../workspaces/workspaces.service'
 
 export interface IssuedAuth extends AuthResponse {
   refreshToken: string
@@ -48,6 +49,7 @@ export class AuthService {
     private readonly actionTokens: ActionTokensRepository,
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
+    private readonly workspaces: WorkspacesService,
   ) {}
 
   async register(input: RegisterDto, metadata: SessionMetadata): Promise<IssuedAuth> {
@@ -203,6 +205,7 @@ export class AuthService {
 
   private async issue(userId: string, refreshDays: number, metadata: SessionMetadata): Promise<IssuedAuth> {
     const user = await this.userService.require(userId)
+    await this.workspaces.ensureDefaultForUser(user.id, user.name, user.email)
     const refreshToken = randomBytes(48).toString('base64url')
     const refreshExpiresAt = new Date(Date.now() + refreshDays * 86_400_000)
     const session = await this.sessions.create(user.id, this.hashToken(refreshToken), refreshExpiresAt, metadata)

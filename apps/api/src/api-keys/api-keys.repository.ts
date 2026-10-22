@@ -7,16 +7,16 @@ import { ApiKeyEntity } from '../database/entities/api-key.entity'
 export class ApiKeysRepository {
   constructor(@InjectRepository(ApiKeyEntity) private readonly repository: Repository<ApiKeyEntity>) {}
 
-  list(userId: string): Promise<ApiKeyEntity[]> {
-    return this.repository.find({ where: { userId, revokedAt: IsNull() }, order: { createdAt: 'DESC' } })
+  list(workspaceId: string): Promise<ApiKeyEntity[]> {
+    return this.repository.find({ where: { workspaceId, revokedAt: IsNull() }, order: { createdAt: 'DESC' } })
   }
 
-  findActive(id: string, userId: string): Promise<ApiKeyEntity | null> {
-    return this.repository.findOne({ where: { id, userId, revokedAt: IsNull() } })
+  findActive(id: string, workspaceId: string): Promise<ApiKeyEntity | null> {
+    return this.repository.findOne({ where: { id, workspaceId, revokedAt: IsNull() } })
   }
 
-  countActive(userId: string): Promise<number> {
-    return this.repository.count({ where: { userId, revokedAt: IsNull() } })
+  countActive(workspaceId: string): Promise<number> {
+    return this.repository.count({ where: { workspaceId, revokedAt: IsNull() } })
   }
 
   create(input: Partial<ApiKeyEntity>): ApiKeyEntity { return this.repository.create(input) }
