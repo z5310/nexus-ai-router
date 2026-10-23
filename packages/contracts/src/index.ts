@@ -238,6 +238,9 @@ export interface RankingEntry extends CatalogModel {
   rank: number
   metric: RankingMetric
   metricScore: number
+  calls7d: number
+  usageShare: number
+  weeklyGrowth: number | null
 }
 
 export interface RankingListResponse {

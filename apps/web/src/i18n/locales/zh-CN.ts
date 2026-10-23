@@ -1,7 +1,7 @@
 export default {
   common: {
     home: '首页', models: '模型广场', rankings: '模型排名', docs: '说明文档', console: '控制台', login: '登录',
-    search: '搜索', reset: '重置', all: '全部', try: '体验', details: '查看详情', stable: '稳定', mainNav: '主导航', openNav: '打开导航', loading: '正在同步服务数据…', liveData: '实时数据', fallbackData: '后端暂未连接，当前展示本地演示数据',
+    search: '搜索', reset: '重置', all: '全部', try: '体验', details: '查看详情', stable: '稳定', mainNav: '主导航', openNav: '打开导航', loading: '正在同步服务数据…', liveData: '实时数据', loadError: '数据服务暂时不可用，请稍后重试',
     types: { all: '全部', text: '文本', image: '图像', video: '视频', audio: '音频', embedding: '向量' }, providers: { all: '全部', alibaba: '阿里云', bytedance: '字节跳动' },
   },
   language: { label: '语言', zhCN: '简体中文', enUS: 'English' },
@@ -9,7 +9,7 @@ export default {
     badge: '多模型智能路由 2.0', title1: '用一个接口，', title2: '调用所有 AI 模型',
     subtitle: '文本、图像、视频与语音模型一次接入。Nexus 为每次请求选择更快、更稳、更省的渠道。',
     start: '免费开始', viewDocs: '查看文档', sdk: 'OpenAI SDK 兼容', usageBilling: '按量计费', noCard: '免绑卡体验',
-    deals: '当前模型优惠', searchModel: '搜索模型', viewAll: '查看全部模型', save: '立省', input: '输入', output: '输出', perMillion: '每百万 Token', viewModel: '查看模型', noDeals: '没有找到匹配的优惠模型',
+    deals: '模型与价格', searchModel: '搜索模型', viewAll: '查看全部模型', save: '立省', input: '输入', output: '输出', perMillion: '每百万 Token', viewModel: '查看模型', noDeals: '没有找到匹配的模型',
     production: '为生产环境而生', simpleTitle1: '模型越多，', simpleTitle2: '接入反而越简单。', simpleDesc: '不用再维护不同 SDK、鉴权和账单。通过统一协议管理整个模型栈，把时间留给真正的产品能力。',
     feature1: '智能路由', feature1Desc: '按价格、延迟与可用率动态选择渠道，让请求自动走最优路径。', availability: '路由可用性',
     feature2: '统一观测', feature2Desc: '实时查看调用量、Token、耗时和错误，异常链路快速定位。', refresh: '数据刷新',
@@ -19,7 +19,7 @@ export default {
     ctaTitle: '五分钟，完成第一次模型调用。', ctaDesc: '注册送体验额度。无需信用卡，兼容现有 OpenAI SDK。', createAccount: '创建免费账户', footerLine: '让每次模型调用都有更优解。', rankTags: { gpt: '推理 · 编码 · Agent', claude: '长文本 · 编码 · 分析', deepseek: '推理 · 中文 · 高并发' },
   },
   catalog: {
-    kicker: '模型目录', title: '模型广场', subtitle: '一个 API 调用全球领先模型，价格透明，即开即用。', compatible: 'OpenAI 协议兼容', official: '官方渠道透明计费', sla: '99.99% SLA',
+    kicker: '模型目录', title: '模型广场', subtitle: '一个 API 调用全球领先模型，价格透明，即开即用。', compatible: 'OpenAI 协议兼容', official: '官方渠道透明计费',
     featured: '本周精选 · 多模态旗舰', featuredDesc: '复杂推理、专业编码和多步骤智能体任务，一次调用即可完成。', startNow: '立即体验', score: '综合评分', routingVisualLabel: 'Nexus 智能模型路由拓扑', routingLive: '智能路由在线', routingAuto: '自动选择', requestIn: '新请求', routerCore: '路由核心', selectedRoute: '已选择 · 主路由', routeLatency: '首字延迟',
     placeholder: '搜索模型、API ID 或供应商...', recommended: '推荐排序', highestScore: '评分最高', fastest: '速度最快', lowestPrice: '价格最低', ranking: '模型排名', filter: '筛选',
     provider: '供应商', capability: '能力标签', streaming: '流式输出', tools: '工具调用', vision: '视觉理解', found: '找到 {count} 个模型', cny: '价格均按人民币结算',
@@ -35,7 +35,7 @@ export default {
     snapshot: '数据快照', today: '今日', categoryLabel: '模型分类', categoryTop: 'CATEGORY TOP', categoryTitle: '{category}模型 Top 5', updatedDaily: '每日更新', categorySingle: '该分类已接入 1 个模型，更多模型评测正在加入。',
     points: '分', usageLeader: '7 日使用冠军', calls7d: '次调用', specialtyKicker: 'SPECIALTY RANKINGS', specialtyTitle: '专项排行榜', specialtyDesc: '从能力、真实使用率与增长速度三个维度观察模型表现。', overallBoard: '综合评分', usageBoard: '使用率 Top', heatBoard: '近 7 日热度', usageUnit: '%', growthUnit: '%',
     methodTitle: '排名如何计算？', methodDesc: '我们使用统一测试集，并结合过去 7 天真实请求的成功率、延迟和成本数据。', methodLink: '查看评测方法', full: '完整指标榜单', allVendors: '全部供应商', allStatuses: '全部状态', observing: '观察中',
-    rank: '排名', model: '模型', status: '状态', score: '综合评分', costTask: '单任务成本', latency: '首字延迟', context: '上下文', trend: '趋势', updated: '数据更新于 12 分钟前', total: '共 {count} 个模型',
+    rank: '排名', model: '模型', status: '状态', score: '综合评分', costTask: '单任务成本', latency: '首字延迟', context: '上下文', trend: '趋势', updated: '数据更新于 {time}', total: '共 {count} 个模型',
   },
   docs: {
     search: '搜索文档、API、示例...', openConsole: '控制台', apiReference: 'API 参考', useLight: '切换到白天模式', useDark: '切换到夜间模式', start: '开始使用', quickstart: '快速开始', apiKeys: 'API 密钥', sdk: 'SDK 与客户端', core: '核心能力', text: '文本生成', image: '图像生成', video: '视频生成', routing: '智能路由', platform: '平台', pricing: '模型与定价', billing: '用量与账单', errors: '错误码', security: '安全与治理', rateLimits: '限速策略',
@@ -44,7 +44,7 @@ export default {
   dashboard: {
     workspace: '工作区', currentWorkspace: '当前工作区', overview: '概览', models: '模型', routes: '路由规则', keys: 'API 密钥', operations: '运营', logs: '调用日志', billing: '账单与余额', members: '成员权限', system: '系统', settings: '设置', balance: '账户余额', used: '本月已用', usedValue: '本月已用 ¥{amount}', recharge: '充值', search: '搜索请求 ID、模型...', greeting: '下午好，{name}', title: '工作区概览', createKey: '创建 API 密钥', requests: '24 小时请求', tokens: 'Token 用量', latency: '平均延迟', spending: '24 小时消费', vsYesterday: '较昨日', improved: '性能提升', requestTrend: '请求趋势', requestTrendDesc: '过去 24 小时的 API 调用量', last24h: '最近 24 小时', last7d: '最近 7 天', now: '现在', recent: '最近请求', realtime: '实时更新的模型调用记录', viewAll: '查看全部', requestId: '请求 ID', model: '模型', status: '状态', tokenCount: 'Tokens', cost: '费用', success: '成功', failed: '失败', notifications: '通知', chartLabel: '请求趋势图', accountMenu: '账户菜单', account: '我的账户', accountSettings: '账户设置', accountSettingsHint: '工作区与安全选项', signOut: '退出登录', signingOut: '正在退出…', roleAdmin: '管理员', roleManager: '运营', roleViewer: '只读成员',
   },
-  auth: { backHome: '返回首页', title: '登录工作区', description: '管理模型、路由、密钥和团队用量。', email: '邮箱', password: '密码', togglePassword: '显示或隐藏密码', remember: '保持登录', forgot: '忘记密码？', or: '或使用', github: '使用 GitHub 继续', google: '使用 Google 继续', demoHint: "演示账号：demo{'@'}nexus.cn / nexus-demo", adminHint: "管理员：admin{'@'}nexus.cn / Nexus{'@'}123456", signingIn: '正在登录…', failed: '登录失败，请稍后重试' },
+  auth: { backHome: '返回首页', title: '登录工作区', description: '管理模型、路由、密钥和团队用量。', email: '邮箱', password: '密码', togglePassword: '显示或隐藏密码', remember: '保持登录', forgot: '忘记密码？', or: '或使用', github: '使用 GitHub 继续', google: '使用 Google 继续', signingIn: '正在登录…', failed: '登录失败，请稍后重试' },
   admin: {
     kicker: 'IDENTITY CENTER', title: '用户管理', description: '统一管理平台账户、角色、状态和登录访问。', workspace: '管理空间', management: '平台管理', overview: '总览', users: '用户目录', roles: '角色与权限', security: '安全中心', audit: '审计日志', sessions: '登录会话', logout: '退出登录',
     addUser: '新建用户', total: '全部用户', active: '活跃账户', admins: '管理员', pending: '待处理', totalHint: '平台内全部身份', normal: '运行正常', adminHint: '拥有平台管理权限', pendingHint: '邀请中或已停用', directory: '用户目录', directoryDesc: '搜索用户并维护其角色与账户状态。', search: '搜索姓名或邮箱…', allRoles: '全部角色', allStatuses: '全部状态',

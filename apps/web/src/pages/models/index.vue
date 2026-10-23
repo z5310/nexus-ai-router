@@ -7,7 +7,6 @@ import { ArrowRight, BarChart3, Check, ChevronDown, CircleDollarSign, Filter, Se
 import ModelLogo from '../../components/ModelLogo.vue'
 import ModelRoutingVisual from './cmp/ModelRoutingVisual.vue'
 import SiteHeader from '../../components/SiteHeader.vue'
-import { models } from '../../data/models'
 import { listModels } from './api'
 
 const search = ref('')
@@ -17,7 +16,6 @@ const activeProvider = ref('all')
 const sort = ref('recommended')
 const showFilters = ref(false)
 const types: Array<ModelType | 'all'> = ['all', 'text', 'image', 'video', 'audio', 'embedding']
-const providers = ['all', 'OpenAI', 'Anthropic', 'DeepSeek', '阿里云', 'Google', '字节跳动', 'MiniMax', 'BAAI']
 
 const modelQuery = useQuery({
   queryKey: ['catalog-models'],
@@ -25,7 +23,10 @@ const modelQuery = useQuery({
   staleTime: 60_000,
   retry: 1,
 })
-const catalogModels = computed(() => modelQuery.data.value?.data ?? models)
+const catalogModels = computed(() => modelQuery.data.value?.data ?? [])
+const featuredModel = computed(() => catalogModels.value.find((model) => model.featured) ?? catalogModels.value[0] ?? null)
+const routingModels = computed(() => catalogModels.value.slice(0, 3))
+const providers = computed(() => ['all', ...Object.keys(modelQuery.data.value?.facets.providers ?? {})])
 
 const filteredModels = computed(() => {
   const keyword = search.value.trim().toLowerCase()
@@ -56,12 +57,12 @@ const providerCount = (provider: string) => provider === 'all' ? catalogModels.v
     <main class="catalog-main">
       <header v-reveal class="page-heading">
         <div><span class="section-kicker">{{ t('catalog.kicker') }}</span><h1>{{ t('catalog.title') }}</h1><p>{{ t('catalog.subtitle') }}</p></div>
-        <div class="confidence-chips"><span><Check :size="13" /> {{ t('catalog.compatible') }}</span><span><CircleDollarSign :size="13" /> {{ t('catalog.official') }}</span><span><Check :size="13" /> {{ t('catalog.sla') }}</span></div>
+        <div class="confidence-chips"><span><Check :size="13" /> {{ t('catalog.compatible') }}</span><span><CircleDollarSign :size="13" /> {{ t('catalog.official') }}</span></div>
       </header>
 
-      <section v-reveal="{ delay: 80 }" class="featured-model">
-        <div class="featured-copy"><span>{{ t('catalog.featured') }}</span><h2>GPT-6.1 Sol</h2><p>{{ t('catalog.featuredDesc') }}</p><div><a href="/console" target="_blank" rel="noopener noreferrer" class="button button-green">{{ t('catalog.startNow') }} <ArrowRight :size="15" /></a><RouterLink class="button button-ghost" to="/models/openai/gpt-6.1-sol">{{ t('common.details') }}</RouterLink></div></div>
-        <ModelRoutingVisual />
+      <section v-if="featuredModel" v-reveal="{ delay: 80 }" class="featured-model">
+        <div class="featured-copy"><span>{{ t('catalog.featured') }}</span><h2>{{ featuredModel.name }}</h2><p>{{ t(featuredModel.descriptionKey) }}</p><div><a href="/console" target="_blank" rel="noopener noreferrer" class="button button-green">{{ t('catalog.startNow') }} <ArrowRight :size="15" /></a><RouterLink class="button button-ghost" :to="`/models/${featuredModel.slug}`">{{ t('common.details') }}</RouterLink></div></div>
+        <ModelRoutingVisual :models="routingModels" />
       </section>
 
       <div v-reveal class="catalog-tools">
@@ -84,7 +85,7 @@ const providerCount = (provider: string) => provider === 'all' ? catalogModels.v
 
         <section class="model-results">
           <div v-if="modelQuery.isLoading.value" class="data-state-banner">{{ t('common.loading') }}</div>
-          <div v-else-if="modelQuery.isError.value" class="data-state-banner warning">{{ t('common.fallbackData') }}</div>
+          <div v-else-if="modelQuery.isError.value" class="data-state-banner warning">{{ t('common.loadError') }}</div>
           <div v-else class="data-state-banner live">{{ t('common.liveData') }}</div>
           <div class="results-meta"><span>{{ t('catalog.found', { count: filteredModels.length }) }}</span><span>{{ t('catalog.cny') }}</span></div>
           <div class="model-grid">

@@ -1,1 +1,1 @@
-export type { ModelType, RankingListResponse, RankingMetric } from '@gateway/contracts'
+export type { ModelType, RankingEntry, RankingListResponse, RankingMetric } from '@gateway/contracts'

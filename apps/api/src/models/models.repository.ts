@@ -10,6 +10,12 @@ export interface ModelFacetsResult {
   providers: Array<{ provider: string; count: number }>
 }
 
+export interface ModelActivityResult {
+  publicId: string
+  calls7d: number
+  callsPrevious7d: number
+}
+
 @Injectable()
 export class ModelsRepository {
   constructor(
@@ -100,5 +106,29 @@ export class ModelsRepository {
     if (query.provider) builder.andWhere('model.provider = :provider', { provider: query.provider })
     if (query.status) builder.andWhere('model.status = :status', { status: query.status })
     return builder.orderBy(scoreColumn[query.metric], 'DESC').addOrderBy('model.name', 'ASC').take(query.limit).getMany()
+  }
+
+  async activity(): Promise<ModelActivityResult[]> {
+    const rows = await this.repository.manager.query(`
+      SELECT
+        model.public_id AS "publicId",
+        COUNT(request.id) FILTER (WHERE request.created_at >= now() - interval '7 days')::int AS "calls7d",
+        COUNT(request.id) FILTER (
+          WHERE request.created_at >= now() - interval '14 days'
+            AND request.created_at < now() - interval '7 days'
+        )::int AS "callsPrevious7d"
+      FROM models model
+      LEFT JOIN request_logs request
+        ON request.model_public_id = model.public_id
+        AND request.created_at >= now() - interval '14 days'
+      WHERE model.is_enabled = true
+      GROUP BY model.public_id
+    `) as Array<{ publicId: string; calls7d: number | string; callsPrevious7d: number | string }>
+
+    return rows.map((row) => ({
+      publicId: row.publicId,
+      calls7d: Number(row.calls7d),
+      callsPrevious7d: Number(row.callsPrevious7d),
+    }))
   }
 }

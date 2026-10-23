@@ -1,15 +1,8 @@
-<script setup lang="ts">
+<script setup lang="ts" generic="T extends { name: string; mark?: string; color?: string }">
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 
-export type LogoLoopItem = {
-  name: string
-  mark?: string
-  color?: string
-  [key: string]: string | undefined
-}
-
 const props = withDefaults(defineProps<{
-  logos: LogoLoopItem[]
+  logos: T[]
   speed?: number
   direction?: 'left' | 'right'
   gap?: number

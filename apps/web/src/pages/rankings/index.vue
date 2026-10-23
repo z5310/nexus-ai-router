@@ -2,51 +2,58 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useQuery } from '@tanstack/vue-query'
-import type { ModelType, RankingMetric } from './api'
+import type { ModelType, RankingEntry, RankingMetric } from './api'
 import { ArrowDown, ArrowRight, ArrowUp, BarChart3, CircleDollarSign, Clock3, Flame, Gauge, MousePointerClick, ShieldCheck, Sparkles, Trophy } from 'lucide-vue-next'
 import SiteHeader from '../../components/SiteHeader.vue'
 import ModelLogo from '../../components/ModelLogo.vue'
-import { fallbackRankings, models } from '../../data/models'
-import { categoryRankings, rankBy, withPopularity, type RankingCategory } from '../../data/ranking-insights'
 import { listRankings } from './api'
 
 const { t } = useI18n()
 const metric = ref<RankingMetric>('overall')
 const metrics: RankingMetric[] = ['overall', 'coding', 'cost', 'speed']
+type RankingCategory = ModelType | 'all'
 const vendor = ref('all')
 const status = ref('all')
 const category = ref<RankingCategory>('all')
 const categories: RankingCategory[] = ['all', 'text', 'image', 'video', 'audio', 'embedding']
-const insightModels = withPopularity(models)
-
 const rankingQuery = useQuery({
-  queryKey: computed(() => ['model-rankings', metric.value]),
-  queryFn: ({ signal }) => listRankings(metric.value, signal),
+  queryKey: ['model-rankings'],
+  queryFn: async ({ signal }) => {
+    const responses = await Promise.all(metrics.map((item) => listRankings(item, signal)))
+    return Object.fromEntries(responses.map((response) => [response.metric, response])) as Record<RankingMetric, typeof responses[number]>
+  },
   staleTime: 60_000,
   retry: 1,
 })
 
 const visibleRankings = computed(() => {
-  let rows = [...(rankingQuery.data.value?.data ?? fallbackRankings(metric.value))]
+  let rows = [...(rankingQuery.data.value?.[metric.value]?.data ?? [])]
   if (vendor.value !== 'all') rows = rows.filter((row) => row.provider === vendor.value)
   if (status.value !== 'all') rows = rows.filter((row) => row.status === status.value)
   return rows.map((row, index) => ({ ...row, displayRank: index + 1 }))
 })
-const overallLeader = fallbackRankings('overall')[0]
-const costLeader = fallbackRankings('cost')[0]
-const speedLeader = fallbackRankings('speed')[0]
-const usageLeader = rankBy(insightModels, 'usageShare')[0]
-const categoryLeaders = computed(() => categoryRankings(insightModels, category.value).slice(0, 5))
+const overallRows = computed(() => rankingQuery.data.value?.overall.data ?? [])
+const overallLeader = computed(() => overallRows.value[0] ?? null)
+const costLeader = computed(() => rankingQuery.data.value?.cost.data[0] ?? null)
+const speedLeader = computed(() => rankingQuery.data.value?.speed.data[0] ?? null)
+const usageLeader = computed(() => [...overallRows.value].sort((a, b) => b.calls7d - a.calls7d)[0] ?? null)
+const providers = computed(() => [...new Set(overallRows.value.map((model) => model.provider))])
+const categoryLeaders = computed(() => overallRows.value.filter((model) => category.value === 'all' || model.type === category.value).slice(0, 5))
+const rankBy = (key: 'score' | 'usageShare' | 'weeklyGrowth') => [...overallRows.value].sort((a, b) => (b[key] ?? Number.NEGATIVE_INFINITY) - (a[key] ?? Number.NEGATIVE_INFINITY)).slice(0, 5)
 const specialtyBoards = computed(() => [
-  { key: 'overallBoard', unit: t('ranking.points'), rows: rankBy(insightModels, 'score').slice(0, 5), value: (model: typeof insightModels[number]) => model.score, max: 100 },
-  { key: 'usageBoard', unit: t('ranking.usageUnit'), rows: rankBy(insightModels, 'usageShare').slice(0, 5), value: (model: typeof insightModels[number]) => model.usageShare, max: 28 },
-  { key: 'heatBoard', unit: t('ranking.growthUnit'), rows: rankBy(insightModels, 'weeklyGrowth').slice(0, 5), value: (model: typeof insightModels[number]) => model.weeklyGrowth, max: 50 },
+  { key: 'overallBoard', unit: t('ranking.points'), rows: rankBy('score'), value: (model: RankingEntry) => model.score, max: 100 },
+  { key: 'usageBoard', unit: t('ranking.usageUnit'), rows: rankBy('usageShare'), value: (model: RankingEntry) => model.usageShare, max: Math.max(...overallRows.value.map((model) => model.usageShare), 1) },
+  { key: 'heatBoard', unit: t('ranking.growthUnit'), rows: rankBy('weeklyGrowth'), value: (model: RankingEntry) => model.weeklyGrowth ?? 0, max: Math.max(...overallRows.value.map((model) => model.weeklyGrowth ?? 0), 1) },
 ])
 const providerLabel = (provider: string) => provider === '阿里云' ? t('common.providers.alibaba') : provider === '字节跳动' ? t('common.providers.bytedance') : provider
 const contextLabel = (context: string) => context === '视频' ? t('common.types.video') : context === '图像' ? t('common.types.image') : context === '音频' ? t('common.types.audio') : context
 const speedLabel = (latencyMs: number) => latencyMs >= 1000 ? `${(latencyMs / 1000).toFixed(1)} s` : `${latencyMs} ms`
 const compactNumber = (value: number) => new Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 1 }).format(value)
 const categoryLabel = (value: RankingCategory | ModelType) => t(`common.types.${value}`)
+const updatedAt = computed(() => {
+  const value = rankingQuery.data.value?.[metric.value]?.updatedAt
+  return value ? new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value)) : '—'
+})
 </script>
 
 <template>
@@ -77,14 +84,15 @@ const categoryLabel = (value: RankingCategory | ModelType) => t(`common.types.${
               <div class="overview-score"><i><em :style="{ width: `${model.score}%` }" /></i><b>{{ model.score }}</b></div>
             </li>
           </ol>
+          <div v-if="!categoryLeaders.length" class="data-state-banner">{{ rankingQuery.isLoading.value ? t('common.loading') : t('catalog.noMatch') }}</div>
           <div v-if="categoryLeaders.length === 1" class="category-note"><Sparkles :size="15" />{{ t('ranking.categorySingle') }}</div>
         </article>
 
         <div class="ranking-highlights">
-          <article v-reveal="{ delay: 70 }"><span class="highlight-icon gold"><Trophy :size="18" /></span><small>{{ t('ranking.overallLeader') }}</small><h3>{{ overallLeader.name }}</h3><p>{{ overallLeader.score }} <em>{{ t('ranking.points') }}</em></p></article>
-          <article v-reveal="{ delay: 140 }"><span class="highlight-icon green"><CircleDollarSign :size="18" /></span><small>{{ t('ranking.costLeader') }}</small><h3>{{ costLeader.name }}</h3><p>¥{{ costLeader.costPerTask.toFixed(2) }} <em>{{ t('ranking.taskCost') }}</em></p></article>
-          <article v-reveal="{ delay: 210 }"><span class="highlight-icon blue"><Gauge :size="18" /></span><small>{{ t('ranking.speedLeader') }}</small><h3>{{ speedLeader.name }}</h3><p>{{ speedLabel(speedLeader.latencyMs) }} <em>{{ t('ranking.firstLatency') }}</em></p></article>
-          <article v-reveal="{ delay: 280 }"><span class="highlight-icon hot"><MousePointerClick :size="18" /></span><small>{{ t('ranking.usageLeader') }}</small><h3>{{ usageLeader.name }}</h3><p>{{ compactNumber(usageLeader.calls7d) }} <em>{{ t('ranking.calls7d') }}</em></p></article>
+          <article v-if="overallLeader" v-reveal="{ delay: 70 }"><span class="highlight-icon gold"><Trophy :size="18" /></span><small>{{ t('ranking.overallLeader') }}</small><h3>{{ overallLeader.name }}</h3><p>{{ overallLeader.score }} <em>{{ t('ranking.points') }}</em></p></article>
+          <article v-if="costLeader" v-reveal="{ delay: 140 }"><span class="highlight-icon green"><CircleDollarSign :size="18" /></span><small>{{ t('ranking.costLeader') }}</small><h3>{{ costLeader.name }}</h3><p>¥{{ costLeader.costPerTask.toFixed(2) }} <em>{{ t('ranking.taskCost') }}</em></p></article>
+          <article v-if="speedLeader" v-reveal="{ delay: 210 }"><span class="highlight-icon blue"><Gauge :size="18" /></span><small>{{ t('ranking.speedLeader') }}</small><h3>{{ speedLeader.name }}</h3><p>{{ speedLabel(speedLeader.latencyMs) }} <em>{{ t('ranking.firstLatency') }}</em></p></article>
+          <article v-if="usageLeader" v-reveal="{ delay: 280 }"><span class="highlight-icon hot"><MousePointerClick :size="18" /></span><small>{{ t('ranking.usageLeader') }}</small><h3>{{ usageLeader.name }}</h3><p>{{ compactNumber(usageLeader.calls7d) }} <em>{{ t('ranking.calls7d') }}</em></p></article>
         </div>
       </section>
 
@@ -97,7 +105,7 @@ const categoryLabel = (value: RankingCategory | ModelType) => t(`common.types.${
               <li v-for="(model, index) in board.rows" :key="model.slug">
                 <b>{{ index + 1 }}</b><ModelLogo :owner="model.owner" :provider="model.provider" :name="model.name" :accent="model.accent" :size="30" />
                 <div><strong>{{ model.name }}</strong><i><em :style="{ width: `${Math.min(100, board.value(model) / board.max * 100)}%` }" /></i></div>
-                <span>{{ board.key === 'heatBoard' ? '+' : '' }}{{ board.value(model) }}{{ board.unit }}</span>
+                <span>{{ board.key === 'heatBoard' && model.weeklyGrowth === null ? '—' : `${board.key === 'heatBoard' ? '+' : ''}${board.value(model)}${board.unit}` }}</span>
               </li>
             </ol>
           </article>
@@ -108,9 +116,9 @@ const categoryLabel = (value: RankingCategory | ModelType) => t(`common.types.${
 
       <section v-reveal class="leaderboard-section" id="model-discovery-full-ranking">
         <div v-if="rankingQuery.isLoading.value" class="data-state-banner">{{ t('common.loading') }}</div>
-        <div v-else-if="rankingQuery.isError.value" class="data-state-banner warning">{{ t('common.fallbackData') }}</div>
+        <div v-else-if="rankingQuery.isError.value" class="data-state-banner warning">{{ t('common.loadError') }}</div>
         <div v-else class="data-state-banner live">{{ t('common.liveData') }}</div>
-        <div class="leaderboard-heading"><div><span>FULL METRIC LEADERBOARD</span><h2>{{ t('ranking.full') }}</h2></div><div class="leaderboard-controls"><div class="metric-switcher"><button v-for="item in metrics" :key="item" :class="{ active: metric === item }" @click="metric = item">{{ t(`ranking.${item}`) }}</button></div><div class="table-filters"><select v-model="vendor"><option value="all">{{ t('ranking.allVendors') }}</option><option>OpenAI</option><option>Anthropic</option><option>DeepSeek</option><option value="阿里云">{{ t('common.providers.alibaba') }}</option><option>Google</option><option value="字节跳动">{{ t('common.providers.bytedance') }}</option></select><select v-model="status"><option value="all">{{ t('ranking.allStatuses') }}</option><option value="stable">{{ t('common.stable') }}</option><option value="observing">{{ t('ranking.observing') }}</option></select></div></div></div>
+        <div class="leaderboard-heading"><div><span>FULL METRIC LEADERBOARD</span><h2>{{ t('ranking.full') }}</h2></div><div class="leaderboard-controls"><div class="metric-switcher"><button v-for="item in metrics" :key="item" :class="{ active: metric === item }" @click="metric = item">{{ t(`ranking.${item}`) }}</button></div><div class="table-filters"><select v-model="vendor"><option value="all">{{ t('ranking.allVendors') }}</option><option v-for="provider in providers" :key="provider" :value="provider">{{ providerLabel(provider) }}</option></select><select v-model="status"><option value="all">{{ t('ranking.allStatuses') }}</option><option value="stable">{{ t('common.stable') }}</option><option value="observing">{{ t('ranking.observing') }}</option></select></div></div></div>
         <div class="table-wrap">
           <table>
             <thead><tr><th>{{ t('ranking.rank') }}</th><th>{{ t('ranking.model') }}</th><th>{{ t('ranking.status') }}</th><th>{{ t('ranking.score') }}</th><th>{{ t('ranking.costTask') }}</th><th>{{ t('ranking.latency') }}</th><th>{{ t('ranking.context') }}</th><th>{{ t('ranking.trend') }}</th><th /></tr></thead>
@@ -125,7 +133,7 @@ const categoryLabel = (value: RankingCategory | ModelType) => t(`common.types.${
             </tbody>
           </table>
         </div>
-        <div class="table-foot"><span><ShieldCheck :size="14" /> {{ t('ranking.updated') }}</span><span>{{ t('ranking.total', { count: visibleRankings.length }) }}</span></div>
+        <div class="table-foot"><span><ShieldCheck :size="14" /> {{ t('ranking.updated', { time: updatedAt }) }}</span><span>{{ t('ranking.total', { count: visibleRankings.length }) }}</span></div>
       </section>
     </main>
   </div>

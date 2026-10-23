@@ -9,7 +9,7 @@ import ModelLogo from '../../../components/ModelLogo.vue'
 import { authState } from '../../../lib/auth'
 import { request } from '../../../lib/http'
 
-const props = defineProps<{ model: CatalogModel; demo?: boolean }>()
+const props = defineProps<{ model: CatalogModel }>()
 const route = useRoute()
 const router = useRouter()
 const { t } = useI18n()
@@ -49,7 +49,6 @@ onBeforeUnmount(() => controller?.abort())
 <template>
   <main class="text-model-page">
     <RouterLink class="model-back" to="/models"><ArrowLeft :size="15" />返回模型广场</RouterLink>
-    <p v-if="demo" class="model-warning">目录连接暂不可用，当前展示演示资料；恢复连接后才能在线调用。</p>
     <section class="text-model-heading">
       <ModelLogo :owner="model.owner" :provider="model.provider" :name="model.name" :accent="model.accent" :size="80" />
       <div class="text-model-summary"><h1>{{ model.name }}</h1><p>{{ model.provider }} / {{ model.type === 'video' ? '视频模型' : model.type === 'image' ? '图像模型' : '文字模型' }}</p><p class="model-description-copy">{{ t(model.descriptionKey) }}</p><div class="model-capabilities"><span>{{ model.type === 'video' ? '视频生成' : model.type === 'image' ? '图像生成' : '文本生成' }}</span><span v-for="capability in model.capabilities" :key="capability">{{ t(`modelDetail.capability.${capability}`) }}</span></div></div>
@@ -63,7 +62,7 @@ onBeforeUnmount(() => controller?.abort())
         <form class="model-input-panel" @submit.prevent="run">
           <header><label for="model-prompt">提示词</label><button type="button" :disabled="pending || !prompt" @click="prompt = ''"><Trash2 :size="15" />清空</button></header>
           <div class="model-prompt-wrap"><textarea id="model-prompt" v-model="prompt" maxlength="8000" :disabled="pending" placeholder="请帮我写一份产品需求文档（PRD），主题是「学生个人知识库应用」。包含背景、核心功能和用户流程，使用 Markdown 输出。" /><span>{{ prompt.length }} / 8000</span></div>
-          <footer><div><span>当前模型</span><code>{{ model.slug }}</code></div><button class="model-run" type="submit" :disabled="pending || demo || (!!authState.user && !prompt.trim())"><LoaderCircle v-if="pending" :size="17" class="spin" /><Play v-else :size="17" />{{ pending ? '正在调用…' : authState.user ? '开始调用' : '登录后调用' }}</button></footer>
+          <footer><div><span>当前模型</span><code>{{ model.slug }}</code></div><button class="model-run" type="submit" :disabled="pending || (!!authState.user && !prompt.trim())"><LoaderCircle v-if="pending" :size="17" class="spin" /><Play v-else :size="17" />{{ pending ? '正在调用…' : authState.user ? '开始调用' : '登录后调用' }}</button></footer>
           <p class="model-call-note">使用当前工作区，单次最多输出 2,048 Tokens，实际用量记入调用日志。</p>
         </form>
         <article class="model-output-panel"><header><h2>输出结果</h2><button :disabled="!output" @click="copy(output, 'output')"><Copy :size="15" />{{ copied === 'output' ? '已复制' : '复制' }}</button></header><div class="model-output" aria-live="polite" :aria-busy="pending"><div v-if="pending" class="model-output-empty"><LoaderCircle class="spin" :size="27" /><strong>模型正在思考</strong><p>正在等待模型返回结果…</p></div><div v-else-if="error" class="model-output-empty model-error" role="alert"><strong>调用未完成</strong><p>{{ error }}</p><RouterLink to="/console/models">检查工作区模型配置 <ArrowRight :size="14" /></RouterLink></div><pre v-else-if="output">{{ output }}</pre><div v-else class="model-output-empty"><FileText :size="32" /><strong>暂无输出结果</strong><p>在左侧输入提示词并点击「开始调用」，<br />即可在这里查看模型的回复内容。</p></div></div><p v-if="usage" class="model-call-note">本次用量：{{ usage }}</p></article>

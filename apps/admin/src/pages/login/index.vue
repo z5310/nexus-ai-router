@@ -7,8 +7,8 @@ import { signIn } from '../../lib/auth'
 
 const route = useRoute()
 const router = useRouter()
-const email = ref('admin@nexus.cn')
-const password = ref('Nexus@123456')
+const email = ref('')
+const password = ref('')
 const loading = ref(false)
 const error = ref(route.query.forbidden ? '当前账户没有平台管理权限' : '')
 async function submit() { error.value = ''; loading.value = true; try { const user = await signIn(email.value, password.value); if (user.role !== 'admin') throw new Error('当前账户没有平台管理权限'); await router.replace('/admin') } catch (reason) { error.value = reason instanceof Error ? reason.message : '登录失败' } finally { loading.value = false } }

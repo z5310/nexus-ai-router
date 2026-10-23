@@ -33,15 +33,25 @@ export class ModelsService {
   }
 
   async rankings(query: ListRankingsQuery): Promise<RankingListResponse> {
-    const entities = await this.models.rankings(query)
+    const [entities, activity] = await Promise.all([this.models.rankings(query), this.models.activity()])
     const metric = query.metric
+    const activityByModel = new Map(activity.map((item) => [item.publicId, item]))
+    const totalCalls7d = activity.reduce((sum, item) => sum + item.calls7d, 0)
     return {
-      data: entities.map((entity, index) => ({
-        ...this.mapModel(entity),
-        rank: index + 1,
-        metric,
-        metricScore: this.metricScore(entity, metric),
-      })),
+      data: entities.map((entity, index) => {
+        const usage = activityByModel.get(entity.publicId) ?? { calls7d: 0, callsPrevious7d: 0 }
+        return {
+          ...this.mapModel(entity),
+          rank: index + 1,
+          metric,
+          metricScore: this.metricScore(entity, metric),
+          calls7d: usage.calls7d,
+          usageShare: totalCalls7d === 0 ? 0 : Number(((usage.calls7d / totalCalls7d) * 100).toFixed(1)),
+          weeklyGrowth: usage.callsPrevious7d === 0
+            ? null
+            : Number((((usage.calls7d - usage.callsPrevious7d) / usage.callsPrevious7d) * 100).toFixed(1)),
+        }
+      }),
       metric,
       updatedAt: new Date().toISOString(),
     }

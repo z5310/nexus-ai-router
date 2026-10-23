@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useQuery } from '@tanstack/vue-query'
+import type { CatalogModel } from '@gateway/contracts'
 import { motion } from 'motion-v'
 import { ArrowRight, ArrowUpRight, CircleDollarSign, Gauge, Route, Search, ShieldCheck, Zap } from 'lucide-vue-next'
 import BorderGlow from './cmp/BorderGlow.vue'
@@ -11,8 +13,10 @@ import LogoLoop from './cmp/LogoLoop.vue'
 import ModelLogo from '../../components/ModelLogo.vue'
 import SiteHeader from '../../components/SiteHeader.vue'
 import StarBorder from './cmp/StarBorder.vue'
+import { getHomeData } from './api'
 
 const { t } = useI18n()
+const homeQuery = useQuery({ queryKey: ['home-data'], queryFn: ({ signal }) => getHomeData(signal), staleTime: 60_000, retry: 1 })
 const codeSample = `curl https://api.nexus.cn/v1/chat/completions \\
   -H "Authorization: Bearer $NEXUS_KEY" \\
   -d '{ "model": "nexus/auto", "messages": [...] }'`
@@ -48,27 +52,22 @@ const startTyping = () => {
 onMounted(startTyping)
 onBeforeUnmount(() => window.clearTimeout(typingTimer))
 const features = computed(() => [
-  { icon: Route, title: t('home.feature1'), text: t('home.feature1Desc'), stat: '99.99%', label: t('home.availability') },
-  { icon: Gauge, title: t('home.feature2'), text: t('home.feature2Desc'), stat: '< 30s', label: t('home.refresh') },
-  { icon: ShieldCheck, title: t('home.feature3'), text: t('home.feature3Desc'), stat: 'AES-256', label: t('home.encryption') },
-  { icon: CircleDollarSign, title: t('home.feature4'), text: t('home.feature4Desc'), stat: '100%', label: t('home.traceable') },
+  { icon: Route, title: t('home.feature1'), text: t('home.feature1Desc'), label: t('home.availability') },
+  { icon: Gauge, title: t('home.feature2'), text: t('home.feature2Desc'), label: t('home.refresh') },
+  { icon: ShieldCheck, title: t('home.feature3'), text: t('home.feature3Desc'), label: t('home.encryption') },
+  { icon: CircleDollarSign, title: t('home.feature4'), text: t('home.feature4Desc'), label: t('home.traceable') },
 ])
 
-const deals = [
-  { name: 'GPT-6.1 Sol', owner: 'openai', provider: 'OpenAI', color: '#d4e2d8', saving: '31%', input: '¥8.40', oldInput: '¥12.00', output: '¥42.00', oldOutput: '¥60.00' },
-  { name: 'Claude Sonnet 5.5', owner: 'anthropic', provider: 'Anthropic', color: '#e7a27a', saving: '18%', input: '¥21.00', oldInput: '¥25.60', output: '¥105.00', oldOutput: '¥128.00' },
-  { name: 'DeepSeek V4.1 Flash', owner: 'deepseek', provider: 'DeepSeek', color: '#8b9cff', saving: '40%', input: '¥1.80', oldInput: '¥3.00', output: '¥7.20', oldOutput: '¥12.00' },
-  { name: 'Qwen 3.8 Max', owner: 'alibaba', provider: 'Qwen', color: '#a991ff', saving: '35%', input: '¥4.20', oldInput: '¥6.46', output: '¥16.80', oldOutput: '¥25.85' },
-  { name: 'Gemini 3 Flash', owner: 'google', provider: 'Google', color: '#72c7ff', saving: '49%', input: '¥0.70', oldInput: '¥1.37', output: '¥3.50', oldOutput: '¥6.86' },
-  { name: 'MiniMax M2.5', owner: 'minimax', provider: 'MiniMax', color: '#65e2a2', saving: '26%', input: '¥2.60', oldInput: '¥3.51', output: '¥10.40', oldOutput: '¥14.05' },
-]
-
+const deals = computed(() => homeQuery.data.value?.models.data ?? [])
+const rankings = computed(() => homeQuery.data.value?.rankings.data ?? [])
 const dealSearch = ref('')
 const filteredDeals = computed(() => {
   const keyword = dealSearch.value.trim().toLowerCase()
-  if (!keyword) return deals
-  return deals.filter((deal) => `${deal.provider} ${deal.name}`.toLowerCase().includes(keyword))
+  if (!keyword) return deals.value
+  return deals.value.filter((deal) => `${deal.provider} ${deal.name}`.toLowerCase().includes(keyword))
 })
+const formatPrice = (value: number | null) => value === null ? '—' : `¥${value.toFixed(2)}`
+const unitLabel = (unit: CatalogModel['priceUnit']) => ({ million_tokens: t('home.perMillion'), image: t('common.types.image'), second: t('common.types.video'), '10k_chars': t('common.types.audio') })[unit]
 </script>
 
 <template>
@@ -125,25 +124,27 @@ const filteredDeals = computed(() => {
 
       <section v-reveal class="deals-section" :aria-label="t('home.deals')">
         <div class="deals-heading">
-          <div><i /><b>{{ t('home.deals') }}</b><span>61</span></div>
+          <div><i /><b>{{ t('home.deals') }}</b><span>{{ homeQuery.data.value?.models.pagination.total ?? 0 }}</span></div>
           <div class="deals-actions"><label><Search :size="16" /><input v-model="dealSearch" :placeholder="t('home.searchModel')" /></label><RouterLink to="/models">{{ t('home.viewAll') }} <ArrowRight :size="15" /></RouterLink></div>
         </div>
         <div class="deals-grid-bg">
+          <div v-if="homeQuery.isLoading.value" class="data-state-banner">{{ t('common.loading') }}</div>
+          <div v-else-if="homeQuery.isError.value" class="data-state-banner warning">{{ t('common.loadError') }}</div>
           <LogoLoop v-if="filteredDeals.length" :logos="filteredDeals" :speed="34" direction="left" :gap="18" :pause-on-hover="true" :fade-out="true" fade-out-color="#08130e" :aria-label="`${t('home.deals')} 1`">
             <template #renderItem="{ item }">
               <article class="deal-card">
-                <div class="deal-card-top"><ModelLogo :owner="item.owner" :provider="item.provider" :name="item.name" :accent="item.color" :size="42" /><div><small>{{ item.provider }}</small><h3>{{ item.name }}</h3></div><b>{{ t('home.save') }} {{ item.saving }}</b></div>
-                <div class="deal-prices"><span><small>{{ t('home.input') }}</small><strong>{{ item.input }}</strong><del>{{ item.oldInput }}</del></span><span><small>{{ t('home.output') }}</small><strong>{{ item.output }}</strong><del>{{ item.oldOutput }}</del></span></div>
-                <footer><span>{{ t('home.perMillion') }}</span><RouterLink to="/models">{{ t('home.viewModel') }} <ArrowRight :size="14" /></RouterLink></footer>
+                <div class="deal-card-top"><ModelLogo :owner="item.owner" :provider="item.provider" :name="item.name" :accent="item.accent" :size="42" /><div><small>{{ item.provider }}</small><h3>{{ item.name }}</h3></div><b>{{ t(`common.types.${item.type}`) }}</b></div>
+                <div class="deal-prices"><span><small>{{ t('home.input') }}</small><strong>{{ formatPrice(item.inputPrice) }}</strong></span><span><small>{{ t('home.output') }}</small><strong>{{ formatPrice(item.outputPrice) }}</strong></span></div>
+                <footer><span>{{ unitLabel(item.priceUnit) }}</span><RouterLink :to="`/models/${item.slug}`">{{ t('home.viewModel') }} <ArrowRight :size="14" /></RouterLink></footer>
               </article>
             </template>
           </LogoLoop>
           <LogoLoop v-if="filteredDeals.length" :logos="filteredDeals.slice().reverse()" :speed="28" direction="right" :gap="18" :pause-on-hover="true" :fade-out="true" fade-out-color="#08130e" :aria-label="`${t('home.deals')} 2`">
             <template #renderItem="{ item }">
               <article class="deal-card">
-                <div class="deal-card-top"><ModelLogo :owner="item.owner" :provider="item.provider" :name="item.name" :accent="item.color" :size="42" /><div><small>{{ item.provider }}</small><h3>{{ item.name }}</h3></div><b>{{ t('home.save') }} {{ item.saving }}</b></div>
-                <div class="deal-prices"><span><small>{{ t('home.input') }}</small><strong>{{ item.input }}</strong><del>{{ item.oldInput }}</del></span><span><small>{{ t('home.output') }}</small><strong>{{ item.output }}</strong><del>{{ item.oldOutput }}</del></span></div>
-                <footer><span>{{ t('home.perMillion') }}</span><RouterLink to="/models">{{ t('home.viewModel') }} <ArrowRight :size="14" /></RouterLink></footer>
+                <div class="deal-card-top"><ModelLogo :owner="item.owner" :provider="item.provider" :name="item.name" :accent="item.accent" :size="42" /><div><small>{{ item.provider }}</small><h3>{{ item.name }}</h3></div><b>{{ t(`common.types.${item.type}`) }}</b></div>
+                <div class="deal-prices"><span><small>{{ t('home.input') }}</small><strong>{{ formatPrice(item.inputPrice) }}</strong></span><span><small>{{ t('home.output') }}</small><strong>{{ formatPrice(item.outputPrice) }}</strong></span></div>
+                <footer><span>{{ unitLabel(item.priceUnit) }}</span><RouterLink :to="`/models/${item.slug}`">{{ t('home.viewModel') }} <ArrowRight :size="14" /></RouterLink></footer>
               </article>
             </template>
           </LogoLoop>
@@ -171,7 +172,7 @@ const filteredDeals = computed(() => {
             v-reveal="{ delay: index * 75 }"
           >
             <div class="feature-top"><span><component :is="feature.icon" :size="19" /></span><small>{{ feature.label }}</small></div>
-            <h3>{{ feature.title }}</h3><p>{{ feature.text }}</p><strong>{{ feature.stat }}</strong>
+            <h3>{{ feature.title }}</h3><p>{{ feature.text }}</p>
           </BorderGlow>
         </div>
       </section>
@@ -184,9 +185,9 @@ const filteredDeals = computed(() => {
           <RouterLink class="text-link" to="/models">{{ t('home.browse') }} <ArrowRight :size="15" /></RouterLink>
         </div>
         <div class="model-stack">
-          <article><ModelLogo owner="openai" provider="OpenAI" name="GPT-6.1 Sol" accent="#d8e8dd" :size="38" /><div><b>GPT-6.1 Sol</b><small>{{ t('home.rankTags.gpt') }}</small></div><strong>96.8</strong></article>
-          <article><ModelLogo owner="anthropic" provider="Anthropic" name="Claude Sonnet 5.5" accent="#d97757" :size="38" /><div><b>Claude Sonnet 5.5</b><small>{{ t('home.rankTags.claude') }}</small></div><strong>95.9</strong></article>
-          <article><ModelLogo owner="deepseek" provider="DeepSeek" name="DeepSeek V4.1 Flash" accent="#5b79ff" :size="38" /><div><b>DeepSeek V4.1 Flash</b><small>{{ t('home.rankTags.deepseek') }}</small></div><strong>92.6</strong></article>
+          <article v-for="model in rankings" :key="model.id"><ModelLogo :owner="model.owner" :provider="model.provider" :name="model.name" :accent="model.accent" :size="38" /><div><b>{{ model.name }}</b><small>{{ model.provider }} · {{ t(`common.types.${model.type}`) }}</small></div><strong>{{ model.metricScore }}</strong></article>
+          <div v-if="homeQuery.isLoading.value" class="data-state-banner">{{ t('common.loading') }}</div>
+          <div v-else-if="homeQuery.isError.value" class="data-state-banner warning">{{ t('common.loadError') }}</div>
           <RouterLink class="ranking-callout" to="/rankings"><span>{{ t('home.weeklyRank') }}</span><ArrowUpRight :size="18" /></RouterLink>
         </div>
       </section>

@@ -1,15 +1,13 @@
 <script setup lang="ts">
 import { Network, Zap } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
+import type { CatalogModel } from '@gateway/contracts'
 import ModelLogo from '../../../components/ModelLogo.vue'
 
 const { t } = useI18n()
 
-const providers = [
-  { key: 'openai', owner: 'openai', provider: 'OpenAI', name: 'GPT-6.1 Sol', accent: '#d8e8dd', position: 'primary' },
-  { key: 'claude', owner: 'anthropic', provider: 'Anthropic', name: 'Claude', accent: '#d97757', position: 'top' },
-  { key: 'deepseek', owner: 'deepseek', provider: 'DeepSeek', name: 'DeepSeek', accent: '#5b79ff', position: 'bottom' },
-] as const
+const props = defineProps<{ models: CatalogModel[] }>()
+const positions = ['primary', 'top', 'bottom'] as const
 </script>
 
 <template>
@@ -54,19 +52,19 @@ const providers = [
       </div>
 
       <div
-        v-for="provider in providers"
-        :key="provider.key"
-        :class="['provider-node', `provider-node--${provider.position}`]"
+        v-for="(provider, index) in props.models"
+        :key="provider.id"
+        :class="['provider-node', `provider-node--${positions[index]}`]"
       >
         <ModelLogo
           :owner="provider.owner"
           :provider="provider.provider"
           :name="provider.name"
           :accent="provider.accent"
-          :size="provider.position === 'primary' ? 38 : 30"
+          :size="index === 0 ? 38 : 30"
         />
-        <span><strong>{{ provider.name }}</strong><small>{{ provider.position === 'primary' ? t('catalog.selectedRoute') : provider.provider }}</small></span>
-        <i v-if="provider.position === 'primary'" />
+        <span><strong>{{ provider.name }}</strong><small>{{ index === 0 ? t('catalog.selectedRoute') : provider.provider }}</small></span>
+        <i v-if="index === 0" />
       </div>
     </div>
 

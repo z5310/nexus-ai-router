@@ -11,6 +11,7 @@
     "test:traffic-control": "node test/traffic-control.integration.cjs",
     "test:inference-concurrency": "node test/inference-concurrency.integration.cjs",
     "test:trusted-proxy": "node test/trusted-proxy.test.cjs",
+    "test:catalog": "node test/catalog.integration.cjs",
     "dev": "nest start --watch",
     "start:dev": "nest start --watch",
     "start:prod": "node dist/main.js",
