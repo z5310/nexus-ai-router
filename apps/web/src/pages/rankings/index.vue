@@ -134,7 +134,7 @@ const updatedAt = computed(() => {
                 </td>
                 <td>¥{{ row.costPerTask.toFixed(2) }}</td><td>{{ speedLabel(row.latencyMs) }}</td><td>{{ contextLabel(row.context) }}</td>
                 <td><span :class="['trend', { down: (row.trend ?? 0) < 0 }]" v-if="row.trend !== null"><ArrowDown v-if="row.trend < 0" :size="12" /><ArrowUp v-else :size="12" />{{ Math.abs(row.trend) }}</span><span v-else>—</span></td>
-                <td><a href="/console" target="_blank" rel="noopener noreferrer">{{ t('common.try') }} <ArrowRight :size="13" /></a></td>
+                <td><RouterLink :to="{ path: `/models/${row.slug}`, query: { tab: 'playground' } }">{{ t('common.try') }} <ArrowRight :size="13" /></RouterLink></td>
               </tr>
             </tbody>
           </table>
