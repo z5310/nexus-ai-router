@@ -35,13 +35,17 @@ npm run db:migrate
 | 方法 | 路径 | 能力 |
 | --- | --- | --- |
 | `GET` | `/api/health` | API 存活探针 |
-| `GET` | `/api/ready` | PostgreSQL 就绪探针 |
+| `GET` | `/api/ready` | PostgreSQL 与 Redis 就绪探针 |
 | `GET` | `/api/models` | 模型搜索、类型/供应商筛选、评分/速度/价格排序与分页 |
 | `GET` | `/api/models/:publicId` | 模型详情，包含价格、能力、评分和状态 |
 | `GET` | `/api/rankings` | 按综合、编码、成本、速度指标排行 |
 | `GET` | `/api/dashboard/overview` | 用量指标、24 小时趋势、余额和最近请求 |
 | `GET` | `/api/dashboard/requests` | 按请求 ID 或模型检索调用记录 |
 | `GET` | `/api/workspaces` | 查询当前用户可访问的工作区与工作区角色 |
+| `GET/PATCH` | `/api/workspaces/current` | 读取或修改当前工作区名称和默认展示币种 |
+| `GET` | `/api/workspaces/current/members` | 查询当前工作区成员 |
+| `PATCH/DELETE` | `/api/workspaces/current/members/:id` | 修改成员角色或移除成员，并撤销失效权限与密钥 |
+| `GET/PATCH` | `/api/workspaces/current/ip-policy` | 读取或修改 API Key 来源 IP 允许列表 |
 | `GET/POST` | `/api/console/models` | 查询或添加当前工作区模型配置 |
 | `PATCH/DELETE` | `/api/console/models/:id` | 修改或移除当前工作区模型配置 |
 | `GET/POST` | `/api/console/routes` | 查询或创建当前工作区路由规则 |
@@ -68,6 +72,9 @@ npm run db:migrate
 | `GET` | `/api/admin/models` | 管理员检索、筛选和分页查看模型配置 |
 | `GET` | `/api/admin/models/summary` | 模型、供应商和运行状态统计 |
 | `PATCH` | `/api/admin/models/:id` | 修改模型上架、推荐和运行状态 |
+| `GET/POST` | `/api/admin/provider-credentials` | 查询或创建加密的供应商凭证元数据 |
+| `PATCH/DELETE` | `/api/admin/provider-credentials/:id` | 轮换、启停或删除供应商凭证 |
+| `POST` | `/api/console/playground/chat` | 使用当前工作区权限进行文字模型在线调用 |
 | `GET` | `/v1/models` | API Key 鉴权的当前工作区 OpenAI 兼容模型列表 |
 | `POST` | `/v1/chat/completions` | API Key 鉴权的 OpenAI 兼容模型调用，支持 JSON 与 SSE 流式响应 |
 
@@ -93,7 +100,7 @@ Swagger 文档位于 `http://localhost:3000/docs`。接口错误统一返回 Pro
 | --- | --- |
 | `/` | 首页，已完成 |
 | `/models` | 模型搜索、筛选、排序，已接模型目录 API |
-| `/models/:provider/:model` | 模型详情，已接详情 API并支持演示数据回退 |
+| `/models/:provider/:model` | 模型详情，已接数据库目录详情 API |
 | `/rankings` | 分类 Top 5、综合/使用率/7 日热度专项榜与四种完整指标排行，已接排行 API |
 | `/docs` | 独立开发文档页 |
 | `/login` | 邮箱密码、GitHub 和 Google 登录，会话恢复与角色分流 |
@@ -107,8 +114,8 @@ Swagger 文档位于 `http://localhost:3000/docs`。接口错误统一返回 Pro
 | `/console/routes` | 路由规则查询、新建、编辑、启停与删除，已接真实 CRUD API |
 | `/console/keys` | 密钥命名创建、仅显示一次、查询与撤销，已接真实 CRUD API |
 | `/console/billing` | 账单与余额 UI；待接账单 API |
-| `/console/members` | 工作区成员 UI；平台级账号与 RBAC 由 `/admin` 管理 |
-| `/console/settings` | 工作区与安全设置 UI；待接设置 API |
+| `/console/members` | 工作区成员读取、改角色和移除；邀请与所有权转移待开发 |
+| `/console/settings` | 已接工作区资料与 API 来源 IP 允许列表；完整审计待开发 |
 
 ## 工程结构
 
@@ -131,7 +138,7 @@ Swagger 文档位于 `http://localhost:3000/docs`。接口错误统一返回 Pro
 
 Turbo 负责跨项目依赖顺序、并行运行和构建缓存。根目录 `npm run dev` 会同时启动 API、Web 和 Admin；每个应用仍保留独立运行命令。
 
-完整的能力盘点、接口状态与 P0/P1/P2 规划见 [产品路线图](docs/product-roadmap.md)。面向高并发、安全、性能、高可用和长期维护的技术演进方案见 [架构审计与演进方案](docs/architecture-evolution-plan.md)。本轮实施进度见 [开发清单](docs/development-checklist.md)，多供应商调用层决策见 [多模型供应商网关选型](docs/llm-provider-gateway-selection.md)。
+完整的能力盘点、接口状态与 P0/P1/P2 规划见 [产品路线图](docs/product-roadmap.md)。后端接口的实际完成度、缺口和建议新增入口见 [后端接口完成度与缺口清单](docs/backend-api-gap-audit.md)。面向高并发、安全、性能、高可用和长期维护的技术演进方案见 [架构审计与演进方案](docs/architecture-evolution-plan.md)。本轮实施进度见 [开发清单](docs/development-checklist.md)，多供应商调用层决策见 [多模型供应商网关选型](docs/llm-provider-gateway-selection.md)。
 
 ## 第三方登录配置
 
@@ -148,7 +155,7 @@ GOOGLE_CLIENT_SECRET=...
 
 密码登录连续失败 5 次后会锁定 15 分钟。密码重置凭证有效期为 15 分钟、只能使用一次；重置或修改密码会撤销该账户的全部刷新会话。开发环境的找回密码响应会包含 `debugToken` 方便本地联调，生产环境不会返回该字段，部署时应将重置凭证交给邮件服务发送。
 
-刷新会话在 PostgreSQL 事务内轮换，继承原登录的绝对过期时间。重复使用已轮换令牌会撤销该登录链的全部刷新会话，其他设备不受影响。前端通过 Web Locks 串行化同源标签页的刷新请求，并合并单页面请求；不支持 Web Locks 时仅合并单页面请求。不同端口或域名不共享锁，Web/Admin 跨源同时使用同一 Cookie 仍有冲突风险。既有访问令牌仍按原 15 分钟有效期失效，当前 JWT guard 不查询会话撤销状态。
+刷新会话在 PostgreSQL 事务内轮换，继承原登录的绝对过期时间。重复使用已轮换令牌会撤销该登录链的全部刷新会话，其他设备不受影响。前端通过 Web Locks 串行化同源标签页的刷新请求，并合并单页面请求；不支持 Web Locks 时仅合并单页面请求。不同端口或域名不共享锁，Web/Admin 跨源同时使用同一 Cookie 仍有冲突风险。访问请求会按 `sid + sub` 查询当前有效会话和用户状态，因此会话撤销、密码重置、账户停用和角色变更会从下一次请求生效。
 
 前端刷新协调逻辑测试：`npm run test:refresh -w @gateway/ui`。测试覆盖单页面请求合并、失败后再次刷新和模拟同源标签页的串行轮换；真实浏览器与后端联调待数据库恢复后验证。
 
