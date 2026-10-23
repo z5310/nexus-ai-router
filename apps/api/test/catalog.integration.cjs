@@ -18,6 +18,9 @@ async function main() {
 
     const detail = await service.detail(catalog.data[0].slug)
     assert.equal(detail.id, catalog.data[0].id)
+    assert.ok(detail.originalInputPrice >= detail.inputPrice)
+    assert.ok(detail.discountPercent >= 0 && detail.discountPercent <= 100)
+    assert.ok(Date.parse(detail.priceEffectiveFrom) > 0)
 
     const ranking = await service.rankings({ metric: 'overall', limit: 100 })
     assert.equal(ranking.data.length, catalog.data.length)

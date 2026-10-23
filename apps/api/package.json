@@ -15,6 +15,7 @@
     "test:provider-routing": "node test/provider-routing.integration.cjs",
     "test:trusted-proxy": "node test/trusted-proxy.test.cjs",
     "test:catalog": "node test/catalog.integration.cjs",
+    "test:model-pricing": "node test/model-pricing.integration.cjs",
     "dev": "nest start --watch",
     "start:dev": "nest start --watch",
     "start:prod": "node dist/main.js",

@@ -30,6 +30,18 @@ export class ModelEntity {
   @Column({ name: 'output_price', type: 'numeric', precision: 12, scale: 4, nullable: true })
   outputPrice: string | null
 
+  @Column({ name: 'original_input_price', type: 'numeric', precision: 12, scale: 4, default: 0 })
+  originalInputPrice: string
+
+  @Column({ name: 'original_output_price', type: 'numeric', precision: 12, scale: 4, nullable: true })
+  originalOutputPrice: string | null
+
+  @Column({ name: 'discount_percent', type: 'numeric', precision: 5, scale: 2, default: 0 })
+  discountPercent: string
+
+  @Column({ name: 'price_effective_from', type: 'timestamptz', default: () => 'now()' })
+  priceEffectiveFrom: Date
+
   @Column({ name: 'price_unit', length: 30, default: 'million_tokens' })
   priceUnit: 'million_tokens' | 'image' | 'second' | '10k_chars'
 

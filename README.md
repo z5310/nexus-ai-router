@@ -37,7 +37,7 @@ npm run db:migrate
 | `GET` | `/api/health` | API 存活探针 |
 | `GET` | `/api/ready` | PostgreSQL 与 Redis 就绪探针 |
 | `GET` | `/api/models` | 模型搜索、类型/供应商筛选、评分/速度/价格排序与分页 |
-| `GET` | `/api/models/:publicId` | 模型详情，包含价格、能力、评分和状态 |
+| `GET` | `/api/models/:publicId` | 模型详情，包含成交价、原价、折扣、价格生效时间、能力、评分和状态 |
 | `GET` | `/api/rankings` | 按综合、编码、成本、速度指标排行 |
 | `GET` | `/api/dashboard/overview` | 用量指标、24 小时趋势、余额和最近请求 |
 | `GET` | `/api/dashboard/requests` | 按请求 ID 或模型检索调用记录 |
@@ -73,6 +73,7 @@ npm run db:migrate
 | `GET` | `/api/admin/models` | 管理员检索、筛选和分页查看模型配置 |
 | `GET` | `/api/admin/models/summary` | 模型、供应商和运行状态统计 |
 | `PATCH` | `/api/admin/models/:id` | 修改模型上架、推荐和运行状态 |
+| `GET/PUT` | `/api/admin/models/:id/pricing` | 查询价格历史或立即发布新的原价、折扣和成交价版本 |
 | `GET/POST` | `/api/admin/provider-credentials` | 查询或创建加密的供应商凭证元数据 |
 | `PATCH/DELETE` | `/api/admin/provider-credentials/:id` | 轮换、启停或删除供应商凭证 |
 | `POST` | `/api/console/playground/chat` | 使用当前工作区权限进行文字模型在线调用 |
@@ -179,6 +180,10 @@ GOOGLE_CLIENT_SECRET=...
 平台管理员通过 `/api/admin/provider-channels` 管理渠道，通过 `/api/admin/model-deployments` 将平台模型映射到渠道和上游模型 ID。渠道保存环境、区域、超时、最大并发和健康状态；模型部署保存优先级、权重与启停状态。Admin 页面入口为 `http://localhost:5174/admin/channels`。
 
 推理时先执行工作区模型规则，再在模型内部按渠道健康度、优先级和基于请求 ID 的稳定权重选择部署。连续三次失败会把渠道置为 `unhealthy` 并冷却 60 秒，成功后恢复；工作区和渠道分别使用 Redis 并发租约。数据面仅接收渠道/部署标识，数据库中的解密凭证尚未接入外部出站。
+
+## 模型价格版本
+
+平台管理员在 `http://localhost:5174/admin/models` 的“配置价格”弹窗中维护输入/输出原价、折扣比例和计价单位。后端按固定四位小数计算成交价，并在同一事务中关闭旧版本、创建新版本和更新模型当前价格投影。首页、模型广场和详情页只读取 API 返回的当前价格；有折扣时展示划线原价和折扣比例。当前版本立即生效，预约生效、请求级价格版本快照、账本和预算预占仍属于后续计费阶段。
 
 ## 本地演示身份
 

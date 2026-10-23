@@ -338,6 +338,11 @@
 .model-cell > div, .person > div { display: flex; flex-direction: column; gap: 3px; }
 .model-cell b, .person b { color: #ffffff; font-size: 13px; }
 .model-cell small, .person small { color: #a6b5ab; font-size: 13px; line-height: 1.6; }
+.price-cell { display: flex; align-items: baseline; gap: 6px; }
+.price-cell del { color: #65736a; font-size: 12px; }
+.price-cell small { color: #79d896; font-size: 11px; }
+.pricing-button { min-height: 30px; padding: 0 10px; color: #0a120d; border: 0; border-radius: 7px; background: #DCE7DE; font-size: 12px; font-weight: 700; }
+.pricing-button:hover { filter: brightness(1.05); }
 
 .person > span {
   width: 30px;

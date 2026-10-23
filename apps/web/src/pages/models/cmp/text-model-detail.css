@@ -12,6 +12,7 @@ h1 { margin:0 0 8px; font-size:34px; line-height:1.2; letter-spacing:-.03em; }
 .text-model-prices span { font-size:13px; color:#a6b5ab; }
 .text-model-prices p { margin:7px 0 0; font-size:13px; color:#a6b5ab; white-space:nowrap; }
 .text-model-prices strong { font-size:24px; color:#fff; }
+.text-model-prices del { margin-left:8px; color:#607067; font-size:12px; }.text-model-prices > em { align-self:center; padding:4px 7px; color:#9de9b5; border-radius:99px; background:rgba(99,228,149,.09); font-size:9px; font-style:normal; }
 .text-model-tabs { display:flex; gap:28px; margin-bottom:22px; border-bottom:1px solid #24372b; }
 .text-model-tabs button { padding:16px 24px; color:#afbeb4; background:none; border:0; border-bottom:3px solid transparent; font-size:15px; font-weight:650; }
 .text-model-tabs button.active { color:#63e495; border-bottom-color:#63e495; }

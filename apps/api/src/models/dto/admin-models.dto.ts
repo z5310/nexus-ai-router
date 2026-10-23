@@ -1,6 +1,6 @@
 import { Type } from 'class-transformer'
 import { ApiPropertyOptional } from '@nestjs/swagger'
-import { IsBoolean, IsEnum, IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator'
+import { IsBoolean, IsEnum, IsInt, IsNumber, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator'
 
 export class ListAdminModelsQuery {
   @ApiPropertyOptional()
@@ -38,4 +38,28 @@ export class UpdateAdminModelDto {
   @IsOptional()
   @IsEnum(['stable', 'observing'])
   status?: 'stable' | 'observing'
+}
+
+export class UpdateAdminModelPricingDto {
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 4 })
+  @Min(0)
+  @Max(99_999_999)
+  originalInputPrice: number
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 4 })
+  @Min(0)
+  @Max(99_999_999)
+  originalOutputPrice: number | null
+
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  @Max(100)
+  discountPercent: number
+
+  @IsEnum(['million_tokens', 'image', 'second', '10k_chars'])
+  priceUnit: 'million_tokens' | 'image' | 'second' | '10k_chars'
 }

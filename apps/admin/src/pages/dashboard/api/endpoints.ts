@@ -2,6 +2,7 @@ export const adminEndpoints = {
   modelSummary: '/api/admin/models/summary',
   models: '/api/admin/models',
   model: (id: string) => `/api/admin/models/${id}`,
+  modelPricing: (id: string) => `/api/admin/models/${id}/pricing`,
   userSummary: '/api/admin/users/summary',
   users: '/api/admin/users',
   credentials: '/api/admin/provider-credentials',

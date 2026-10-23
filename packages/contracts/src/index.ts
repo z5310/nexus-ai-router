@@ -85,6 +85,10 @@ export interface CatalogModel {
   descriptionKey: string
   inputPrice: number
   outputPrice: number | null
+  originalInputPrice: number
+  originalOutputPrice: number | null
+  discountPercent: number
+  priceEffectiveFrom: string
   priceUnit: 'million_tokens' | 'image' | 'second' | '10k_chars'
   latencyMs: number
   score: number
@@ -135,6 +139,41 @@ export interface AdminModelSummaryResponse {
   featured: number
   observing: number
   providers: number
+}
+
+export interface ModelPriceVersion {
+  id: string
+  modelId: string
+  inputPrice: number
+  outputPrice: number | null
+  originalInputPrice: number
+  originalOutputPrice: number | null
+  discountPercent: number
+  priceUnit: CatalogModel['priceUnit']
+  effectiveFrom: string
+  effectiveTo: string | null
+  createdAt: string
+}
+
+export interface ModelPricingResponse {
+  modelId: string
+  modelName: string
+  modelSlug: string
+  inputPrice: number
+  outputPrice: number | null
+  originalInputPrice: number
+  originalOutputPrice: number | null
+  discountPercent: number
+  priceUnit: CatalogModel['priceUnit']
+  effectiveFrom: string
+  versions: ModelPriceVersion[]
+}
+
+export interface UpdateModelPricingInput {
+  originalInputPrice: number
+  originalOutputPrice: number | null
+  discountPercent: number
+  priceUnit: CatalogModel['priceUnit']
 }
 
 export type ProviderEnvironment = 'development' | 'staging' | 'production'

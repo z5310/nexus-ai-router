@@ -134,7 +134,7 @@ const unitLabel = (unit: CatalogModel['priceUnit']) => ({ million_tokens: t('hom
             <template #renderItem="{ item }">
               <article class="deal-card">
                 <div class="deal-card-top"><ModelLogo :owner="item.owner" :provider="item.provider" :name="item.name" :accent="item.accent" :size="42" /><div><small>{{ item.provider }}</small><h3>{{ item.name }}</h3></div><b>{{ t(`common.types.${item.type}`) }}</b></div>
-                <div class="deal-prices"><span><small>{{ t('home.input') }}</small><strong>{{ formatPrice(item.inputPrice) }}</strong></span><span><small>{{ t('home.output') }}</small><strong>{{ formatPrice(item.outputPrice) }}</strong></span></div>
+                <div class="deal-prices"><span><small>{{ t('home.input') }}</small><strong>{{ formatPrice(item.inputPrice) }}</strong><del v-if="item.discountPercent>0">{{ formatPrice(item.originalInputPrice) }}</del><i v-if="item.discountPercent>0">-{{ item.discountPercent }}%</i></span><span><small>{{ t('home.output') }}</small><strong>{{ formatPrice(item.outputPrice) }}</strong><del v-if="item.discountPercent>0&&item.originalOutputPrice!==null">{{ formatPrice(item.originalOutputPrice) }}</del></span></div>
                 <footer><span>{{ unitLabel(item.priceUnit) }}</span><RouterLink :to="`/models/${item.slug}`">{{ t('home.viewModel') }} <ArrowRight :size="14" /></RouterLink></footer>
               </article>
             </template>
@@ -143,7 +143,7 @@ const unitLabel = (unit: CatalogModel['priceUnit']) => ({ million_tokens: t('hom
             <template #renderItem="{ item }">
               <article class="deal-card">
                 <div class="deal-card-top"><ModelLogo :owner="item.owner" :provider="item.provider" :name="item.name" :accent="item.accent" :size="42" /><div><small>{{ item.provider }}</small><h3>{{ item.name }}</h3></div><b>{{ t(`common.types.${item.type}`) }}</b></div>
-                <div class="deal-prices"><span><small>{{ t('home.input') }}</small><strong>{{ formatPrice(item.inputPrice) }}</strong></span><span><small>{{ t('home.output') }}</small><strong>{{ formatPrice(item.outputPrice) }}</strong></span></div>
+                <div class="deal-prices"><span><small>{{ t('home.input') }}</small><strong>{{ formatPrice(item.inputPrice) }}</strong><del v-if="item.discountPercent>0">{{ formatPrice(item.originalInputPrice) }}</del><i v-if="item.discountPercent>0">-{{ item.discountPercent }}%</i></span><span><small>{{ t('home.output') }}</small><strong>{{ formatPrice(item.outputPrice) }}</strong><del v-if="item.discountPercent>0&&item.originalOutputPrice!==null">{{ formatPrice(item.originalOutputPrice) }}</del></span></div>
                 <footer><span>{{ unitLabel(item.priceUnit) }}</span><RouterLink :to="`/models/${item.slug}`">{{ t('home.viewModel') }} <ArrowRight :size="14" /></RouterLink></footer>
               </article>
             </template>

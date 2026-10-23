@@ -1,4 +1,4 @@
-import type { AdminModel, AdminModelListResponse, AdminModelSummaryResponse, ModelDeployment, ModelDeploymentListResponse, ProviderChannel, ProviderChannelListResponse, ProviderCredentialListResponse, UserListResponse, UserSummaryResponse } from '@gateway/contracts'
+import type { AdminModel, AdminModelListResponse, AdminModelSummaryResponse, ModelDeployment, ModelDeploymentListResponse, ModelPricingResponse, ProviderChannel, ProviderChannelListResponse, ProviderCredentialListResponse, UpdateModelPricingInput, UserListResponse, UserSummaryResponse } from '@gateway/contracts'
 import { request } from '../../../lib/http'
 import { adminEndpoints } from './endpoints'
 import type { AdminListQuery, CreateModelDeploymentInput, CreateProviderChannelInput, CreateProviderCredentialInput } from './types'
@@ -8,6 +8,8 @@ export const getUserSummary = () => request<UserSummaryResponse>({ url: adminEnd
 export const getAdminModels = (params: AdminListQuery) => request<AdminModelListResponse>({ url: adminEndpoints.models, params })
 export const getAdminUsers = (params: AdminListQuery) => request<UserListResponse>({ url: adminEndpoints.users, params })
 export const updateAdminModel = (id: string, data: Partial<Pick<AdminModel, 'enabled' | 'featured' | 'status'>>) => request<AdminModel>({ method: 'PATCH', url: adminEndpoints.model(id), data })
+export const getModelPricing = (id: string) => request<ModelPricingResponse>({ url: adminEndpoints.modelPricing(id) })
+export const updateModelPricing = (id: string, data: UpdateModelPricingInput) => request<ModelPricingResponse>({ method: 'PUT', url: adminEndpoints.modelPricing(id), data })
 export const getProviderCredentials = () => request<ProviderCredentialListResponse>({ url: adminEndpoints.credentials })
 export const createProviderCredential = (data: CreateProviderCredentialInput) => request<ProviderCredentialListResponse['data'][number]>({ method: 'POST', url: adminEndpoints.credentials, data })
 export const updateProviderCredential = (id: string, data: { name?: string; apiKey?: string; enabled?: boolean }) => request<ProviderCredentialListResponse['data'][number]>({ method: 'PATCH', url: adminEndpoints.credential(id), data })
@@ -22,3 +24,4 @@ export const updateModelDeployment = (id: string, data: Partial<Pick<ModelDeploy
 export const deleteModelDeployment = (id: string) => request<void>({ method: 'DELETE', url: adminEndpoints.deployment(id) })
 export { adminEndpoints }
 export type * from './types'
+export type { AdminModel, ModelPricingResponse, UpdateModelPricingInput } from '@gateway/contracts'
