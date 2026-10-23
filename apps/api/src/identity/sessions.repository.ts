@@ -33,6 +33,13 @@ export class SessionsRepository {
     })
   }
 
+  findActiveById(id: string, userId: string): Promise<AuthSessionEntity | null> {
+    return this.repository.findOne({
+      where: { id, userId, revokedAt: IsNull(), expiresAt: MoreThan(new Date()) },
+      relations: { user: true },
+    })
+  }
+
   async rotate(tokenHash: string, nextHash: string, metadata: SessionMetadata): Promise<AuthSessionEntity | null> {
     return this.repository.manager.transaction(async (manager) => {
       const sessions = manager.getRepository(AuthSessionEntity)

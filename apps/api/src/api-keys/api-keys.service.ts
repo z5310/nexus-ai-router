@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common'
+import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common'
 import { createHash, randomBytes } from 'node:crypto'
 import type { ApiKeyListResponse, ApiKeyRecord, CreateApiKeyResponse } from '@gateway/contracts'
 import type { ApiKeyEntity } from '../database/entities/api-key.entity'
@@ -13,9 +13,8 @@ export class ApiKeysService {
   }
 
   async create(workspaceId: string, actorUserId: string, name: string): Promise<CreateApiKeyResponse> {
-    if (await this.keys.countActive(workspaceId) >= 20) throw new ConflictException('每个工作区最多保留 20 个有效密钥')
     const secret = `nxs_live_${randomBytes(24).toString('base64url')}`
-    const key = this.keys.create({
+    const result = await this.keys.createForAuthorizedMember(workspaceId, actorUserId, {
       userId: actorUserId,
       workspaceId,
       name: name.trim(),
@@ -25,7 +24,10 @@ export class ApiKeysService {
       lastUsedAt: null,
       revokedAt: null,
     })
-    return { ...this.map(await this.keys.save(key)), key: secret }
+    if (result.status === 'limit-reached') throw new ConflictException('每个工作区最多保留 20 个有效密钥')
+    if (result.status === 'workspace-unavailable') throw new ForbiddenException('工作区不可用')
+    if (result.status === 'membership-denied') throw new ForbiddenException('当前成员无权创建 API 密钥')
+    return { ...this.map(result.key), key: secret }
   }
 
   async revoke(workspaceId: string, id: string): Promise<void> {

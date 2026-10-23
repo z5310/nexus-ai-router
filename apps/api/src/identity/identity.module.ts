@@ -26,6 +26,6 @@ import { WorkspacesController } from '../workspaces/workspaces.controller'
   ],
   controllers: [AuthController, AdminUsersController, WorkspacesController],
   providers: [AuthService, UsersService, UsersRepository, SessionsRepository, ActionTokensRepository, PasswordService, JwtAuthGuard, RolesGuard],
-  exports: [JwtModule, JwtAuthGuard, RolesGuard, UsersService, WorkspacesModule],
+  exports: [JwtModule, JwtAuthGuard, RolesGuard, UsersService, SessionsRepository, WorkspacesModule],
 })
 export class IdentityModule {}

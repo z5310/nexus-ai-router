@@ -11,6 +11,7 @@ import { WorkspaceEntity } from '../database/entities/workspace.entity'
 import type { UpdateWorkspaceDto } from './update-workspace.dto'
 import type { UpdateIpPolicyDto } from './update-ip-policy.dto'
 import { parseNetwork } from './ip-policy'
+import { hasWorkspacePermissions } from './workspace-permissions'
 
 @Injectable()
 export class WorkspacesService {
@@ -88,6 +89,12 @@ export class WorkspacesService {
       if (target.role === 'owner' || target.userId === actorId) throw new ForbiddenException('不能通过此操作变更所有者或自身权限')
       if (actor.role === 'admin' && (target.role === 'admin' || role === 'admin')) throw new ForbiddenException('仅所有者可管理管理员')
       if (role) {
+        if (!hasWorkspacePermissions(role, ['keys:manage'])) {
+          await manager.getRepository(ApiKeyEntity).update(
+            { workspaceId, userId: target.userId, revokedAt: IsNull() },
+            { revokedAt: new Date() },
+          )
+        }
         await members.update(target.id, { role })
       } else {
         await manager.getRepository(ApiKeyEntity).update({ workspaceId, userId: target.userId, revokedAt: IsNull() }, { revokedAt: new Date() })

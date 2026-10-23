@@ -4,7 +4,9 @@
   "private": true,
   "scripts": {
     "test:members": "node test/member-management.integration.cjs",
+    "test:member-key-race": "node test/member-key-race.integration.cjs",
     "test:workspace-permissions": "node test/workspace-permissions.integration.cjs",
+    "test:access-revocation": "node test/access-revocation.integration.cjs",
     "test:session-rotation": "node test/session-rotation.integration.cjs",
     "dev": "nest start --watch",
     "start:dev": "nest start --watch",

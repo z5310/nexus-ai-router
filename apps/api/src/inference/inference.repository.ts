@@ -1,10 +1,11 @@
 import { Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { DataSource, IsNull, Repository } from 'typeorm'
+import { DataSource, Repository } from 'typeorm'
 import { ApiKeyEntity } from '../database/entities/api-key.entity'
 import { RequestLogEntity } from '../database/entities/request-log.entity'
 import { WorkspaceModelEntity } from '../database/entities/workspace-model.entity'
 import { WorkspaceEntity } from '../database/entities/workspace.entity'
+import { WorkspaceMemberEntity } from '../database/entities/workspace-member.entity'
 
 export interface RecordedInference {
   workspaceId: string
@@ -27,7 +28,17 @@ export class InferenceRepository {
   ) {}
 
   findActiveKey(keyHash: string): Promise<ApiKeyEntity | null> {
-    return this.keys.findOne({ where: { keyHash, revokedAt: IsNull() } })
+    return this.keys.createQueryBuilder('key')
+      .innerJoin(
+        WorkspaceMemberEntity,
+        'member',
+        'member.workspace_id = key.workspace_id AND member.user_id = key.user_id',
+      )
+      .where('key.key_hash = :keyHash', { keyHash })
+      .andWhere('key.revoked_at IS NULL')
+      .andWhere('member.status = :memberStatus', { memberStatus: 'active' })
+      .andWhere('member.role IN (:...authorizedRoles)', { authorizedRoles: ['owner', 'admin', 'developer'] })
+      .getOne()
   }
 
   workspacePolicy(id: string) {
