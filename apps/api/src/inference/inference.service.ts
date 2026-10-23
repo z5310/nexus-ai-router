@@ -9,6 +9,7 @@ import { PROVIDER_GATEWAY, type ProviderChatStream, type ProviderGateway } from 
 import { ConfigService } from '@nestjs/config'
 import { TrafficControlService, type TrafficLease } from '../traffic-control/traffic-control.service'
 import { RoutingExecutorService, type RoutingDecision } from './routing-executor.service'
+import { ProviderConfigurationService, type ResolvedProviderTarget } from '../providers/provider-configuration.service'
 
 export interface InferenceChatStream {
   chunks: AsyncIterable<OpenAIChatCompletionChunk>
@@ -25,6 +26,7 @@ export class InferenceService {
     private readonly traffic: TrafficControlService,
     private readonly config: ConfigService,
     private readonly routing: RoutingExecutorService,
+    private readonly deployments: ProviderConfigurationService,
   ) {}
 
   async chat(input: ChatCompletionDto, key: Pick<ApiKeyEntity, 'workspaceId' | 'userId'>, requestId: string = randomUUID()): Promise<OpenAIChatCompletionResponse> {
@@ -37,17 +39,28 @@ export class InferenceService {
     let lastError: unknown
 
     try {
-      for (const candidate of decision.candidates) {
+      candidateLoop: for (const candidate of decision.candidates) {
         selected = candidate
         await this.consumeModelRate(key.workspaceId, candidate)
-        const attemptStartedAt = performance.now()
-        try {
-          response = await this.provider.chat(input, this.target(candidate))
-          attempts.push(this.attempt(candidate, 'success', attemptStartedAt))
-          break
-        } catch (error) {
-          lastError = error
-          attempts.push(this.attempt(candidate, 'failed', attemptStartedAt, error))
+        for (const target of await this.deployments.resolveTargets(candidate.model, requestId)) {
+          const attemptStartedAt = performance.now()
+          let channelLease: TrafficLease | undefined
+          let providerCalled = false
+          try {
+            channelLease = await this.acquireChannelConcurrency(target)
+            providerCalled = true
+            response = await this.provider.chat(input, target)
+            attempts.push(this.attempt(candidate, target, 'success', attemptStartedAt))
+            await this.safeRecordResult(target)
+            break candidateLoop
+          } catch (error) {
+            lastError = error
+            const errorInfo = this.errorInfo(error)
+            attempts.push(this.attempt(candidate, target, 'failed', attemptStartedAt, error))
+            if (providerCalled) await this.safeRecordResult(target, errorInfo.code)
+          } finally {
+            await channelLease?.release()
+          }
         }
       }
 
@@ -101,33 +114,44 @@ export class InferenceService {
         await lease.release()
         throw error
       }
-      const attemptStartedAt = performance.now()
-      let providerStream: ProviderChatStream
-      try {
-        providerStream = await this.provider.streamChat(input, this.target(candidate), signal)
-      } catch (error) {
-        lastError = error
-        attempts.push(this.attempt(candidate, signal.aborted ? 'cancelled' : 'failed', attemptStartedAt, error))
-        if (signal.aborted) break
-        continue
-      }
+      for (const target of await this.deployments.resolveTargets(candidate.model, requestId)) {
+        const attemptStartedAt = performance.now()
+        let channelLease: TrafficLease | undefined
+        let providerCalled = false
+        let providerStream: ProviderChatStream
+        try {
+          channelLease = await this.acquireChannelConcurrency(target)
+          providerCalled = true
+          providerStream = await this.provider.streamChat(input, target, signal)
+        } catch (error) {
+          await channelLease?.release()
+          lastError = error
+          attempts.push(this.attempt(candidate, target, signal.aborted ? 'cancelled' : 'failed', attemptStartedAt, error))
+          if (!signal.aborted && providerCalled) await this.safeRecordResult(target, this.errorInfo(error).code)
+          if (signal.aborted) break
+          continue
+        }
 
-      return {
-        chunks: this.trackStream(providerStream.chunks, {
-          decision,
-          key,
-          requestId,
-          selected: candidate,
-          attempts,
-          attemptStartedAt,
-          startedAt,
-          signal,
-          lease,
-        }),
-        cancel: () => {
-          providerStream.cancel()
-          void lease.release()
-        },
+        return {
+          chunks: this.trackStream(providerStream.chunks, {
+            decision,
+            key,
+            requestId,
+            selected: candidate,
+            target,
+            attempts,
+            attemptStartedAt,
+            startedAt,
+            signal,
+            lease,
+            channelLease,
+          }),
+          cancel: () => {
+            providerStream.cancel()
+            void channelLease?.release()
+            void lease.release()
+          },
+        }
       }
     }
 
@@ -143,11 +167,13 @@ export class InferenceService {
       key: Pick<ApiKeyEntity, 'workspaceId' | 'userId'>
       requestId: string
       selected: WorkspaceModelEntity
+      target: ResolvedProviderTarget
       attempts: RecordedInferenceAttempt[]
       attemptStartedAt: number
       startedAt: number
       signal: AbortSignal
       lease: TrafficLease
+      channelLease?: TrafficLease
     },
   ): AsyncGenerator<OpenAIChatCompletionChunk> {
     let inputTokens = 0
@@ -170,8 +196,11 @@ export class InferenceService {
       throw error
     } finally {
       await context.lease.release()
+      await context.channelLease?.release()
       const attemptStatus = completed ? 'success' : context.signal.aborted ? 'cancelled' : 'failed'
-      context.attempts.push(this.attempt(context.selected, attemptStatus, context.attemptStartedAt, streamError))
+      context.attempts.push(this.attempt(context.selected, context.target, attemptStatus, context.attemptStartedAt, streamError))
+      if (completed) await this.safeRecordResult(context.target)
+      else if (!context.signal.aborted) await this.safeRecordResult(context.target, this.errorInfo(streamError).code)
       await this.safeRecord(this.recordInput({
         decision: context.decision,
         key: context.key,
@@ -225,6 +254,7 @@ export class InferenceService {
 
   private attempt(
     candidate: WorkspaceModelEntity,
+    target: ResolvedProviderTarget,
     status: RecordedInferenceAttempt['status'],
     startedAt: number,
     error?: unknown,
@@ -232,18 +262,13 @@ export class InferenceService {
     const errorInfo = error === undefined ? null : this.errorInfo(error)
     return {
       modelPublicId: candidate.model.publicId,
-      provider: candidate.model.owner.toLowerCase(),
+      provider: target.provider,
+      channelId: target.channelId ?? null,
+      deploymentId: target.deploymentId ?? null,
       status,
       latencyMs: this.elapsed(startedAt),
       errorCode: errorInfo?.code ?? null,
       errorMessage: errorInfo?.message ?? null,
-    }
-  }
-
-  private target(candidate: WorkspaceModelEntity): { provider: string; model: string } {
-    return {
-      provider: candidate.model.owner.toLowerCase(),
-      model: this.upstreamModelId(candidate.model.publicId),
     }
   }
 
@@ -268,9 +293,12 @@ export class InferenceService {
     }
   }
 
-  private upstreamModelId(publicId: string): string {
-    const separator = publicId.indexOf('/')
-    return separator === -1 ? publicId : publicId.slice(separator + 1)
+  private async safeRecordResult(target: ResolvedProviderTarget, errorCode?: string): Promise<void> {
+    try {
+      await this.deployments.recordResult(target, errorCode)
+    } catch (error) {
+      this.logger.warn(`更新供应商渠道健康状态失败: ${error instanceof Error ? error.message : 'unknown error'}`)
+    }
   }
 
   private async acquireConcurrency(workspaceId: string): Promise<TrafficLease> {
@@ -284,6 +312,16 @@ export class InferenceService {
 
   private async consumeModelRate(workspaceId: string, candidate: WorkspaceModelEntity): Promise<void> {
     await this.traffic.consume('inference-rpm', `${workspaceId}:${candidate.model.publicId}`, candidate.rateLimitRpm, 60_000)
+  }
+
+  private async acquireChannelConcurrency(target: ResolvedProviderTarget): Promise<TrafficLease | undefined> {
+    if (!target.channelId || !target.maxConcurrency) return undefined
+    return this.traffic.acquireConcurrency(
+      'provider-channel',
+      target.channelId,
+      target.maxConcurrency,
+      Math.max(30_000, (target.timeoutMs ?? 60_000) + 5_000),
+    )
   }
 
   private elapsed(startedAt: number): number {

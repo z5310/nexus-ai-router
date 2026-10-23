@@ -5,6 +5,10 @@ export const PROVIDER_GATEWAY = Symbol('PROVIDER_GATEWAY')
 export interface ProviderTarget {
   provider: string
   model: string
+  channelId?: string
+  deploymentId?: string
+  timeoutMs?: number
+  maxConcurrency?: number
 }
 
 export interface ProviderGateway {

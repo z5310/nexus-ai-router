@@ -29,6 +29,12 @@ export class InferenceAttemptEntity {
   @Column({ length: 60 })
   provider: string
 
+  @Column({ name: 'channel_id', type: 'uuid', nullable: true })
+  channelId: string | null
+
+  @Column({ name: 'deployment_id', type: 'uuid', nullable: true })
+  deploymentId: string | null
+
   @Column({ length: 20 })
   status: InferenceAttemptStatus
 

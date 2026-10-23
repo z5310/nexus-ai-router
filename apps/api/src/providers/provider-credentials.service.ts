@@ -57,7 +57,14 @@ export class ProviderCredentialsService {
   async remove(id: string): Promise<void> {
     const credential = await this.credentials.find(id)
     if (!credential) throw new NotFoundException('供应商凭证不存在')
-    await this.credentials.remove(credential)
+    try {
+      await this.credentials.remove(credential)
+    } catch (error) {
+      if (error instanceof QueryFailedError && (error.driverError as { code?: string }).code === '23503') {
+        throw new ConflictException('凭证仍绑定供应商渠道，请先移除或更换渠道凭证')
+      }
+      throw error
+    }
   }
 
   async resolve(provider: string): Promise<string> {

@@ -98,6 +98,10 @@ async function verifyFallbackAndAttemptChain() {
     traffic,
     { get: (_key, fallbackValue) => fallbackValue },
     { resolve: async () => decision },
+    {
+      resolveTargets: async (model) => [{ provider: model.owner.toLowerCase(), model: model.publicId.split('/').at(-1) }],
+      recordResult: async () => {},
+    },
   )
   const input = { model: primary.model.publicId, messages: [{ role: 'user', content: 'hello' }], stream: false }
   const key = { workspaceId: primary.workspaceId, userId: randomUUID() }

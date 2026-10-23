@@ -16,9 +16,10 @@ import { OpenAIErrorFilter } from './openai-error.filter'
 import { IdentityModule } from '../identity/identity.module'
 import { PlaygroundController } from './playground.controller'
 import { RoutingExecutorService } from './routing-executor.service'
+import { ProvidersModule } from '../providers/providers.module'
 
 @Module({
-  imports: [IdentityModule, TypeOrmModule.forFeature([ApiKeyEntity, WorkspaceModelEntity, RouteRuleEntity, RequestLogEntity, InferenceAttemptEntity, UsageBucketEntity])],
+  imports: [IdentityModule, ProvidersModule, TypeOrmModule.forFeature([ApiKeyEntity, WorkspaceModelEntity, RouteRuleEntity, RequestLogEntity, InferenceAttemptEntity, UsageBucketEntity])],
   controllers: [ChatCompletionsController, PlaygroundController],
   providers: [
     InferenceRepository,

@@ -28,6 +28,8 @@ export interface RecordedInference {
 export interface RecordedInferenceAttempt {
   modelPublicId: string
   provider: string
+  channelId: string | null
+  deploymentId: string | null
   status: InferenceAttemptStatus
   latencyMs: number
   errorCode: string | null

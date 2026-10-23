@@ -154,6 +154,53 @@ export interface ProviderCredential {
 
 export interface ProviderCredentialListResponse { data: ProviderCredential[] }
 
+export type ProviderChannelHealth = 'unknown' | 'healthy' | 'degraded' | 'unhealthy'
+
+export interface ProviderChannel {
+  id: string
+  name: string
+  provider: string
+  environment: ProviderEnvironment
+  credentialId: string
+  credentialName: string
+  credentialMaskedKey: string
+  region: string
+  timeoutMs: number
+  maxConcurrency: number
+  enabled: boolean
+  healthStatus: ProviderChannelHealth
+  consecutiveFailures: number
+  lastCheckedAt: string | null
+  lastSuccessAt: string | null
+  lastFailureAt: string | null
+  lastErrorCode: string | null
+  nextProbeAt: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ProviderChannelListResponse { data: ProviderChannel[] }
+
+export interface ModelDeployment {
+  id: string
+  modelId: string
+  modelName: string
+  modelPublicId: string
+  channelId: string
+  channelName: string
+  provider: string
+  region: string
+  healthStatus: ProviderChannelHealth
+  upstreamModelId: string
+  priority: number
+  weight: number
+  enabled: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ModelDeploymentListResponse { data: ModelDeployment[] }
+
 export type ApiKeyStatus = 'active' | 'revoked'
 
 export interface ApiKeyRecord {
@@ -299,6 +346,8 @@ export interface InferenceAttemptItem {
   attemptNumber: number
   modelId: string
   provider: string
+  channelId: string | null
+  deploymentId: string | null
   status: 'success' | 'failed' | 'cancelled'
   latencyMs: number
   errorCode: string | null

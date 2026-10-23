@@ -55,7 +55,11 @@ async function main() {
   const routing = {
     resolve: async () => ({ requested: configuredModel, routeRuleId: null, routeRuleName: null, candidates: [configuredModel] }),
   }
-  const service = new InferenceService(repository, provider, traffic, config, routing)
+  const deployments = {
+    resolveTargets: async (model) => [{ provider: model.owner.toLowerCase(), model: model.publicId.split('/').at(-1) }],
+    recordResult: async () => {},
+  }
+  const service = new InferenceService(repository, provider, traffic, config, routing, deployments)
   const input = { model: 'openai/test', messages: [{ role: 'user', content: 'hello' }], stream: false }
   const key = { workspaceId: randomUUID(), userId: randomUUID() }
 

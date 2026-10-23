@@ -109,6 +109,7 @@ Swagger 文档位于 `http://localhost:3000/docs`。接口错误统一返回 Pro
 | `/forgot-password` | 申请一次性密码重置凭证 |
 | `/reset-password` | 使用一次性凭证设置新密码 |
 | `/admin` | 管理员入口，验证角色后跳转独立的 5174 管理端 |
+| `http://localhost:5174/admin/channels` | 平台供应商渠道与模型部署配置，已接真实 API |
 | `/console` | 用量概览、趋势和最近请求，已接控制台 API |
 | `/console/models` | 模型管理，已接模型目录 API |
 | `/console/logs` | 调用日志，已接请求日志 API |
@@ -172,6 +173,12 @@ GOOGLE_CLIENT_SECRET=...
 - `DELETE /api/admin/provider-credentials/:id`：删除凭证。
 
 接口只返回 `••••末四位`、密钥版本和轮换时间，不会返回明文或数据库密文。同一环境下每个供应商只允许启用一个凭证。`ENCRYPTION_KEY` 建议使用 32 字节随机值的 Base64，`ENCRYPTION_KEY_VERSION` 用于轮换识别，`PROVIDER_CREDENTIAL_ENV` 决定数据面读取哪个环境的凭证。生产环境应将本地加密实现替换为云 KMS envelope encryption，并为轮换和删除补充不可变审计日志。
+
+## 供应商渠道与模型部署
+
+平台管理员通过 `/api/admin/provider-channels` 管理渠道，通过 `/api/admin/model-deployments` 将平台模型映射到渠道和上游模型 ID。渠道保存环境、区域、超时、最大并发和健康状态；模型部署保存优先级、权重与启停状态。Admin 页面入口为 `http://localhost:5174/admin/channels`。
+
+推理时先执行工作区模型规则，再在模型内部按渠道健康度、优先级和基于请求 ID 的稳定权重选择部署。连续三次失败会把渠道置为 `unhealthy` 并冷却 60 秒，成功后恢复；工作区和渠道分别使用 Redis 并发租约。数据面仅接收渠道/部署标识，数据库中的解密凭证尚未接入外部出站。
 
 ## 本地演示身份
 

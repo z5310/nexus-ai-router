@@ -12,6 +12,7 @@
     "test:inference-concurrency": "node test/inference-concurrency.integration.cjs",
     "test:routing-execution": "node test/routing-execution.integration.cjs",
     "test:request-attempts": "node test/request-attempts.integration.cjs",
+    "test:provider-routing": "node test/provider-routing.integration.cjs",
     "test:trusted-proxy": "node test/trusted-proxy.test.cjs",
     "test:catalog": "node test/catalog.integration.cjs",
     "dev": "nest start --watch",

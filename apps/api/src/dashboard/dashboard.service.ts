@@ -59,6 +59,8 @@ export class DashboardService {
         attemptNumber: attempt.attemptNumber,
         modelId: attempt.modelPublicId,
         provider: attempt.provider,
+        channelId: attempt.channelId,
+        deploymentId: attempt.deploymentId,
         status: attempt.status,
         latencyMs: attempt.latencyMs,
         errorCode: attempt.errorCode,

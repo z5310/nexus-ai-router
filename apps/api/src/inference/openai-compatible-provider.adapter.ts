@@ -19,16 +19,11 @@ export class OpenAICompatibleProviderAdapter implements ProviderGateway {
   async chat(input: OpenAIChatCompletionRequest, target: ProviderTarget): Promise<OpenAIChatCompletionResponse> {
     const baseUrl = this.baseUrl()
     const controller = new AbortController()
-    const timer = setTimeout(() => controller.abort(), this.config.get<number>('PROVIDER_GATEWAY_TIMEOUT_MS', 60_000))
+    const timer = setTimeout(() => controller.abort(), target.timeoutMs ?? this.config.get<number>('PROVIDER_GATEWAY_TIMEOUT_MS', 60_000))
     try {
-      const apiKey = this.config.get<string>('PROVIDER_GATEWAY_API_KEY')
       const response = await fetch(`${baseUrl}/chat/completions`, {
         method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-          ...(apiKey ? { authorization: `Bearer ${apiKey}` } : {}),
-          'x-portkey-provider': target.provider,
-        },
+        headers: this.headers(target),
         body: JSON.stringify({ ...input, model: target.model, stream: false }),
         signal: controller.signal,
       })
@@ -60,7 +55,7 @@ export class OpenAICompatibleProviderAdapter implements ProviderGateway {
   }
 
   async streamChat(input: OpenAIChatCompletionRequest, target: ProviderTarget, signal: AbortSignal): Promise<ProviderChatStream> {
-    const control = this.streamControl(signal)
+    const control = this.streamControl(signal, target.timeoutMs)
     try {
       const response = await fetch(`${this.baseUrl()}/chat/completions`, {
         method: 'POST',
@@ -147,9 +142,9 @@ export class OpenAICompatibleProviderAdapter implements ProviderGateway {
     return { values, remainder }
   }
 
-  private streamControl(externalSignal: AbortSignal): StreamControl {
+  private streamControl(externalSignal: AbortSignal, targetTimeoutMs?: number): StreamControl {
     const controller = new AbortController()
-    const timeoutMs = this.config.get<number>('PROVIDER_GATEWAY_TIMEOUT_MS', 60_000)
+    const timeoutMs = targetTimeoutMs ?? this.config.get<number>('PROVIDER_GATEWAY_TIMEOUT_MS', 60_000)
     let timeout: NodeJS.Timeout
     let didTimeout = false
     const abortFromClient = () => controller.abort()
@@ -194,6 +189,8 @@ export class OpenAICompatibleProviderAdapter implements ProviderGateway {
       'content-type': 'application/json',
       ...(apiKey ? { authorization: `Bearer ${apiKey}` } : {}),
       'x-portkey-provider': target.provider,
+      ...(target.channelId ? { 'x-nexus-channel-id': target.channelId } : {}),
+      ...(target.deploymentId ? { 'x-nexus-deployment-id': target.deploymentId } : {}),
     }
   }
 
