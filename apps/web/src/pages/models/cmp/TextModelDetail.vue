@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { ArrowLeft, ArrowRight, Copy, FileText, LoaderCircle, Play, Trash2 } from 'lucide-vue-next'
 import type { CatalogModel, OpenAIChatCompletionResponse } from '@gateway/contracts'
+import AudioPlayground from './AudioPlayground.vue'
 import MediaPlayground from './MediaPlayground.vue'
 import ModelLogo from '../../../components/ModelLogo.vue'
 import { authState } from '../../../lib/auth'
@@ -23,7 +24,15 @@ const usage = ref('')
 let controller: AbortController | null = null
 const price = (value: number | null) => value === null ? '—' : `¥${value.toFixed(2)}`
 const apiOrigin = new URL(import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? 'http://localhost:3000' : window.location.origin), window.location.origin).origin
+const modelKind = computed(() => ({ text: '文字模型', image: '图像模型', video: '视频模型', audio: '音频模型', embedding: '向量模型' }[props.model.type]))
+const referencePriceUnit = computed(() => ({ million_tokens: '/ 1M tokens', image: '/ 张', second: '/ 秒', '10k_chars': '/ 万字' }[props.model.priceUnit]))
 const sample = computed(() => `curl "${apiOrigin}/v1/chat/completions" \\\n  -H "Authorization: Bearer $NEXUS_KEY" \\\n  -H "Content-Type: application/json" \\\n  -d '${JSON.stringify({ model: props.model.slug, messages: [{ role: 'user', content: '你好，请介绍一下自己。' }], max_tokens: 2048, stream: false }, null, 2)}'`)
+const audioSample = computed(() => [
+  `curl -X POST "${apiOrigin}/v1/audios/generations" \\`,
+  '  -H "Authorization: Bearer $NEXUS_KEY" \\',
+  '  -H "Content-Type: application/json" \\',
+  `  -d '${JSON.stringify({ model: props.model.slug, prompt: '欢迎使用 Nexus API。', voice: 'male-qn-qingse', instruction: '自然、沉稳，保持适中的停顿和语速', language: 'Chinese', speech_rate: 1, pitch: 0, volume: 1, sample_rate: 32000, bitrate: 128000, response_format: 'mp3' }, null, 2)}'`,
+].join('\n'))
 function changeTab(value: string) { router.replace({ query: { ...route.query, tab: value } }) }
 async function copy(value: string, name: string) {
   try { await navigator.clipboard.writeText(value); copied.value = name } catch { error.value = '复制失败，请手动选择文本复制。' }
@@ -51,13 +60,14 @@ onBeforeUnmount(() => controller?.abort())
     <RouterLink class="model-back" to="/models"><ArrowLeft :size="15" />返回模型广场</RouterLink>
     <section class="text-model-heading">
       <ModelLogo :owner="model.owner" :provider="model.provider" :name="model.name" :accent="model.accent" :size="80" />
-      <div class="text-model-summary"><h1>{{ model.name }}</h1><p>{{ model.provider }} / {{ model.type === 'video' ? '视频模型' : model.type === 'image' ? '图像模型' : '文字模型' }}</p><p class="model-description-copy">{{ t(model.descriptionKey) }}</p><div class="model-capabilities"><span>{{ model.type === 'video' ? '视频生成' : model.type === 'image' ? '图像生成' : '文本生成' }}</span><span v-for="capability in model.capabilities" :key="capability">{{ t(`modelDetail.capability.${capability}`) }}</span></div></div>
+      <div class="text-model-summary"><h1>{{ model.name }}</h1><p>{{ model.provider }} / {{ modelKind }}</p><p class="model-description-copy">{{ t(model.descriptionKey) }}</p><div class="model-capabilities"><span>{{ model.type === 'video' ? '视频生成' : model.type === 'image' ? '图像生成' : model.type === 'audio' ? '语音合成' : '文本生成' }}</span><span v-for="capability in model.capabilities" :key="capability">{{ t(`modelDetail.capability.${capability}`) }}</span></div></div>
       <div v-if="model.type === 'text'" class="text-model-prices"><div><span>输入价格</span><p><strong>{{ price(model.inputPrice) }}</strong><del v-if="model.discountPercent>0">{{ price(model.originalInputPrice) }}</del> / 1M tokens</p></div><div><span>输出价格</span><p><strong>{{ price(model.outputPrice) }}</strong><del v-if="model.discountPercent>0&&model.originalOutputPrice!==null">{{ price(model.originalOutputPrice) }}</del> / 1M tokens</p></div><em v-if="model.discountPercent>0">优惠 {{ model.discountPercent }}%</em></div>
-      <div v-if="model.type !== 'text'" class="text-model-prices"><div><span>参考价格</span><p><strong>{{ price(model.inputPrice) }}</strong> {{ model.priceUnit === 'second' ? '/ 秒' : model.priceUnit === 'image' ? '/ 张' : '/ 1M tokens' }}</p></div></div>
+      <div v-if="model.type !== 'text'" class="text-model-prices"><div><span>参考价格</span><p><strong>{{ price(model.inputPrice) }}</strong> {{ referencePriceUnit }}</p></div></div>
     </section>
     <div class="text-model-tabs" role="tablist" aria-label="模型使用方式"><button id="playground-tab" role="tab" :aria-selected="tab === 'playground'" aria-controls="model-panel" :class="{ active: tab === 'playground' }" @click="changeTab('playground')">在线调用</button><button id="api-tab" role="tab" :aria-selected="tab === 'api'" aria-controls="model-panel" :class="{ active: tab === 'api' }" @click="changeTab('api')">接入说明</button></div>
     <section id="model-panel" role="tabpanel" :aria-labelledby="tab === 'api' ? 'api-tab' : 'playground-tab'">
-      <MediaPlayground v-if="tab === 'playground' && model.type !== 'text'" :key="model.slug" :model="model" />
+      <AudioPlayground v-if="tab === 'playground' && model.type === 'audio'" :key="model.slug" :model="model" />
+      <MediaPlayground v-else-if="tab === 'playground' && ['image', 'video'].includes(model.type)" :key="model.slug" :model="model" />
       <div v-else-if="tab === 'playground'" class="text-model-workbench">
         <form class="model-input-panel" @submit.prevent="run">
           <header><label for="model-prompt">提示词</label><button type="button" :disabled="pending || !prompt" @click="prompt = ''"><Trash2 :size="15" />清空</button></header>
@@ -68,6 +78,7 @@ onBeforeUnmount(() => controller?.abort())
         <article class="model-output-panel"><header><h2>输出结果</h2><button :disabled="!output" @click="copy(output, 'output')"><Copy :size="15" />{{ copied === 'output' ? '已复制' : '复制' }}</button></header><div class="model-output" aria-live="polite" :aria-busy="pending"><div v-if="pending" class="model-output-empty"><LoaderCircle class="spin" :size="27" /><strong>模型正在思考</strong><p>正在等待模型返回结果…</p></div><div v-else-if="error" class="model-output-empty model-error" role="alert"><strong>调用未完成</strong><p>{{ error }}</p><RouterLink to="/console/models">检查工作区模型配置 <ArrowRight :size="14" /></RouterLink></div><pre v-else-if="output">{{ output }}</pre><div v-else class="model-output-empty"><FileText :size="32" /><strong>暂无输出结果</strong><p>在左侧输入提示词并点击「开始调用」，<br />即可在这里查看模型的回复内容。</p></div></div><p v-if="usage" class="model-call-note">本次用量：{{ usage }}</p></article>
       </div>
       <article v-else-if="model.type === 'text'" class="model-api-panel"><header><div><h2>OpenAI 兼容调用</h2><p>在工作区启用模型，创建 API Key 后即可从服务端发起请求。</p></div><button @click="copy(sample, 'sample')"><Copy :size="15" />{{ copied === 'sample' ? '已复制' : '复制示例' }}</button></header><pre><code>{{ sample }}</code></pre><p>将 NEXUS_KEY 替换为控制台创建的密钥。密钥请保存在服务端环境变量中。在线体验使用登录会话，SDK 接入使用 API Key。</p></article>
+      <article v-else-if="model.type === 'audio'" class="model-api-panel"><header><div><h2>统一音频生成请求</h2><p>平台层使用统一字段，供应商适配器负责转换 MiniMax、Qwen 等不同协议。</p></div><button @click="copy(audioSample, 'audio-sample')"><Copy :size="15" />{{ copied === 'audio-sample' ? '已复制' : '复制示例' }}</button></header><pre><code>{{ audioSample }}</code></pre><p>当前页面已完成参数与结果布局；异步任务、计费预占、供应商结果映射完成后再开放正式提交，避免产生无法追踪的音频任务。</p></article>
       <article v-else class="model-api-panel"><h2>生成任务接入说明</h2><p>图像与视频生成接口接入中，暂未开放任务提交。后续通过提交生成任务、查询状态、获取结果的流程接入，当前可预览生成参数。</p></article>
     </section>
     <section class="model-integration"><header><h2>接入步骤</h2><p>3 步即可在你的应用中使用本模型</p></header><div class="model-integration-grid"><article><span>1</span><div><h3>创建 API Key</h3><p>在控制台创建密钥，用于 API 调用身份验证。</p><RouterLink to="/console/keys">前往密钥管理 <ArrowRight :size="14" /></RouterLink></div></article><article><span>2</span><div><h3>开通模型</h3><p>在工作区模型管理中启用 {{ model.name }}。</p><RouterLink to="/console/models">前往模型管理 <ArrowRight :size="14" /></RouterLink></div></article><article><span>3</span><div><h3>调用 API</h3><p>使用模型 ID 与请求示例接入你的应用。</p><button @click="changeTab('api')">查看接入说明 <ArrowRight :size="14" /></button></div></article></div></section>
