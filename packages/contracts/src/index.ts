@@ -178,6 +178,24 @@ export interface UpdateModelPricingInput {
 
 export type ProviderEnvironment = 'development' | 'staging' | 'production'
 
+export type ProviderProtocol = 'openai_compatible' | 'anthropic' | 'google' | 'custom'
+
+export interface ProviderDefinition {
+  id: string
+  code: string
+  name: string
+  protocol: ProviderProtocol
+  baseUrl: string | null
+  docsUrl: string | null
+  capabilities: ModelType[]
+  enabled: boolean
+  sortOrder: number
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ProviderDefinitionListResponse { data: ProviderDefinition[] }
+
 export interface ProviderCredential {
   id: string
   provider: string

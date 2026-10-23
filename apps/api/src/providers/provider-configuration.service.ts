@@ -13,6 +13,7 @@ import type { CreateProviderChannelDto, ListProviderChannelsQuery, UpdateProvide
 import { ModelDeploymentsRepository } from './model-deployments.repository'
 import { ProviderChannelsRepository } from './provider-channels.repository'
 import { ProviderCredentialsRepository } from './provider-credentials.repository'
+import { ProvidersService } from './providers.service'
 
 export interface ResolvedProviderTarget {
   provider: string
@@ -29,6 +30,7 @@ export class ProviderConfigurationService {
     private readonly channels: ProviderChannelsRepository,
     private readonly deployments: ModelDeploymentsRepository,
     private readonly credentials: ProviderCredentialsRepository,
+    private readonly providers: ProvidersService,
     @InjectRepository(ModelEntity) private readonly models: Repository<ModelEntity>,
     private readonly config: ConfigService,
   ) {}
@@ -39,6 +41,7 @@ export class ProviderConfigurationService {
 
   async createChannel(actorUserId: string, input: CreateProviderChannelDto): Promise<ProviderChannel> {
     const provider = input.provider.trim().toLowerCase()
+    await this.providers.assertEnabled(provider)
     await this.assertCredential(input.credentialId, provider, input.environment)
     const entity = this.channels.create({
       name: input.name.trim(), provider, environment: input.environment, credentialId: input.credentialId,

@@ -5,24 +5,35 @@ const { randomUUID } = require('node:crypto')
 const source = require('../src/database/data-source').default
 const { ModelEntity } = require('../src/database/entities/model.entity')
 const { ProviderCredentialEntity } = require('../src/database/entities/provider-credential.entity')
+const { ProviderEntity } = require('../src/database/entities/provider.entity')
 const { ProviderChannelEntity } = require('../src/database/entities/provider-channel.entity')
 const { ModelDeploymentEntity } = require('../src/database/entities/model-deployment.entity')
 const { ProviderCredentialsRepository } = require('../src/providers/provider-credentials.repository')
 const { ProviderChannelsRepository } = require('../src/providers/provider-channels.repository')
 const { ModelDeploymentsRepository } = require('../src/providers/model-deployments.repository')
 const { ProviderConfigurationService } = require('../src/providers/provider-configuration.service')
+const { ProvidersRepository } = require('../src/providers/providers.repository')
+const { ProvidersService } = require('../src/providers/providers.service')
 
 async function main() {
   await source.initialize()
   const suffix = randomUUID().slice(0, 8)
   const provider = `test-${suffix}`
   let credentialId
+  let providerId
   let channelId
   let deploymentId
   try {
     const [user] = await source.query('SELECT id FROM users ORDER BY created_at ASC LIMIT 1')
     const model = await source.getRepository(ModelEntity).findOne({ where: { isEnabled: true }, order: { createdAt: 'ASC' } })
     assert.ok(user && model, 'migrated development user and model are required')
+
+    const providerRepository = source.getRepository(ProviderEntity)
+    const providerRecord = await providerRepository.save(providerRepository.create({
+      code: provider, name: `Integration ${suffix}`, protocol: 'openai_compatible', baseUrl: null,
+      docsUrl: null, capabilities: ['text'], enabled: true, sortOrder: 999, createdByUserId: user.id,
+    }))
+    providerId = providerRecord.id
 
     const credentialRepository = source.getRepository(ProviderCredentialEntity)
     const credential = await credentialRepository.save(credentialRepository.create({
@@ -42,10 +53,12 @@ async function main() {
 
     const channels = new ProviderChannelsRepository(source.getRepository(ProviderChannelEntity))
     const deployments = new ModelDeploymentsRepository(source.getRepository(ModelDeploymentEntity))
+    const providers = new ProvidersService(new ProvidersRepository(providerRepository))
     const service = new ProviderConfigurationService(
       channels,
       deployments,
       new ProviderCredentialsRepository(credentialRepository),
+      providers,
       source.getRepository(ModelEntity),
       { get: (_key, fallbackValue) => fallbackValue },
     )
@@ -98,6 +111,7 @@ async function main() {
     if (deploymentId) await source.getRepository(ModelDeploymentEntity).delete(deploymentId)
     if (channelId) await source.getRepository(ProviderChannelEntity).delete(channelId)
     if (credentialId) await source.getRepository(ProviderCredentialEntity).delete(credentialId)
+    if (providerId) await source.getRepository(ProviderEntity).delete(providerId)
     await source.destroy()
   }
 }

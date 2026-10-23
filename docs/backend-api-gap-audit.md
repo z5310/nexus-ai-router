@@ -31,7 +31,7 @@
 | 工作区模型 | 部分完成 | CRUD、别名、启停、RPM、预算字段与租户隔离 | 预算实际执行、Project 绑定、渠道/部署选择、并发与配额覆盖策略 |
 | 路由规则 | 部分完成 | CRUD、模型级稳定流量分桶、三种策略、主备故障转移；渠道级健康/优先级/稳定权重选部署；命中规则和尝试链持久化 | 配置版本/缓存、命中统计、严格半开探测和规则模拟接口 |
 | Chat 推理 | 部分完成 | OpenAI 兼容 JSON/SSE、取消、RPM、工作区及渠道并发、部署级超时、连接前多模型/多渠道 fallback、首 Token、日志和成本 | 有限重试、幂等键、上游请求 ID、SSE 中断后的精确计量、可信数据面端到端验证 |
-| 供应商渠道与凭证 | 部分完成/暂缓 | 凭证加密 CRUD；Channel/Deployment CRUD；环境、区域、超时、并发、健康状态；连续失败熔断；Admin 配置页面 | 主动连通性测试、严格半开、配额同步；解密凭证接入真实数据面需先确认可信目标与出站边界 |
+| 供应商渠道与凭证 | 部分完成/暂缓 | Provider 主数据 CRUD；协议、API 元数据和能力配置；凭证加密 CRUD；Channel/Deployment CRUD；环境、区域、超时、并发、健康状态；连续失败熔断；Admin 四层配置页面 | 主动连通性测试、严格半开、配额同步；解密凭证接入真实数据面需先确认可信目标与出站边界 |
 | 请求日志 | 部分完成 | 请求 ID、请求/实际模型、命中规则、尝试次数、首 Token、每次目标供应商/渠道/部署/模型/耗时/错误、Token、成本；支持详情接口 | 游标分页、日期/状态/项目/渠道筛选、上游请求 ID、trace、导出与保留策略 |
 | 用量看板 | 部分完成 | 24 小时请求/Token/延迟/费用趋势、最近请求 | 环比真实计算、可选时间范围、按模型/项目/密钥聚合、统计物化与大数据量查询策略 |
 | 计费与余额 | 未开发 | 响应合同保留 `balance`，当前恒为 `null` | 不可变账本、额度预占/结算/释放、预算、充值、支付回调、退款、优惠、账单、发票、对账 |
@@ -50,7 +50,7 @@
 - Console：`/api/console/models`、`/api/console/routes`、`/api/console/playground/chat`。
 - 密钥：`/api/keys`。
 - 公共目录：`/api/models`、`/api/rankings`。
-- 管理端：`/api/admin/users`、`/api/admin/models`、`/api/admin/provider-credentials`、`/api/admin/provider-channels`、`/api/admin/model-deployments`。
+- 管理端：`/api/admin/users`、`/api/admin/models`、`/api/admin/providers`、`/api/admin/provider-credentials`、`/api/admin/provider-channels`、`/api/admin/model-deployments`。
 - 数据面：`/v1/models`、`/v1/chat/completions`。
 - 用量：`/api/dashboard/overview`、`/api/dashboard/requests`、`/api/dashboard/requests/:requestId`。
 

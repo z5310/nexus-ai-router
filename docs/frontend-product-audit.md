@@ -24,7 +24,7 @@
 | 8 | Admin 平台总览 | 基本可用 | 用户和模型汇总来自真实 API，普通控制台与平台后台边界清楚；供应商渠道和模型定价已有真实配置入口，审计和会话仍为规划项 |
 | 9 | Admin 管理模型 | 基本可用 | 可即时切换上线、精选和生命周期，并通过独立弹窗发布原价、折扣、计价单位及查看历史版本；仍缺少完整资料编辑、预约生效、变更确认和审计 |
 | 10 | Admin 管理用户 | 高风险 | 后端已支持详情、创建、角色/状态/密码修改，前端却只有只读列表；平台 `manager/viewer` 被显示成“工作区管理员/只读用户”，与工作区角色概念混淆 |
-| 11 | Admin 管理供应商渠道 | 部分完成 | 已有 Credential/Channel/Deployment 页面，支持凭证创建/启停/删除、渠道与部署新增/启停/删除和健康状态；凭证轮换表单、主动探测及可信数据面联调仍待补充 |
+| 11 | Admin 管理供应商渠道 | 部分完成 | 已形成 Provider/Credential/Channel/Deployment 四层页面，支持供应商协议与能力配置、凭证创建/启停/删除、渠道与部署新增/启停/删除和健康状态；凭证轮换表单、主动探测及可信数据面联调仍待补充 |
 
 ## 必须优先修正的问题
 
@@ -52,7 +52,8 @@
 | 工作区选择器 | `GET /api/workspaces` | 选择、持久化、请求头注入、缓存与在途请求隔离 |
 | 账户安全 | `POST /api/auth/change-password`、`GET/DELETE /api/auth/sessions` | 修改密码、查看设备会话、单个退出、退出其他设备 |
 | Admin 用户管理 | `GET/POST/PATCH /api/admin/users` | 创建、详情、角色/状态修改、密码重置 |
-| Admin 供应商凭证 | `GET/POST/PATCH/DELETE /api/admin/provider-credentials` | 元数据列表、创建、轮换、启停和删除 |
+| Admin 供应商目录 | `GET/POST/PATCH/DELETE /api/admin/providers` | 供应商协议、API 元数据、模型能力、排序与启停管理 |
+| Admin 供应商凭证 | `GET/POST/PATCH/DELETE /api/admin/provider-credentials` | 元数据列表、创建、轮换、启停和删除；只允许绑定已启用供应商 |
 | Console 模型配置 | `/api/console/models` CRUD | 权限感知按钮、移动端卡片、保存反馈和启用向导 |
 | Console 路由配置 | `/api/console/routes` CRUD | 在执行器上线前显示未生效状态，后续补运行指标 |
 | API Key | `/api/keys` | 创建成功后直接给出按已启用模型生成的 cURL/SDK 示例 |

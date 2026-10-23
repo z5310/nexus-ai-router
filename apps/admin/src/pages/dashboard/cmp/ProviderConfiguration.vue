@@ -5,13 +5,15 @@ import { Activity, Boxes, KeyRound, Plus, ServerCog, Trash2, X } from 'lucide-vu
 import type { ModelDeployment, ProviderChannel, ProviderCredential } from '../api'
 import {
   createModelDeployment, createProviderChannel, createProviderCredential, deleteModelDeployment, deleteProviderChannel, deleteProviderCredential,
-  getAdminModels, getModelDeployments, getProviderChannels, getProviderCredentials,
+  getAdminModels, getModelDeployments, getProviderChannels, getProviderCredentials, getProviders,
   updateModelDeployment, updateProviderChannel, updateProviderCredential,
 } from '../api'
+import ProviderRegistry from './ProviderRegistry.vue'
 
 const queryClient = useQueryClient()
 const dialog = ref<'credential' | 'channel' | 'deployment' | null>(null)
 const errorMessage = ref('')
+const providers = useQuery({ queryKey: ['admin-providers'], queryFn: getProviders })
 const credentials = useQuery({ queryKey: ['admin-provider-credentials'], queryFn: getProviderCredentials })
 const channels = useQuery({ queryKey: ['admin-provider-channels'], queryFn: getProviderChannels })
 const deployments = useQuery({ queryKey: ['admin-model-deployments'], queryFn: getModelDeployments })
@@ -21,6 +23,7 @@ const channelForm = reactive({ name: '', credentialId: '', region: 'global', tim
 const deploymentForm = reactive({ modelId: '', channelId: '', upstreamModelId: '', priority: 100, weight: 100 })
 const selectedCredential = computed(() => credentials.data.value?.data.find((item) => item.id === channelForm.credentialId))
 const enabledChannels = computed(() => channels.data.value?.data.filter((item) => item.enabled) ?? [])
+const enabledProviders = computed(() => providers.data.value?.data.filter((item) => item.enabled) ?? [])
 
 const invalidate = async () => Promise.all([
   queryClient.invalidateQueries({ queryKey: ['admin-provider-credentials'] }),
@@ -58,7 +61,7 @@ const removeDeploymentMutation = useMutation({ mutationFn: deleteModelDeployment
 function open(value: 'credential' | 'channel' | 'deployment') {
   errorMessage.value = ''
   if (value === 'credential') {
-    Object.assign(credentialForm, { name: '', provider: '', environment: 'development', apiKey: '' })
+    Object.assign(credentialForm, { name: '', provider: enabledProviders.value[0]?.code ?? '', environment: 'development', apiKey: '' })
   } else if (value === 'channel') {
     Object.assign(channelForm, { name: '', credentialId: credentials.data.value?.data.find((item) => item.enabled)?.id ?? '', region: 'global', timeoutMs: 60_000, maxConcurrency: 100 })
   } else {
@@ -91,6 +94,7 @@ function removeDeployment(item: ModelDeployment) {
 <template>
   <div class="mt-6 grid gap-4">
     <p v-if="errorMessage" class="m-0 rounded-2 border border-red-400/20 bg-red-400/8 px-4 py-3 text-13px text-red-300">{{ errorMessage }}</p>
+    <ProviderRegistry />
     <section class="overflow-hidden rounded-14px border border-white/9 bg-white/2">
       <header class="min-h-68px flex items-center justify-between gap-4 border-b border-white/7 px-18px py-4">
         <div><h2 class="m-0 text-15px">供应商凭证</h2><p class="mb-0 mt-1 text-13px text-[#647268]">密钥写入后立即加密，页面只显示名称、环境和末四位。</p></div>
@@ -163,7 +167,7 @@ function removeDeployment(item: ModelDeployment) {
       <header class="mb-5 flex items-start justify-between"><div><small class="text-12px font-700 tracking-2px text-emerald-300">PROVIDER CONFIG</small><h2 class="mb-0 mt-2 text-22px">{{ dialog==='credential'?'新增供应商凭证':dialog==='channel'?'新增供应商渠道':'新增模型部署' }}</h2></div><button type="button" class="h-8 w-8 grid place-items-center rounded-8px border border-white/8 bg-transparent text-[#8d9b92]" @click="dialog=null"><X :size="17" /></button></header>
       <div v-if="dialog==='credential'" class="grid gap-4">
         <label class="grid gap-2 text-13px text-[#91a097]">凭证名称<input v-model="credentialForm.name" required maxlength="80" placeholder="OpenAI 生产主密钥" class="h-11 rounded-9px border border-white/9 bg-white/3 px-3 text-white outline-none focus:border-emerald-300/35"></label>
-        <label class="grid gap-2 text-13px text-[#91a097]">供应商标识<input v-model="credentialForm.provider" required pattern="[a-z0-9][a-z0-9-]{1,39}" placeholder="openai" class="h-11 rounded-9px border border-white/9 bg-white/3 px-3 text-white outline-none"></label>
+        <label class="grid gap-2 text-13px text-[#91a097]">供应商<select v-model="credentialForm.provider" required class="h-11 rounded-9px border border-white/9 bg-[#0f1a14] px-3 text-white outline-none"><option value="" disabled>请选择已启用供应商</option><option v-for="item in enabledProviders" :key="item.id" :value="item.code">{{ item.name }} · {{ item.code }}</option></select></label>
         <label class="grid gap-2 text-13px text-[#91a097]">环境<select v-model="credentialForm.environment" class="h-11 rounded-9px border border-white/9 bg-[#0f1a14] px-3 text-white outline-none"><option value="development">development</option><option value="staging">staging</option><option value="production">production</option></select></label>
         <label class="grid gap-2 text-13px text-[#91a097]">API Key<input v-model="credentialForm.apiKey" type="password" required minlength="8" maxlength="4096" autocomplete="new-password" placeholder="仅本次写入可见" class="h-11 rounded-9px border border-white/9 bg-white/3 px-3 font-mono text-white outline-none"></label>
       </div>

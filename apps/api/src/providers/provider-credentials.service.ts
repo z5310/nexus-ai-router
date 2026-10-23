@@ -7,11 +7,13 @@ import type { ProviderCredentialEntity, ProviderEnvironment } from '../database/
 import { CredentialCipherService } from './credential-cipher.service'
 import type { CreateProviderCredentialDto, ListProviderCredentialsQuery, UpdateProviderCredentialDto } from './dto/provider-credentials.dto'
 import { ProviderCredentialsRepository } from './provider-credentials.repository'
+import { ProvidersService } from './providers.service'
 
 @Injectable()
 export class ProviderCredentialsService {
   constructor(
     private readonly credentials: ProviderCredentialsRepository,
+    private readonly providers: ProvidersService,
     private readonly cipher: CredentialCipherService,
     private readonly config: ConfigService,
   ) {}
@@ -23,6 +25,7 @@ export class ProviderCredentialsService {
   async create(actorUserId: string, input: CreateProviderCredentialDto): Promise<ProviderCredential> {
     const id = randomUUID()
     const provider = input.provider.trim().toLowerCase()
+    await this.providers.assertEnabled(provider)
     const encrypted = this.cipher.encrypt(input.apiKey, { id, provider, environment: input.environment })
     const credential = this.credentials.create({
       id,

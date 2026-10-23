@@ -14,11 +14,15 @@ import { ModelDeploymentsController } from './model-deployments.controller'
 import { ProviderChannelsRepository } from './provider-channels.repository'
 import { ModelDeploymentsRepository } from './model-deployments.repository'
 import { ProviderConfigurationService } from './provider-configuration.service'
+import { ProviderEntity } from '../database/entities/provider.entity'
+import { ProvidersController } from './providers.controller'
+import { ProvidersRepository } from './providers.repository'
+import { ProvidersService } from './providers.service'
 
 @Module({
-  imports: [TypeOrmModule.forFeature([ProviderCredentialEntity, ProviderChannelEntity, ModelDeploymentEntity, ModelEntity]), IdentityModule],
-  controllers: [ProviderCredentialsController, ProviderChannelsController, ModelDeploymentsController],
-  providers: [ProviderCredentialsRepository, ProviderCredentialsService, ProviderChannelsRepository, ModelDeploymentsRepository, ProviderConfigurationService, CredentialCipherService],
-  exports: [ProviderCredentialsService, ProviderConfigurationService],
+  imports: [TypeOrmModule.forFeature([ProviderEntity, ProviderCredentialEntity, ProviderChannelEntity, ModelDeploymentEntity, ModelEntity]), IdentityModule],
+  controllers: [ProvidersController, ProviderCredentialsController, ProviderChannelsController, ModelDeploymentsController],
+  providers: [ProvidersRepository, ProvidersService, ProviderCredentialsRepository, ProviderCredentialsService, ProviderChannelsRepository, ModelDeploymentsRepository, ProviderConfigurationService, CredentialCipherService],
+  exports: [ProvidersService, ProviderCredentialsService, ProviderConfigurationService],
 })
 export class ProvidersModule {}

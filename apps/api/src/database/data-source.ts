@@ -20,6 +20,7 @@ import { ProviderCredentialEntity } from './entities/provider-credential.entity'
 import { InferenceAttemptEntity } from './entities/inference-attempt.entity'
 import { ProviderChannelEntity } from './entities/provider-channel.entity'
 import { ModelDeploymentEntity } from './entities/model-deployment.entity'
+import { ProviderEntity } from './entities/provider.entity'
 import { CreateModels1760000000000 } from './migrations/1760000000000-CreateModels'
 import { ExpandCatalogAndUsage1760000001000 } from './migrations/1760000001000-ExpandCatalogAndUsage'
 import { CreateIdentity1760000002000 } from './migrations/1760000002000-CreateIdentity'
@@ -31,13 +32,14 @@ import { CreateProviderCredentials1760000007000 } from './migrations/17600000070
 import { CreateInferenceAttempts1760000010000 } from './migrations/1760000010000-CreateInferenceAttempts'
 import { CreateProviderChannels1760000011000 } from './migrations/1760000011000-CreateProviderChannels'
 import { CreateModelPriceVersions1760000012000 } from './migrations/1760000012000-CreateModelPriceVersions'
+import { CreateProviders1760000013000 } from './migrations/1760000013000-CreateProviders'
 
 config({ path: resolve(__dirname, '../../../../.env') })
 
 export default new DataSource({
   type: 'postgres',
   url: process.env.DATABASE_URL,
-  entities: [ModelEntity, ModelPriceVersionEntity, RequestLogEntity, InferenceAttemptEntity, UsageBucketEntity, UserEntity, AuthSessionEntity, AuthActionTokenEntity, ApiKeyEntity, WorkspaceModelEntity, RouteRuleEntity, WorkspaceEntity, WorkspaceMemberEntity, ProjectEntity, ProviderCredentialEntity, ProviderChannelEntity, ModelDeploymentEntity],
-  migrations: [CreateModels1760000000000, ExpandCatalogAndUsage1760000001000, CreateIdentity1760000002000, HardenIdentity1760000003000, CreateWorkspaceConfiguration1760000004000, CreateRouteRulesAndScopeUsage1760000005000, CreateWorkspaceTenancy1760000006000, CreateProviderCredentials1760000007000, SessionRotation1760000008000, WorkspaceIpPolicy1760000009000, CreateInferenceAttempts1760000010000, CreateProviderChannels1760000011000, CreateModelPriceVersions1760000012000],
+  entities: [ModelEntity, ModelPriceVersionEntity, RequestLogEntity, InferenceAttemptEntity, UsageBucketEntity, UserEntity, AuthSessionEntity, AuthActionTokenEntity, ApiKeyEntity, WorkspaceModelEntity, RouteRuleEntity, WorkspaceEntity, WorkspaceMemberEntity, ProjectEntity, ProviderEntity, ProviderCredentialEntity, ProviderChannelEntity, ModelDeploymentEntity],
+  migrations: [CreateModels1760000000000, ExpandCatalogAndUsage1760000001000, CreateIdentity1760000002000, HardenIdentity1760000003000, CreateWorkspaceConfiguration1760000004000, CreateRouteRulesAndScopeUsage1760000005000, CreateWorkspaceTenancy1760000006000, CreateProviderCredentials1760000007000, SessionRotation1760000008000, WorkspaceIpPolicy1760000009000, CreateInferenceAttempts1760000010000, CreateProviderChannels1760000011000, CreateModelPriceVersions1760000012000, CreateProviders1760000013000],
   synchronize: false,
 })

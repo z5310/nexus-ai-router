@@ -74,6 +74,8 @@ npm run db:migrate
 | `GET` | `/api/admin/models/summary` | 模型、供应商和运行状态统计 |
 | `PATCH` | `/api/admin/models/:id` | 修改模型上架、推荐和运行状态 |
 | `GET/PUT` | `/api/admin/models/:id/pricing` | 查询价格历史或立即发布新的原价、折扣和成交价版本 |
+| `GET/POST` | `/api/admin/providers` | 查询或登记平台供应商主数据 |
+| `PATCH/DELETE` | `/api/admin/providers/:id` | 编辑、启停或删除供应商定义 |
 | `GET/POST` | `/api/admin/provider-credentials` | 查询或创建加密的供应商凭证元数据 |
 | `PATCH/DELETE` | `/api/admin/provider-credentials/:id` | 轮换、启停或删除供应商凭证 |
 | `POST` | `/api/console/playground/chat` | 使用当前工作区权限进行文字模型在线调用 |
@@ -164,7 +166,9 @@ GOOGLE_CLIENT_SECRET=...
 
 迁移完成后可运行 `npm run test:session-rotation -w @gateway/api` 验证并发轮换、祖先令牌重放、设备隔离和过期令牌。测试仅创建并清理自身的临时账户。新增迁移 `SessionRotation1760000008000` 必须在部署新 API 前执行。
 
-## 供应商凭证管理
+## 供应商目录与凭证管理
+
+平台管理员先通过 `/api/admin/providers` 维护供应商目录，包括唯一标识、显示名称、协议适配器、API Base URL 元数据、官方文档、支持能力、排序与启停状态。供应商标识创建后不可修改；已绑定凭证或渠道时不可删除。API Base URL 当前只作为控制面元数据保存，不会自动成为携带解密凭证的出站目标。
 
 平台管理员通过 `/api/admin/provider-credentials` 管理各环境的供应商 API Key：
 
@@ -173,7 +177,7 @@ GOOGLE_CLIENT_SECRET=...
 - `PATCH /api/admin/provider-credentials/:id`：重命名、轮换、启用或停用凭证。
 - `DELETE /api/admin/provider-credentials/:id`：删除凭证。
 
-接口只返回 `••••末四位`、密钥版本和轮换时间，不会返回明文或数据库密文。同一环境下每个供应商只允许启用一个凭证。`ENCRYPTION_KEY` 建议使用 32 字节随机值的 Base64，`ENCRYPTION_KEY_VERSION` 用于轮换识别，`PROVIDER_CREDENTIAL_ENV` 决定数据面读取哪个环境的凭证。生产环境应将本地加密实现替换为云 KMS envelope encryption，并为轮换和删除补充不可变审计日志。
+凭证只能选择已登记且启用的供应商。接口只返回 `••••末四位`、密钥版本和轮换时间，不会返回明文或数据库密文。同一环境下每个供应商只允许启用一个凭证。`ENCRYPTION_KEY` 建议使用 32 字节随机值的 Base64，`ENCRYPTION_KEY_VERSION` 用于轮换识别，`PROVIDER_CREDENTIAL_ENV` 决定数据面读取哪个环境的凭证。生产环境应将本地加密实现替换为云 KMS envelope encryption，并为轮换和删除补充不可变审计日志。
 
 ## 供应商渠道与模型部署
 
