@@ -21,6 +21,13 @@ const envSchema = z.object({
   PROVIDER_GATEWAY_URL: z.preprocess((value) => value === '' ? undefined : value, z.string().url().optional()),
   PROVIDER_GATEWAY_API_KEY: optionalSecret,
   PROVIDER_GATEWAY_TIMEOUT_MS: z.coerce.number().int().min(1_000).max(300_000).default(60_000),
+  TRUSTED_PROXY_CIDRS: z.string().optional(),
+  REQUEST_BODY_LIMIT_BYTES: z.coerce.number().int().min(16_384).max(10_485_760).default(1_048_576),
+  GLOBAL_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().min(10).max(1_000_000).default(600),
+  LOGIN_RATE_LIMIT_PER_15_MINUTES: z.coerce.number().int().min(3).max(10_000).default(20),
+  INFERENCE_MAX_CONCURRENCY_PER_WORKSPACE: z.coerce.number().int().min(1).max(10_000).default(20),
+  INFERENCE_CONCURRENCY_LEASE_MS: z.coerce.number().int().min(30_000).max(3_600_000).default(600_000),
+  TRAFFIC_CONTROL_KEY_PREFIX: z.string().regex(/^[A-Za-z0-9_.:-]{1,64}$/).default('nexus'),
 })
 
 export type Environment = z.infer<typeof envSchema>

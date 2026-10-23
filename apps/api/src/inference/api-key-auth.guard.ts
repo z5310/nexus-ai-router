@@ -22,8 +22,8 @@ export class ApiKeyAuthGuard implements CanActivate {
     if (!key) throw new UnauthorizedException('API Key 无效或已撤销')
     const workspace = await this.inference.workspacePolicy(key.workspaceId)
     if (!workspace || workspace.status !== 'active') throw new ForbiddenException('工作区不可用')
-    // Use the transport peer; untrusted forwarded headers cannot bypass this policy.
-    if (workspace.ipAllowlistEnabled && !allowsIp(workspace.ipAllowlist, request.raw.socket.remoteAddress ?? '')) {
+    // Fastify only resolves forwarded addresses from explicitly trusted proxy CIDRs.
+    if (workspace.ipAllowlistEnabled && !allowsIp(workspace.ipAllowlist, request.ip)) {
       throw new ForbiddenException('当前来源 IP 不在工作区允许列表中')
     }
     request.apiKey = key

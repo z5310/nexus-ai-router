@@ -1,4 +1,5 @@
 import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus } from '@nestjs/common'
+import { DistributedLimitException } from '../../traffic-control/distributed-limit.exception'
 
 interface FastifyRequestLike {
   id?: string
@@ -7,6 +8,7 @@ interface FastifyRequestLike {
 }
 
 interface FastifyReplyLike {
+  header(name: string, value: string | number): FastifyReplyLike
   status(code: number): FastifyReplyLike
   send(body: unknown): void
 }
@@ -20,6 +22,8 @@ export class ProblemDetailsFilter implements ExceptionFilter {
     const status = exception instanceof HttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR
     const response = exception instanceof HttpException ? exception.getResponse() : null
     const detail = this.detail(response, exception, status)
+
+    if (exception instanceof DistributedLimitException) reply.header('retry-after', exception.retryAfterSeconds)
 
     reply.status(status).send({
       type: `https://httpstatuses.com/${status}`,

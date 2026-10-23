@@ -36,6 +36,7 @@ import { ApiKeysModule } from './api-keys/api-keys.module'
 import { RoutingModule } from './routing/routing.module'
 import { InferenceModule } from './inference/inference.module'
 import { ProvidersModule } from './providers/providers.module'
+import { TrafficControlModule } from './traffic-control/traffic-control.module'
 
 @Module({
   imports: [
@@ -75,6 +76,7 @@ import { ProvidersModule } from './providers/providers.module'
         connection: { url: config.getOrThrow<string>('REDIS_URL') },
       }),
     }),
+    TrafficControlModule,
     ModelsModule,
     DashboardModule,
     IdentityModule,

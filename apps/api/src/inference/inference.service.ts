@@ -5,6 +5,8 @@ import type { ApiKeyEntity } from '../database/entities/api-key.entity'
 import type { ChatCompletionDto } from './dto/chat-completion.dto'
 import { InferenceRepository } from './inference.repository'
 import { PROVIDER_GATEWAY, type ProviderChatStream, type ProviderGateway } from './provider-gateway'
+import { ConfigService } from '@nestjs/config'
+import { TrafficControlService, type TrafficLease } from '../traffic-control/traffic-control.service'
 
 export interface InferenceChatStream {
   chunks: AsyncIterable<OpenAIChatCompletionChunk>
@@ -18,11 +20,14 @@ export class InferenceService {
   constructor(
     private readonly inference: InferenceRepository,
     @Inject(PROVIDER_GATEWAY) private readonly provider: ProviderGateway,
+    private readonly traffic: TrafficControlService,
+    private readonly config: ConfigService,
   ) {}
 
   async chat(input: ChatCompletionDto, key: Pick<ApiKeyEntity, 'workspaceId' | 'userId'>, requestId: string = randomUUID()): Promise<OpenAIChatCompletionResponse> {
     const config = await this.inference.findRoutableModel(key.workspaceId, input.model)
     if (!config) throw new NotFoundException('模型未在当前工作区启用')
+    const lease = await this.acquireTraffic(key.workspaceId, config.model.publicId, config.rateLimitRpm)
 
     const startedAt = performance.now()
     let response: OpenAIChatCompletionResponse
@@ -48,6 +53,8 @@ export class InferenceService {
         this.logger.error('记录失败模型调用时发生错误', recordError instanceof Error ? recordError.stack : undefined)
       }
       throw error
+    } finally {
+      await lease.release()
     }
 
     const latencyMs = Math.max(0, Math.round(performance.now() - startedAt))
@@ -79,6 +86,7 @@ export class InferenceService {
   ): Promise<InferenceChatStream> {
     const config = await this.inference.findRoutableModel(key.workspaceId, input.model)
     if (!config) throw new NotFoundException('模型未在当前工作区启用')
+    const lease = await this.acquireTraffic(key.workspaceId, config.model.publicId, config.rateLimitRpm)
 
     const startedAt = performance.now()
     let providerStream: ProviderChatStream
@@ -103,6 +111,7 @@ export class InferenceService {
       } catch (recordError) {
         this.logger.error('记录流式模型连接失败时发生错误', recordError instanceof Error ? recordError.stack : undefined)
       }
+      await lease.release()
       throw error
     }
 
@@ -115,8 +124,12 @@ export class InferenceService {
         Number(config.model.inputPrice),
         Number(config.model.outputPrice ?? 0),
         startedAt,
+        lease,
       ),
-      cancel: providerStream.cancel,
+      cancel: () => {
+        providerStream.cancel()
+        void lease.release()
+      },
     }
   }
 
@@ -128,6 +141,7 @@ export class InferenceService {
     inputPrice: number,
     outputPrice: number,
     startedAt: number,
+    lease: TrafficLease,
   ): AsyncGenerator<OpenAIChatCompletionChunk> {
     let inputTokens = 0
     let outputTokens = 0
@@ -142,6 +156,7 @@ export class InferenceService {
       }
       completed = true
     } finally {
+      await lease.release()
       try {
         await this.inference.record({
           workspaceId: key.workspaceId,
@@ -163,6 +178,16 @@ export class InferenceService {
   private upstreamModelId(publicId: string): string {
     const separator = publicId.indexOf('/')
     return separator === -1 ? publicId : publicId.slice(separator + 1)
+  }
+
+  private async acquireTraffic(workspaceId: string, modelPublicId: string, rateLimitRpm: number): Promise<TrafficLease> {
+    await this.traffic.consume('inference-rpm', `${workspaceId}:${modelPublicId}`, rateLimitRpm, 60_000)
+    return this.traffic.acquireConcurrency(
+      'inference-workspace',
+      workspaceId,
+      this.config.get<number>('INFERENCE_MAX_CONCURRENCY_PER_WORKSPACE', 20),
+      this.config.get<number>('INFERENCE_CONCURRENCY_LEASE_MS', 600_000),
+    )
   }
 
   private cost(inputTokens: number, outputTokens: number, inputPrice: number, outputPrice: number): number {

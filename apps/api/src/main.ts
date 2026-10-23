@@ -10,12 +10,14 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
 import { Logger } from 'nestjs-pino'
 import { AppModule } from './app.module'
 import { ProblemDetailsFilter } from './common/filters/problem-details.filter'
+import { parseTrustedProxyCidrs } from './config/trusted-proxy'
 
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     new FastifyAdapter({
-      trustProxy: true,
+      trustProxy: parseTrustedProxyCidrs(process.env.TRUSTED_PROXY_CIDRS),
+      bodyLimit: Number(process.env.REQUEST_BODY_LIMIT_BYTES ?? 1_048_576),
       genReqId: (request: { headers: IncomingHttpHeaders }) => {
         const correlationId = request.headers['x-request-id']
         const prefix = typeof correlationId === 'string' && /^[A-Za-z0-9_.:-]{1,32}$/.test(correlationId)

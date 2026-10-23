@@ -1,6 +1,8 @@
 import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus } from '@nestjs/common'
+import { DistributedLimitException } from '../traffic-control/distributed-limit.exception'
 
 interface OpenAIReply {
+  header(name: string, value: string | number): OpenAIReply
   status(code: number): OpenAIReply
   send(body: unknown): void
 }
@@ -18,6 +20,7 @@ export class OpenAIErrorFilter implements ExceptionFilter {
     const reply = context.getResponse<OpenAIReply>()
     const status = exception instanceof HttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR
     const response = exception instanceof HttpException ? exception.getResponse() : null
+    if (exception instanceof DistributedLimitException) reply.header('retry-after', exception.retryAfterSeconds)
     reply.status(status).send({
       error: {
         message: this.message(response, status),

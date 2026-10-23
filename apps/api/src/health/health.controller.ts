@@ -3,11 +3,15 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger'
 import { InjectDataSource } from '@nestjs/typeorm'
 import { DataSource } from 'typeorm'
 import type { HealthResponse } from '@gateway/contracts'
+import { TrafficControlService } from '../traffic-control/traffic-control.service'
 
 @ApiTags('system')
 @Controller('api')
 export class HealthController {
-  constructor(@InjectDataSource() private readonly dataSource: DataSource) {}
+  constructor(
+    @InjectDataSource() private readonly dataSource: DataSource,
+    private readonly traffic: TrafficControlService,
+  ) {}
 
   @Get('health')
   @ApiOperation({ summary: 'Liveness check' })
@@ -23,7 +27,7 @@ export class HealthController {
   @Get('ready')
   @ApiOperation({ summary: 'Readiness check including PostgreSQL' })
   async ready(): Promise<HealthResponse> {
-    await this.dataSource.query('SELECT 1')
+    await Promise.all([this.dataSource.query('SELECT 1'), this.traffic.ping()])
     return this.health()
   }
 }
