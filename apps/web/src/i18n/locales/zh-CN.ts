@@ -30,11 +30,11 @@ export default {
   },
   tags: { new: '新上线', hot: '热门', lowLatency: '低延迟', value: '高性价比', creator: '创作精选' },
   ranking: {
-    kicker: 'NEXUS 基准测试', title: '模型排名', subtitle: '用真实调用数据评估模型能力、成本和速度。每天更新，不受厂商宣传影响。', overall: '综合能力', coding: '编码能力', cost: '成本效率', speed: '响应速度',
+    kicker: 'NEXUS 基准测试', title: '模型排名', subtitle: '汇总公开基准、平台配置与真实调用数据，透明呈现模型能力、成本和速度。', overall: '综合能力', coding: '编码能力', cost: '成本效率', speed: '响应速度',
     overallLeader: '综合能力领先', costLeader: '成本效率领先', speedLeader: '响应速度领先', overallScore: '综合评分', taskCost: '单任务均价', firstLatency: '首字延迟',
     snapshot: '数据快照', today: '今日', categoryLabel: '模型分类', categoryTop: 'CATEGORY TOP', categoryTitle: '{category}模型 Top 5', updatedDaily: '每日更新', categorySingle: '该分类已接入 1 个模型，更多模型评测正在加入。',
     points: '分', usageLeader: '7 日使用冠军', calls7d: '次调用', specialtyKicker: 'SPECIALTY RANKINGS', specialtyTitle: '专项排行榜', specialtyDesc: '从能力、真实使用率与增长速度三个维度观察模型表现。', overallBoard: '综合评分', usageBoard: '使用率 Top', heatBoard: '近 7 日热度', usageUnit: '%', growthUnit: '%',
-    methodTitle: '排名如何计算？', methodDesc: '我们使用统一测试集，并结合过去 7 天真实请求的成功率、延迟和成本数据。', methodLink: '查看评测方法', full: '完整指标榜单', allVendors: '全部供应商', allStatuses: '全部状态', observing: '观察中',
+    methodTitle: '排名如何计算？', methodDesc: '能力分可接入公开基准；成本、延迟和稳定性来自平台配置与真实调用。每个分数都会保留数据来源。', methodLink: '查看评测方法', sourceReady: '数据已通过后端统一校验并标注来源', full: '完整指标榜单', allVendors: '全部供应商', allStatuses: '全部状态', observing: '观察中',
     rank: '排名', model: '模型', status: '状态', score: '综合评分', costTask: '单任务成本', latency: '首字延迟', context: '上下文', trend: '趋势', updated: '数据更新于 {time}', total: '共 {count} 个模型',
   },
   docs: {

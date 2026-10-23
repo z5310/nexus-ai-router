@@ -10,7 +10,8 @@ async function main() {
   await source.initialize()
   try {
     const repository = new ModelsRepository(source.getRepository(ModelEntity))
-    const service = new ModelsService(repository, {})
+    const rankingSources = { scores: async () => new Map(), scoreSource: () => { throw new Error('unexpected external score') } }
+    const service = new ModelsService(repository, {}, rankingSources)
     const catalog = await service.list({ page: 1, pageSize: 100, sort: 'recommended' })
     assert.ok(catalog.data.length > 0, 'catalog must be seeded in the database')
     assert.equal(catalog.pagination.total, catalog.data.length)
@@ -28,6 +29,7 @@ async function main() {
     assert.ok(ranking.data.every((item) => item.usageShare >= 0 && item.usageShare <= 100))
     assert.deepEqual(ranking.data.map((item) => item.rank), ranking.data.map((_, index) => index + 1))
     assert.ok(ranking.data.every((item, index, rows) => index === 0 || rows[index - 1].metricScore >= item.metricScore))
+    assert.ok(ranking.sources.some((item) => item.code === 'nexus-catalog'))
     console.log('PASS: catalog, detail, facets and ranking activity are loaded from PostgreSQL')
   } finally {
     await source.destroy()

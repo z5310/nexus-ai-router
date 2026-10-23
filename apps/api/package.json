@@ -17,6 +17,7 @@
     "test:catalog": "node test/catalog.integration.cjs",
     "test:model-pricing": "node test/model-pricing.integration.cjs",
     "test:providers": "node test/providers.integration.cjs",
+    "test:ranking-sources": "node test/ranking-sources.integration.cjs",
     "dev": "nest start --watch",
     "start:dev": "nest start --watch",
     "start:prod": "node dist/main.js",

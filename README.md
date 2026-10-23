@@ -143,7 +143,7 @@ Swagger 文档位于 `http://localhost:3000/docs`。接口错误统一返回 Pro
 
 Turbo 负责跨项目依赖顺序、并行运行和构建缓存。根目录 `npm run dev` 会同时启动 API、Web 和 Admin；每个应用仍保留独立运行命令。
 
-完整的能力盘点、接口状态与 P0/P1/P2 规划见 [产品路线图](docs/product-roadmap.md)。后端接口的实际完成度、缺口和建议新增入口见 [后端接口完成度与缺口清单](docs/backend-api-gap-audit.md)。面向高并发、安全、性能、高可用和长期维护的技术演进方案见 [架构审计与演进方案](docs/architecture-evolution-plan.md)。本轮实施进度见 [开发清单](docs/development-checklist.md)，多供应商调用层决策见 [多模型供应商网关选型](docs/llm-provider-gateway-selection.md)。
+完整的能力盘点、接口状态与 P0/P1/P2 规划见 [产品路线图](docs/product-roadmap.md)。后端接口的实际完成度、缺口和建议新增入口见 [后端接口完成度与缺口清单](docs/backend-api-gap-audit.md)。面向高并发、安全、性能、高可用和长期维护的技术演进方案见 [架构审计与演进方案](docs/architecture-evolution-plan.md)。本轮实施进度见 [开发清单](docs/development-checklist.md)，多供应商调用层决策见 [多模型供应商网关选型](docs/llm-provider-gateway-selection.md)，公开榜单聚合边界见 [模型排行榜数据源设计](docs/model-ranking-data-sources.md)。
 
 ## 第三方登录配置
 
@@ -188,6 +188,12 @@ GOOGLE_CLIENT_SECRET=...
 ## 模型价格版本
 
 平台管理员在 `http://localhost:5174/admin/models` 的“配置价格”弹窗中维护输入/输出原价、折扣比例和计价单位。后端按固定四位小数计算成交价，并在同一事务中关闭旧版本、创建新版本和更新模型当前价格投影。首页、模型广场和详情页只读取 API 返回的当前价格；有折扣时展示划线原价和折扣比例。当前版本立即生效，预约生效、请求级价格版本快照、账本和预算预占仍属于后续计费阶段。
+
+## 模型排行榜数据源
+
+平台管理员在 `http://localhost:5174/admin/rankings` 管理公开榜单来源。当前支持 Hugging Face 官方 Leaderboard API：后端拉取后保存快照，管理员显式映射外部模型与平台模型，再启用来源。公开 `GET /api/rankings` 会返回每个分数的 `scoreSource` 与响应级 `sources`，Web 排行榜展示来源署名。
+
+Nginx 只转发站内 API，不直接代理第三方榜单。第三方域名、响应格式、分数归一化和错误保留策略全部封装在 NestJS 适配器中；公开请求只读本地快照。详细边界和后续定时同步计划见 [模型排行榜数据源设计](docs/model-ranking-data-sources.md)。
 
 ## 本地演示身份
 

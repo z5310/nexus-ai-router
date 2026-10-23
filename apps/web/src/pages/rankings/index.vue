@@ -117,7 +117,7 @@ const updatedAt = computed(() => {
       <section v-reveal class="leaderboard-section" id="model-discovery-full-ranking">
         <div v-if="rankingQuery.isLoading.value" class="data-state-banner">{{ t('common.loading') }}</div>
         <div v-else-if="rankingQuery.isError.value" class="data-state-banner warning">{{ t('common.loadError') }}</div>
-        <div v-else class="data-state-banner live">{{ t('common.liveData') }}</div>
+        <div v-else class="data-state-banner live">{{ t('ranking.sourceReady') }}</div>
         <div class="leaderboard-heading"><div><span>FULL METRIC LEADERBOARD</span><h2>{{ t('ranking.full') }}</h2></div><div class="leaderboard-controls"><div class="metric-switcher"><button v-for="item in metrics" :key="item" :class="{ active: metric === item }" @click="metric = item">{{ t(`ranking.${item}`) }}</button></div><div class="table-filters"><select v-model="vendor"><option value="all">{{ t('ranking.allVendors') }}</option><option v-for="provider in providers" :key="provider" :value="provider">{{ providerLabel(provider) }}</option></select><select v-model="status"><option value="all">{{ t('ranking.allStatuses') }}</option><option value="stable">{{ t('common.stable') }}</option><option value="observing">{{ t('ranking.observing') }}</option></select></div></div></div>
         <div class="table-wrap">
           <table>
@@ -126,7 +126,13 @@ const updatedAt = computed(() => {
               <tr v-for="row in visibleRankings" :key="row.slug">
                 <td><span :class="['rank-number', { top: row.displayRank <= 3 }]">{{ String(row.displayRank).padStart(2, '0') }}</span></td>
                 <td><div class="table-model"><ModelLogo :owner="row.owner" :provider="row.provider" :name="row.name" :accent="row.accent" :size="28" /><div><b>{{ row.name }}</b><small>{{ providerLabel(row.provider) }}</small></div></div></td>
-                <td><span class="status-pill"><i /> {{ row.status === 'stable' ? t('common.stable') : t('ranking.observing') }}</span></td><td><strong class="score-cell">{{ row.metricScore }}</strong></td><td>¥{{ row.costPerTask.toFixed(2) }}</td><td>{{ speedLabel(row.latencyMs) }}</td><td>{{ contextLabel(row.context) }}</td>
+                <td><span class="status-pill"><i /> {{ row.status === 'stable' ? t('common.stable') : t('ranking.observing') }}</span></td>
+                <td>
+                  <strong class="score-cell">{{ row.metricScore }}</strong>
+                  <a v-if="row.scoreSource.url" class="score-source" :href="row.scoreSource.url" target="_blank" rel="noopener noreferrer">{{ row.scoreSource.name }}</a>
+                  <span v-else class="score-source">{{ row.scoreSource.name }}</span>
+                </td>
+                <td>¥{{ row.costPerTask.toFixed(2) }}</td><td>{{ speedLabel(row.latencyMs) }}</td><td>{{ contextLabel(row.context) }}</td>
                 <td><span :class="['trend', { down: (row.trend ?? 0) < 0 }]" v-if="row.trend !== null"><ArrowDown v-if="row.trend < 0" :size="12" /><ArrowUp v-else :size="12" />{{ Math.abs(row.trend) }}</span><span v-else>—</span></td>
                 <td><a href="/console" target="_blank" rel="noopener noreferrer">{{ t('common.try') }} <ArrowRight :size="13" /></a></td>
               </tr>

@@ -4,10 +4,11 @@ import type { ModelEntity } from '../database/entities/model.entity'
 import type { ListModelsQuery, ListRankingsQuery } from './dto/list-models.query'
 import { ModelsRepository } from './models.repository'
 import { WorkspaceModelsRepository } from './workspace-models.repository'
+import { RankingSourcesService } from '../rankings/ranking-sources.service'
 
 @Injectable()
 export class ModelsService {
-  constructor(private readonly models: ModelsRepository, private readonly workspaceModels: WorkspaceModelsRepository) {}
+  constructor(private readonly models: ModelsRepository, private readonly workspaceModels: WorkspaceModelsRepository, private readonly rankingSources: RankingSourcesService) {}
 
   async list(query: ListModelsQuery): Promise<ModelListResponse> {
     const [[entities, total], facets] = await Promise.all([this.models.list(query), this.models.facets()])
@@ -33,27 +34,45 @@ export class ModelsService {
   }
 
   async rankings(query: ListRankingsQuery): Promise<RankingListResponse> {
-    const [entities, activity] = await Promise.all([this.models.rankings(query), this.models.activity()])
+    const [entities, activity, externalScores] = await Promise.all([this.models.rankings(query), this.models.activity(), this.rankingSources.scores(query.metric)])
     const metric = query.metric
     const activityByModel = new Map(activity.map((item) => [item.publicId, item]))
     const totalCalls7d = activity.reduce((sum, item) => sum + item.calls7d, 0)
-    return {
-      data: entities.map((entity, index) => {
+    const data = entities.map((entity) => {
         const usage = activityByModel.get(entity.publicId) ?? { calls7d: 0, callsPrevious7d: 0 }
+        const external = externalScores.get(entity.id)
         return {
           ...this.mapModel(entity),
-          rank: index + 1,
+          rank: 0,
           metric,
-          metricScore: this.metricScore(entity, metric),
+          metricScore: external?.score ?? this.metricScore(entity, metric),
           calls7d: usage.calls7d,
           usageShare: totalCalls7d === 0 ? 0 : Number(((usage.calls7d / totalCalls7d) * 100).toFixed(1)),
           weeklyGrowth: usage.callsPrevious7d === 0
-            ? null
-            : Number((((usage.calls7d - usage.callsPrevious7d) / usage.callsPrevious7d) * 100).toFixed(1)),
+              ? null
+              : Number((((usage.calls7d - usage.callsPrevious7d) / usage.callsPrevious7d) * 100).toFixed(1)),
+          scoreSource: external ? this.rankingSources.scoreSource(external) : {
+            code: metric === 'cost' || metric === 'speed' ? 'nexus-operations' : 'nexus-catalog',
+            name: metric === 'cost' || metric === 'speed' ? 'Nexus 运营数据' : 'Nexus 模型目录配置',
+            url: null, sampledAt: entity.updatedAt.toISOString(), verified: false, external: false,
+          },
         }
-      }),
+      }).sort((a, b) => b.metricScore - a.metricScore || a.name.localeCompare(b.name)).slice(0, query.limit)
+        .map((entry, index) => ({ ...entry, rank: index + 1 }))
+    const sourceByCode = new Map<string, (typeof data)[number]['scoreSource']>()
+    for (const entry of data) {
+      const current = sourceByCode.get(entry.scoreSource.code)
+      if (!current || entry.scoreSource.sampledAt > current.sampledAt) sourceByCode.set(entry.scoreSource.code, entry.scoreSource)
+    }
+    const sources = [...sourceByCode.values()]
+    const updatedAt = sources.length
+      ? sources.reduce((latest, source) => source.sampledAt > latest ? source.sampledAt : latest, sources[0].sampledAt)
+      : new Date().toISOString()
+    return {
+      data,
       metric,
-      updatedAt: new Date().toISOString(),
+      updatedAt,
+      sources,
     }
   }
 

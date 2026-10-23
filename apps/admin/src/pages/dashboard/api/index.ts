@@ -1,7 +1,7 @@
-import type { AdminModel, AdminModelListResponse, AdminModelSummaryResponse, ModelDeployment, ModelDeploymentListResponse, ModelPricingResponse, ProviderChannel, ProviderChannelListResponse, ProviderCredentialListResponse, ProviderDefinition, ProviderDefinitionListResponse, UpdateModelPricingInput, UserListResponse, UserSummaryResponse } from '@gateway/contracts'
+import type { AdminModel, AdminModelListResponse, AdminModelSummaryResponse, ModelDeployment, ModelDeploymentListResponse, ModelPricingResponse, ProviderChannel, ProviderChannelListResponse, ProviderCredentialListResponse, ProviderDefinition, ProviderDefinitionListResponse, RankingSource, RankingSourceDetailResponse, RankingSourceListResponse, UpdateModelPricingInput, UserListResponse, UserSummaryResponse } from '@gateway/contracts'
 import { request } from '../../../lib/http'
 import { adminEndpoints } from './endpoints'
-import type { AdminListQuery, CreateModelDeploymentInput, CreateProviderChannelInput, CreateProviderCredentialInput, CreateProviderDefinitionInput } from './types'
+import type { AdminListQuery, CreateModelDeploymentInput, CreateProviderChannelInput, CreateProviderCredentialInput, CreateProviderDefinitionInput, CreateRankingSourceInput } from './types'
 
 export const getModelSummary = () => request<AdminModelSummaryResponse>({ url: adminEndpoints.modelSummary })
 export const getUserSummary = () => request<UserSummaryResponse>({ url: adminEndpoints.userSummary })
@@ -26,6 +26,13 @@ export const getModelDeployments = () => request<ModelDeploymentListResponse>({ 
 export const createModelDeployment = (data: CreateModelDeploymentInput) => request<ModelDeployment>({ method: 'POST', url: adminEndpoints.deployments, data })
 export const updateModelDeployment = (id: string, data: Partial<Pick<ModelDeployment, 'upstreamModelId' | 'priority' | 'weight' | 'enabled'>>) => request<ModelDeployment>({ method: 'PATCH', url: adminEndpoints.deployment(id), data })
 export const deleteModelDeployment = (id: string) => request<void>({ method: 'DELETE', url: adminEndpoints.deployment(id) })
+export const getRankingSources = () => request<RankingSourceListResponse>({ url: adminEndpoints.rankingSources })
+export const getRankingSource = (id: string) => request<RankingSourceDetailResponse>({ url: adminEndpoints.rankingSource(id) })
+export const createRankingSource = (data: CreateRankingSourceInput) => request<RankingSource>({ method: 'POST', url: adminEndpoints.rankingSources, data })
+export const updateRankingSource = (id: string, data: Partial<Pick<RankingSource, 'name' | 'metric' | 'scoreMultiplier' | 'priority' | 'enabled' | 'attributionLabel'>>) => request<RankingSource>({ method: 'PATCH', url: adminEndpoints.rankingSource(id), data })
+export const syncRankingSource = (id: string) => request<RankingSourceDetailResponse>({ method: 'POST', url: adminEndpoints.rankingSourceSync(id) })
+export const mapRankingModel = (sourceId: string, data: { modelId: string; externalModelId: string }) => request<RankingSourceDetailResponse>({ method: 'POST', url: adminEndpoints.rankingSourceMappings(sourceId), data })
+export const unmapRankingModel = (mappingId: string) => request<void>({ method: 'DELETE', url: adminEndpoints.rankingSourceMapping(mappingId) })
 export { adminEndpoints }
 export type * from './types'
 export type { AdminModel, ModelPricingResponse, UpdateModelPricingInput } from '@gateway/contracts'

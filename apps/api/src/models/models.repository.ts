@@ -105,7 +105,7 @@ export class ModelsRepository {
     const builder = this.repository.createQueryBuilder('model').where('model.isEnabled = true')
     if (query.provider) builder.andWhere('model.provider = :provider', { provider: query.provider })
     if (query.status) builder.andWhere('model.status = :status', { status: query.status })
-    return builder.orderBy(scoreColumn[query.metric], 'DESC').addOrderBy('model.name', 'ASC').take(query.limit).getMany()
+    return builder.orderBy(scoreColumn[query.metric], 'DESC').addOrderBy('model.name', 'ASC').getMany()
   }
 
   async activity(): Promise<ModelActivityResult[]> {

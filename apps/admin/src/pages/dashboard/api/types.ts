@@ -1,7 +1,8 @@
-export type { AdminModel, AdminModelListResponse, AdminModelSummaryResponse, ModelDeployment, ModelDeploymentListResponse, ProviderChannel, ProviderChannelListResponse, ProviderCredential, ProviderCredentialListResponse, ProviderDefinition, ProviderDefinitionListResponse, ProviderProtocol, UserListResponse, UserSummaryResponse } from '@gateway/contracts'
-import type { ModelType, ProviderProtocol } from '@gateway/contracts'
+export type { AdminModel, AdminModelListResponse, AdminModelSummaryResponse, ModelDeployment, ModelDeploymentListResponse, ProviderChannel, ProviderChannelListResponse, ProviderCredential, ProviderCredentialListResponse, ProviderDefinition, ProviderDefinitionListResponse, ProviderProtocol, RankingSource, RankingSourceDetailResponse, RankingSourceListResponse, UserListResponse, UserSummaryResponse } from '@gateway/contracts'
+import type { ModelType, ProviderProtocol, RankingMetric, RankingSourceAdapter } from '@gateway/contracts'
 export interface AdminListQuery { query?: string; page: number; pageSize: number }
 export interface CreateProviderChannelInput { name: string; provider: string; environment: 'development' | 'staging' | 'production'; credentialId: string; region: string; timeoutMs: number; maxConcurrency: number; enabled: boolean }
 export interface CreateModelDeploymentInput { modelId: string; channelId: string; upstreamModelId: string; priority: number; weight: number; enabled: boolean }
 export interface CreateProviderCredentialInput { name: string; provider: string; environment: 'development' | 'staging' | 'production'; apiKey: string; enabled: boolean }
 export interface CreateProviderDefinitionInput { code: string; name: string; protocol: ProviderProtocol; baseUrl?: string; docsUrl?: string; capabilities: ModelType[]; enabled: boolean; sortOrder: number }
+export interface CreateRankingSourceInput { code: string; name: string; adapter: RankingSourceAdapter; datasetId: string; metric: RankingMetric; scoreMultiplier: number; priority: number; enabled: boolean; attributionLabel: string }

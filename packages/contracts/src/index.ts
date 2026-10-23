@@ -345,12 +345,66 @@ export interface RankingEntry extends CatalogModel {
   calls7d: number
   usageShare: number
   weeklyGrowth: number | null
+  scoreSource: RankingScoreSource
+}
+
+export interface RankingScoreSource {
+  code: string
+  name: string
+  url: string | null
+  sampledAt: string
+  verified: boolean
+  external: boolean
 }
 
 export interface RankingListResponse {
   data: RankingEntry[]
   metric: RankingMetric
   updatedAt: string
+  sources: RankingScoreSource[]
+}
+
+export type RankingSourceAdapter = 'huggingface'
+
+export interface RankingSource {
+  id: string
+  code: string
+  name: string
+  adapter: RankingSourceAdapter
+  datasetId: string
+  metric: RankingMetric
+  scoreMultiplier: number
+  priority: number
+  enabled: boolean
+  attributionLabel: string
+  sourceUrl: string
+  lastSyncedAt: string | null
+  lastSuccessAt: string | null
+  lastError: string | null
+  mappingCount: number
+  snapshotCount: number
+  createdAt: string
+  updatedAt: string
+}
+
+export interface RankingSourceListResponse { data: RankingSource[] }
+
+export interface RankingSourceSnapshot {
+  mappingId: string | null
+  externalModelId: string
+  rank: number
+  rawScore: number
+  normalizedScore: number
+  verified: boolean
+  author: string | null
+  capturedAt: string
+  mappedModelId: string | null
+  mappedModelName: string | null
+}
+
+export interface RankingSourceDetailResponse {
+  source: RankingSource
+  snapshots: RankingSourceSnapshot[]
 }
 
 export interface DashboardStat {

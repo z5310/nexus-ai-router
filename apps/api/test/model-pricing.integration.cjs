@@ -46,7 +46,7 @@ async function main() {
     assert.equal(result.versions[0].effectiveTo, null)
     assert.ok(result.versions.some((version) => version.id === previousActiveId && version.effectiveTo !== null))
 
-    const catalog = new ModelsService(new ModelsRepository(source.getRepository(ModelEntity)), {})
+    const catalog = new ModelsService(new ModelsRepository(source.getRepository(ModelEntity)), {}, {})
     const publicModel = await catalog.detail(model.publicId)
     assert.equal(publicModel.inputPrice, 9)
     assert.equal(publicModel.originalInputPrice, 12)
