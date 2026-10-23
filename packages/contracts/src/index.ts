@@ -295,6 +295,28 @@ export interface RequestLogListResponse {
   data: RequestLogItem[]
 }
 
+export interface InferenceAttemptItem {
+  attemptNumber: number
+  modelId: string
+  provider: string
+  status: 'success' | 'failed' | 'cancelled'
+  latencyMs: number
+  errorCode: string | null
+  errorMessage: string | null
+  createdAt: string
+}
+
+export interface RequestLogDetail extends RequestLogItem {
+  requestedModelId: string
+  routeRuleId: string | null
+  attemptCount: number
+  firstTokenLatencyMs: number | null
+  errorCode: string | null
+  inputTokens: number
+  outputTokens: number
+  attempts: InferenceAttemptItem[]
+}
+
 export type UserRole = 'admin' | 'manager' | 'viewer'
 export type UserStatus = 'active' | 'suspended' | 'invited'
 

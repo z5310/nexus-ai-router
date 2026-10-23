@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm'
 import { DataSource, Repository } from 'typeorm'
 import { ApiKeyEntity } from '../database/entities/api-key.entity'
 import { RequestLogEntity } from '../database/entities/request-log.entity'
+import { InferenceAttemptEntity, type InferenceAttemptStatus } from '../database/entities/inference-attempt.entity'
 import { WorkspaceModelEntity } from '../database/entities/workspace-model.entity'
 import { WorkspaceEntity } from '../database/entities/workspace.entity'
 import { WorkspaceMemberEntity } from '../database/entities/workspace-member.entity'
@@ -11,12 +12,26 @@ export interface RecordedInference {
   workspaceId: string
   userId: string
   requestId: string
+  requestedModelPublicId: string
   modelPublicId: string
+  routeRuleId: string | null
   status: 'success' | 'failed'
   latencyMs: number
+  firstTokenLatencyMs: number | null
+  errorCode: string | null
   inputTokens: number
   outputTokens: number
   costCny: number
+  attempts: RecordedInferenceAttempt[]
+}
+
+export interface RecordedInferenceAttempt {
+  modelPublicId: string
+  provider: string
+  status: InferenceAttemptStatus
+  latencyMs: number
+  errorCode: string | null
+  errorMessage: string | null
 }
 
 @Injectable()
@@ -67,17 +82,32 @@ export class InferenceRepository {
     const bucketStart = new Date()
     bucketStart.setUTCMinutes(0, 0, 0)
     await this.dataSource.transaction(async (manager) => {
-      await manager.getRepository(RequestLogEntity).save(manager.getRepository(RequestLogEntity).create({
+      const requestLogRepository = manager.getRepository(RequestLogEntity)
+      const requestLog = await requestLogRepository.save(requestLogRepository.create({
         workspaceId: input.workspaceId,
         userId: input.userId,
         requestId: input.requestId,
+        requestedModelPublicId: input.requestedModelPublicId,
         modelPublicId: input.modelPublicId,
+        routeRuleId: input.routeRuleId,
+        attemptCount: input.attempts.length,
+        firstTokenLatencyMs: input.firstTokenLatencyMs,
+        errorCode: input.errorCode,
         status: input.status,
         latencyMs: input.latencyMs,
         inputTokens: input.inputTokens,
         outputTokens: input.outputTokens,
         costCny: input.costCny.toFixed(6),
       }))
+      if (input.attempts.length > 0) {
+        const attemptRepository = manager.getRepository(InferenceAttemptEntity)
+        await attemptRepository.save(input.attempts.map((attempt, index) => attemptRepository.create({
+          requestLogId: requestLog.id,
+          workspaceId: input.workspaceId,
+          attemptNumber: index + 1,
+          ...attempt,
+        })))
+      }
       await manager.query(`
         INSERT INTO "usage_buckets" (
           "workspace_id", "user_id", "bucket_start", "request_count", "token_count",

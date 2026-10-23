@@ -43,14 +43,19 @@ async function main() {
     }),
   }
   const records = []
+  const configuredModel = {
+    id: randomUUID(),
+    rateLimitRpm: 100,
+    enabled: true,
+    model: { publicId: 'openai/test', owner: 'OpenAI', modelType: 'text', isEnabled: true, inputPrice: '0', outputPrice: '0', latencyMs: 1 },
+  }
   const repository = {
-    findRoutableModel: async () => ({
-      rateLimitRpm: 100,
-      model: { publicId: 'openai/test', owner: 'OpenAI', inputPrice: '0', outputPrice: '0' },
-    }),
     record: async (entry) => { records.push(entry) },
   }
-  const service = new InferenceService(repository, provider, traffic, config)
+  const routing = {
+    resolve: async () => ({ requested: configuredModel, routeRuleId: null, routeRuleName: null, candidates: [configuredModel] }),
+  }
+  const service = new InferenceService(repository, provider, traffic, config, routing)
   const input = { model: 'openai/test', messages: [{ role: 'user', content: 'hello' }], stream: false }
   const key = { workspaceId: randomUUID(), userId: randomUUID() }
 

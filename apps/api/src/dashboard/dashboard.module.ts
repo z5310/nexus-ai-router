@@ -6,9 +6,10 @@ import { DashboardController } from './dashboard.controller'
 import { DashboardRepository } from './dashboard.repository'
 import { DashboardService } from './dashboard.service'
 import { IdentityModule } from '../identity/identity.module'
+import { InferenceAttemptEntity } from '../database/entities/inference-attempt.entity'
 
 @Module({
-  imports: [TypeOrmModule.forFeature([UsageBucketEntity, RequestLogEntity]), IdentityModule],
+  imports: [TypeOrmModule.forFeature([UsageBucketEntity, RequestLogEntity, InferenceAttemptEntity]), IdentityModule],
   controllers: [DashboardController],
   providers: [DashboardRepository, DashboardService],
 })

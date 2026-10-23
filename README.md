@@ -41,6 +41,7 @@ npm run db:migrate
 | `GET` | `/api/rankings` | 按综合、编码、成本、速度指标排行 |
 | `GET` | `/api/dashboard/overview` | 用量指标、24 小时趋势、余额和最近请求 |
 | `GET` | `/api/dashboard/requests` | 按请求 ID 或模型检索调用记录 |
+| `GET` | `/api/dashboard/requests/:requestId` | 查看请求模型、实际模型、命中规则、首 Token 延迟和完整上游尝试链 |
 | `GET` | `/api/workspaces` | 查询当前用户可访问的工作区与工作区角色 |
 | `GET/PATCH` | `/api/workspaces/current` | 读取或修改当前工作区名称和默认展示币种 |
 | `GET` | `/api/workspaces/current/members` | 查询当前工作区成员 |
@@ -92,7 +93,7 @@ curl -N 'http://localhost:3000/v1/chat/completions' \
 
 Swagger 文档位于 `http://localhost:3000/docs`。接口错误统一返回 Problem Details，包含 `status`、`detail`、`instance` 和 `request_id`。
 工作区接口可通过 `x-workspace-id` 指定目标租户；未传时自动使用当前用户最早加入的有效工作区。
-推理接口使用控制台生成的 `nxs_live_` API Key。调用模型必须已在对应工作区启用；成功和失败请求都会写入工作区请求日志与小时用量桶。
+推理接口使用控制台生成的 `nxs_live_` API Key。调用模型必须已在对应工作区启用；启用的路由规则会按请求类型和稳定流量分桶参与选择，支持优先级、最低成本、最低延迟及连接前主备故障转移。成功和失败请求都会写入工作区请求日志、上游尝试明细与小时用量桶。
 
 ## 前端页面
 

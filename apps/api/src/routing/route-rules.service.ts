@@ -16,7 +16,7 @@ export class RouteRulesService {
   async create(workspaceId: string, actorUserId: string, input: CreateRouteRuleDto): Promise<RouteRule> {
     const name = input.name.trim()
     if (await this.rules.findByName(workspaceId, name)) throw new ConflictException('路由规则名称已存在')
-    await this.validateModels(workspaceId, input.primaryModelId, input.fallbackModelId ?? null)
+    await this.validateModels(workspaceId, input.primaryModelId, input.fallbackModelId ?? null, input.matchType)
     const saved = await this.rules.save(this.rules.create({
       userId: actorUserId,
       workspaceId,
@@ -42,7 +42,10 @@ export class RouteRulesService {
     }
     const primaryModelId = input.primaryModelId ?? rule.primaryModelId
     const fallbackModelId = input.fallbackModelId !== undefined ? input.fallbackModelId : rule.fallbackModelId
-    if (input.primaryModelId !== undefined || input.fallbackModelId !== undefined) await this.validateModels(workspaceId, primaryModelId, fallbackModelId)
+    const matchType = input.matchType ?? rule.matchType
+    if (input.primaryModelId !== undefined || input.fallbackModelId !== undefined || input.matchType !== undefined) {
+      await this.validateModels(workspaceId, primaryModelId, fallbackModelId, matchType)
+    }
     if (input.matchType !== undefined) rule.matchType = input.matchType
     if (input.strategy !== undefined) rule.strategy = input.strategy
     if (input.primaryModelId !== undefined) rule.primaryModelId = input.primaryModelId
@@ -59,13 +62,15 @@ export class RouteRulesService {
     await this.rules.remove(rule)
   }
 
-  private async validateModels(workspaceId: string, primaryId: string, fallbackId: string | null): Promise<void> {
+  private async validateModels(workspaceId: string, primaryId: string, fallbackId: string | null, matchType: RouteRuleEntity['matchType']): Promise<void> {
     if (primaryId === fallbackId) throw new BadRequestException('主模型和故障转移模型不能相同')
     const primary = await this.models.find(primaryId, workspaceId)
     if (!primary || !primary.enabled) throw new BadRequestException('主模型必须是当前工作区中已启用的模型')
+    if (matchType !== 'all' && primary.model.modelType !== matchType) throw new BadRequestException('主模型类型必须与规则匹配类型一致')
     if (fallbackId) {
       const fallback = await this.models.find(fallbackId, workspaceId)
       if (!fallback || !fallback.enabled) throw new BadRequestException('故障转移模型必须是当前工作区中已启用的模型')
+      if (fallback.model.modelType !== primary.model.modelType) throw new BadRequestException('主模型和故障转移模型必须属于同一类型')
     }
   }
 

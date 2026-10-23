@@ -1,5 +1,5 @@
-import { Injectable } from '@nestjs/common'
-import type { DashboardOverviewResponse, DashboardStat, RequestLogItem, RequestLogListResponse } from '@gateway/contracts'
+import { Injectable, NotFoundException } from '@nestjs/common'
+import type { DashboardOverviewResponse, DashboardStat, RequestLogDetail, RequestLogItem, RequestLogListResponse } from '@gateway/contracts'
 import { DashboardRepository, type RequestLogRow } from './dashboard.repository'
 import type { ListRequestLogsQuery } from './dto/list-request-logs.query'
 
@@ -40,6 +40,32 @@ export class DashboardService {
   async requests(workspaceId: string, query: ListRequestLogsQuery): Promise<RequestLogListResponse> {
     const rows = await this.dashboard.recentRequests(workspaceId, query)
     return { data: rows.map((row) => this.mapRequest(row)) }
+  }
+
+  async requestDetail(workspaceId: string, requestId: string): Promise<RequestLogDetail> {
+    const result = await this.dashboard.requestDetail(workspaceId, requestId)
+    if (!result) throw new NotFoundException('请求记录不存在')
+    const item = this.mapRequest(result.request)
+    return {
+      ...item,
+      requestedModelId: result.request.requestedModelPublicId,
+      routeRuleId: result.request.routeRuleId,
+      attemptCount: Number(result.request.attemptCount),
+      firstTokenLatencyMs: result.request.firstTokenLatencyMs === null ? null : Number(result.request.firstTokenLatencyMs),
+      errorCode: result.request.errorCode,
+      inputTokens: Number(result.request.inputTokens),
+      outputTokens: Number(result.request.outputTokens),
+      attempts: result.attempts.map((attempt) => ({
+        attemptNumber: attempt.attemptNumber,
+        modelId: attempt.modelPublicId,
+        provider: attempt.provider,
+        status: attempt.status,
+        latencyMs: attempt.latencyMs,
+        errorCode: attempt.errorCode,
+        errorMessage: attempt.errorMessage,
+        createdAt: attempt.createdAt.toISOString(),
+      })),
+    }
   }
 
   private stat(value: number): DashboardStat {

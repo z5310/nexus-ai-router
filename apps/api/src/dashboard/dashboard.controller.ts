@@ -1,6 +1,6 @@
-import { Controller, Get, Query, Req, UseGuards } from '@nestjs/common'
+import { Controller, Get, Param, Query, Req, UseGuards } from '@nestjs/common'
 import { ApiBearerAuth, ApiHeader, ApiOperation, ApiTags } from '@nestjs/swagger'
-import type { DashboardOverviewResponse, RequestLogListResponse } from '@gateway/contracts'
+import type { DashboardOverviewResponse, RequestLogDetail, RequestLogListResponse } from '@gateway/contracts'
 import { DashboardService } from './dashboard.service'
 import { ListRequestLogsQuery } from './dto/list-request-logs.query'
 import { JwtAuthGuard } from '../identity/auth.guard'
@@ -26,5 +26,11 @@ export class DashboardController {
   @ApiOperation({ summary: 'Search recent gateway requests' })
   requests(@Req() request: WorkspaceRequest, @Query() query: ListRequestLogsQuery): Promise<RequestLogListResponse> {
     return this.dashboard.requests(request.workspace.id, query)
+  }
+
+  @Get('requests/:requestId')
+  @ApiOperation({ summary: 'Get one gateway request with its routing attempt chain' })
+  requestDetail(@Req() request: WorkspaceRequest, @Param('requestId') requestId: string): Promise<RequestLogDetail> {
+    return this.dashboard.requestDetail(request.workspace.id, requestId)
   }
 }

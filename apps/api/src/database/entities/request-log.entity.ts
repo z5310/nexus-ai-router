@@ -21,6 +21,21 @@ export class RequestLogEntity {
   @Column({ name: 'model_public_id', length: 120 })
   modelPublicId: string
 
+  @Column({ name: 'requested_model_public_id', length: 120 })
+  requestedModelPublicId: string
+
+  @Column({ name: 'route_rule_id', type: 'uuid', nullable: true })
+  routeRuleId: string | null
+
+  @Column({ name: 'attempt_count', type: 'smallint', default: 1 })
+  attemptCount: number
+
+  @Column({ name: 'first_token_latency_ms', type: 'integer', nullable: true })
+  firstTokenLatencyMs: number | null
+
+  @Column({ name: 'error_code', type: 'varchar', length: 80, nullable: true })
+  errorCode: string | null
+
   @Column({ length: 20, default: 'success' })
   status: 'success' | 'failed'
 
