@@ -14,6 +14,7 @@ function configuredModel(publicId, owner, inputPrice, outputPrice, latencyMs) {
     priority: 50,
     enabled: true,
     model: {
+      id: randomUUID(),
       publicId,
       owner,
       modelType: 'text',
@@ -93,7 +94,7 @@ async function verifyFallbackAndAttemptChain() {
     acquireConcurrency: async () => ({ release: async () => {} }),
   }
   const service = new InferenceService(
-    { record: async (entry) => { records.push(structuredClone(entry)) } },
+    { record: async (entry) => { records.push(structuredClone(entry)) }, capturePrice: async (id) => { const item = [primary, fallback].find((item) => item.model.id === id); return { versionId: id, modelId: id, currency: 'CNY', priceUnit: 'million_tokens', inputPrice: item.model.inputPrice, outputPrice: item.model.outputPrice, effectiveFrom: new Date().toISOString() } } },
     provider,
     traffic,
     { get: (_key, fallbackValue) => fallbackValue },
@@ -112,6 +113,9 @@ async function verifyFallbackAndAttemptChain() {
   assert.equal(records[0].routeRuleId, routeRuleId)
   assert.equal(records[0].requestedModelPublicId, primary.model.publicId)
   assert.equal(records[0].modelPublicId, fallback.model.publicId)
+  assert.equal(records[0].priceSnapshot.modelId, fallback.model.id)
+  assert.equal(records[0].priceSnapshot.inputPrice, '1')
+  assert.equal(records[0].costCny, 0.00002)
   assert.deepEqual(records[0].attempts.map((item) => item.status), ['failed', 'success'])
   assert.equal(records[0].attempts[0].errorCode, 'upstream_502')
 
@@ -125,6 +129,8 @@ async function verifyFallbackAndAttemptChain() {
   assert.ok(records[1].firstTokenLatencyMs >= 0)
   assert.equal(records[1].inputTokens, 4)
   assert.equal(records[1].outputTokens, 3)
+  assert.equal(records[1].priceSnapshot.modelId, fallback.model.id)
+  assert.equal(records[1].costCny, 0.00001)
 }
 
 async function main() {

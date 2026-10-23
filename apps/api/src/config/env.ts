@@ -23,6 +23,7 @@ const envSchema = z.object({
   PROVIDER_GATEWAY_TIMEOUT_MS: z.coerce.number().int().min(1_000).max(300_000).default(60_000),
   AUDIO_GENERATION_GATEWAY_URL: z.preprocess((value) => value === '' ? undefined : value, z.string().url().optional()),
   AUDIO_GENERATION_TIMEOUT_MS: z.coerce.number().int().min(10_000).max(900_000).default(300_000),
+  BILLING_PREPAID_WORKSPACE_IDS: z.string().default('').refine((value) => value.trim() === '' || value.split(',').every((id) => z.string().uuid().safeParse(id.trim()).success), '计费工作区必须为逗号分隔的 UUID'),
   TRUSTED_PROXY_CIDRS: z.string().optional(),
   REQUEST_BODY_LIMIT_BYTES: z.coerce.number().int().min(16_384).max(10_485_760).default(1_048_576),
   GLOBAL_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().min(10).max(1_000_000).default(600),

@@ -50,6 +50,7 @@ async function main() {
     model: { publicId: 'openai/test', owner: 'OpenAI', modelType: 'text', isEnabled: true, inputPrice: '0', outputPrice: '0', latencyMs: 1 },
   }
   const repository = {
+    capturePrice: async () => ({ priceUnit: 'million_tokens', inputPrice: '0', outputPrice: '0' }),
     record: async (entry) => { records.push(entry) },
   }
   const routing = {

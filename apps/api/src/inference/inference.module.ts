@@ -17,9 +17,10 @@ import { IdentityModule } from '../identity/identity.module'
 import { PlaygroundController } from './playground.controller'
 import { RoutingExecutorService } from './routing-executor.service'
 import { ProvidersModule } from '../providers/providers.module'
+import { BillingModule } from '../billing/billing.module'
 
 @Module({
-  imports: [IdentityModule, ProvidersModule, TypeOrmModule.forFeature([ApiKeyEntity, WorkspaceModelEntity, RouteRuleEntity, RequestLogEntity, InferenceAttemptEntity, UsageBucketEntity])],
+  imports: [IdentityModule, ProvidersModule, BillingModule, TypeOrmModule.forFeature([ApiKeyEntity, WorkspaceModelEntity, RouteRuleEntity, RequestLogEntity, InferenceAttemptEntity, UsageBucketEntity])],
   controllers: [ChatCompletionsController, PlaygroundController],
   providers: [
     InferenceRepository,

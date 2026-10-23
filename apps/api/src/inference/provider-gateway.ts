@@ -1,4 +1,8 @@
 import type { OpenAIChatCompletionChunk, OpenAIChatCompletionRequest, OpenAIChatCompletionResponse } from '@gateway/contracts'
+import { ServiceUnavailableException } from '@nestjs/common'
+
+/** The adapter guarantees no network request was issued. Other errors are ambiguous. */
+export class ProviderNotDispatchedException extends ServiceUnavailableException {}
 
 export const PROVIDER_GATEWAY = Symbol('PROVIDER_GATEWAY')
 

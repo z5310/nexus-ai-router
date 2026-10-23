@@ -68,6 +68,7 @@ export class DashboardRepository {
       .select('request.id', 'id')
       .addSelect('request.request_id', 'requestId')
       .addSelect('request.requested_model_public_id', 'requestedModelPublicId')
+        .addSelect('request.price_snapshot', 'priceSnapshot')
       .addSelect('request.model_public_id', 'modelPublicId')
       .addSelect('request.route_rule_id', 'routeRuleId')
       .addSelect('request.attempt_count', 'attemptCount')

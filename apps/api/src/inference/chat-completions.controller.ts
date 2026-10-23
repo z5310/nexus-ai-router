@@ -23,6 +23,7 @@ export class ChatCompletionsController {
     @Res({ passthrough: true }) reply: FastifyReply,
     @Body() input: ChatCompletionDto,
   ): Promise<OpenAIChatCompletionResponse | void> {
+    reply.header('x-request-id', request.id)
     if (input.stream) return this.stream(request, reply, input)
     return this.inference.chat(input, request.apiKey, request.id)
   }
@@ -47,6 +48,7 @@ export class ChatCompletionsController {
       'cache-control': 'no-cache, no-transform',
       connection: 'keep-alive',
       'x-accel-buffering': 'no',
+      'x-request-id': request.id,
     })
 
     try {

@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common'
+import type { RequestPriceSnapshot } from '@gateway/contracts'
 import { InjectRepository } from '@nestjs/typeorm'
 import { DataSource, Repository } from 'typeorm'
 import { ApiKeyEntity } from '../database/entities/api-key.entity'
@@ -9,6 +10,7 @@ import { WorkspaceEntity } from '../database/entities/workspace.entity'
 import { WorkspaceMemberEntity } from '../database/entities/workspace-member.entity'
 
 export interface RecordedInference {
+  priceSnapshot?: RequestPriceSnapshot | null
   workspaceId: string
   userId: string
   requestId: string
@@ -80,6 +82,20 @@ export class InferenceRepository {
       .getOne()
   }
 
+  async capturePrice(modelId: string): Promise<RequestPriceSnapshot> {
+    // One statement sees either side of an atomic price publication, never mixed fields.
+    const [row] = await this.dataSource.query(`
+      SELECT m.id AS "modelId", v.id AS "versionId", m.price_unit AS "priceUnit",
+        m.input_price AS "inputPrice", m.output_price AS "outputPrice",
+        m.original_input_price AS "originalInputPrice", m.original_output_price AS "originalOutputPrice",
+        m.discount_percent AS "discountPercent", m.price_effective_from AS "effectiveFrom"
+      FROM models m LEFT JOIN model_price_versions v ON v.model_id = m.id AND v.effective_to IS NULL
+      WHERE m.id = $1
+    `, [modelId])
+    if (!row) throw new Error('模型价格不存在')
+    return { ...row, currency: 'CNY', effectiveFrom: new Date(row.effectiveFrom).toISOString() }
+  }
+
   async record(input: RecordedInference): Promise<void> {
     const bucketStart = new Date()
     bucketStart.setUTCMinutes(0, 0, 0)
@@ -100,6 +116,7 @@ export class InferenceRepository {
         inputTokens: input.inputTokens,
         outputTokens: input.outputTokens,
         costCny: input.costCny.toFixed(6),
+        priceSnapshot: input.priceSnapshot ?? null,
       }))
       if (input.attempts.length > 0) {
         const attemptRepository = manager.getRepository(InferenceAttemptEntity)

@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { CircleDollarSign, Pencil, Plus, Route as RouteIcon, ShieldCheck, Trash2 } from 'lucide-vue-next'
+import WorkspaceBilling from './cmp/WorkspaceBilling.vue'
+import { Pencil, Plus, Route as RouteIcon, ShieldCheck, Trash2 } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
@@ -105,12 +106,7 @@ function refetchSection() {
 
     <section v-else-if="section === 'logs' && !isError" class="console-surface"><div class="panel-heading"><div><h2>{{ t('dashboard.recent') }}</h2><p>{{ t('consoleSections.logs.description') }}</p></div></div><div class="request-table console-data-table responsive-table"><table><thead><tr><th>{{ t('dashboard.requestId') }}</th><th>{{ t('dashboard.model') }}</th><th>{{ t('dashboard.status') }}</th><th>{{ t('dashboard.latency') }}</th><th>{{ t('dashboard.tokenCount') }}</th><th>{{ t('dashboard.cost') }}</th></tr></thead><tbody><tr v-if="!filteredLogs.length" class="table-empty"><td colspan="6">暂无调用记录</td></tr><tr v-for="item in filteredLogs" :key="item.id"><td :data-label="t('dashboard.requestId')"><code>{{ item.requestId }}</code></td><td :data-label="t('dashboard.model')">{{ item.modelName }}</td><td :data-label="t('dashboard.status')"><span :class="['success-dot', { failed: item.status === 'failed' }]"><i />{{ t(`dashboard.${item.status}`) }}</span></td><td :data-label="t('dashboard.latency')">{{ item.latencyMs }} ms</td><td :data-label="t('dashboard.tokenCount')">{{ item.tokenCount.toLocaleString() }}</td><td :data-label="t('dashboard.cost')">¥{{ item.costCny.toFixed(4) }}</td></tr></tbody></table></div></section>
 
-    <template v-else-if="section === 'billing'">
-      <section class="console-surface billing-unavailable">
-        <CircleDollarSign :size="28" />
-        <div><h2>计费功能尚未启用</h2><p>账本、余额、交易和发票接口完成前，这里不会展示模拟金额。当前调用成本仍可在调用日志中查看。</p></div>
-      </section>
-    </template>
+    <WorkspaceBilling v-else-if="section === 'billing'" />
 
     <WorkspaceMembers v-else-if="section === 'members'" />
 

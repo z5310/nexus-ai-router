@@ -1,9 +1,13 @@
 import { Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
+import type { RequestPriceSnapshot } from '@gateway/contracts'
 
 @Entity({ name: 'request_logs' })
 @Index(['requestId'], { unique: true })
 @Index(['createdAt'])
 export class RequestLogEntity {
+  @Column({ name: 'price_snapshot', type: 'jsonb', nullable: true })
+  priceSnapshot: RequestPriceSnapshot | null
+
   @PrimaryGeneratedColumn('uuid')
   id: string
 

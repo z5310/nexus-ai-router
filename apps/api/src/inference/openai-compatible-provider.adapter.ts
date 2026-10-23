@@ -1,8 +1,9 @@
-import { BadGatewayException, GatewayTimeoutException, Injectable, RequestTimeoutException, ServiceUnavailableException } from '@nestjs/common'
+import { BadGatewayException, GatewayTimeoutException, Injectable, RequestTimeoutException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { randomUUID } from 'node:crypto'
 import type { OpenAIChatCompletionChunk, OpenAIChatCompletionRequest, OpenAIChatCompletionResponse } from '@gateway/contracts'
 import type { ProviderChatStream, ProviderGateway, ProviderTarget } from './provider-gateway'
+import { ProviderNotDispatchedException } from './provider-gateway'
 
 interface StreamControl {
   controller: AbortController
@@ -32,6 +33,9 @@ export class OpenAICompatibleProviderAdapter implements ProviderGateway {
         throw new BadGatewayException(`模型供应商调用失败 (${response.status})`)
       }
       const result = await response.json() as Partial<OpenAIChatCompletionResponse>
+      if (!result.usage || ![result.usage.prompt_tokens, result.usage.completion_tokens].every((value) => Number.isSafeInteger(value) && value >= 0)) {
+        throw new BadGatewayException('模型供应商未返回可信用量，需对账确认')
+      }
       const promptTokens = result.usage?.prompt_tokens ?? 0
       const completionTokens = result.usage?.completion_tokens ?? 0
       return {
@@ -55,6 +59,7 @@ export class OpenAICompatibleProviderAdapter implements ProviderGateway {
   }
 
   async streamChat(input: OpenAIChatCompletionRequest, target: ProviderTarget, signal: AbortSignal): Promise<ProviderChatStream> {
+    if (signal.aborted) throw new ProviderNotDispatchedException('客户端已取消，尚未发送上游请求')
     const control = this.streamControl(signal, target.timeoutMs)
     try {
       const response = await fetch(`${this.baseUrl()}/chat/completions`, {
@@ -102,7 +107,9 @@ export class OpenAICompatibleProviderAdapter implements ProviderGateway {
       }
       buffer += decoder.decode()
       const trailing = this.parseEvent(buffer)
-      if (trailing && trailing !== 'done') yield trailing
+      if (trailing === 'done') return
+      if (trailing) yield trailing
+      throw new BadGatewayException('模型供应商流式响应未完整结束')
     } catch (error) {
       throw this.abortError(error, control.timedOut(), control.clientAborted())
     } finally {
@@ -179,7 +186,7 @@ export class OpenAICompatibleProviderAdapter implements ProviderGateway {
 
   private baseUrl(): string {
     const baseUrl = this.config.get<string>('PROVIDER_GATEWAY_URL')?.replace(/\/$/, '')
-    if (!baseUrl) throw new ServiceUnavailableException('模型数据面尚未配置')
+    if (!baseUrl) throw new ProviderNotDispatchedException('模型数据面尚未配置')
     return baseUrl
   }
 

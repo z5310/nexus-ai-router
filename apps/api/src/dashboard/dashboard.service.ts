@@ -48,6 +48,7 @@ export class DashboardService {
     const item = this.mapRequest(result.request)
     return {
       ...item,
+      priceSnapshot: result.request.priceSnapshot ?? null,
       requestedModelId: result.request.requestedModelPublicId,
       routeRuleId: result.request.routeRuleId,
       attemptCount: Number(result.request.attemptCount),

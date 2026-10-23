@@ -1,3 +1,7 @@
+import { BillingAdminAudit1760000021000 } from './migrations/1760000021000-BillingAdminAudit'
+import { ChatBilling1760000020000 } from './migrations/1760000020000-ChatBilling'
+import { BillingLedger1760000019000 } from './migrations/1760000019000-BillingLedger'
+import { RequestPriceSnapshot1760000018000 } from './migrations/1760000018000-RequestPriceSnapshot'
 import { WorkspaceIpPolicy1760000009000 } from './migrations/1760000009000-WorkspaceIpPolicy'
 import { SessionRotation1760000008000 } from './migrations/1760000008000-SessionRotation'
 import { config } from 'dotenv'
@@ -48,6 +52,6 @@ export default new DataSource({
   type: 'postgres',
   url: process.env.DATABASE_URL,
   entities: [ModelEntity, ModelPriceVersionEntity, RequestLogEntity, InferenceAttemptEntity, UsageBucketEntity, UserEntity, AuthSessionEntity, AuthActionTokenEntity, ApiKeyEntity, WorkspaceModelEntity, RouteRuleEntity, WorkspaceEntity, WorkspaceMemberEntity, ProjectEntity, ProviderEntity, ProviderCredentialEntity, ProviderChannelEntity, ModelDeploymentEntity, RankingSourceEntity, ModelBenchmarkMappingEntity, BenchmarkSnapshotEntity, AudioGenerationTaskEntity],
-  migrations: [CreateModels1760000000000, ExpandCatalogAndUsage1760000001000, CreateIdentity1760000002000, HardenIdentity1760000003000, CreateWorkspaceConfiguration1760000004000, CreateRouteRulesAndScopeUsage1760000005000, CreateWorkspaceTenancy1760000006000, CreateProviderCredentials1760000007000, SessionRotation1760000008000, WorkspaceIpPolicy1760000009000, CreateInferenceAttempts1760000010000, CreateProviderChannels1760000011000, CreateModelPriceVersions1760000012000, CreateProviders1760000013000, CreateRankingSources1760000014000, AddModelTags1760000015000, CreateAudioGenerationTasks1760000016000, SeedDemoAudioWorkspaceModel1760000017000],
+  migrations: [CreateModels1760000000000, ExpandCatalogAndUsage1760000001000, CreateIdentity1760000002000, HardenIdentity1760000003000, CreateWorkspaceConfiguration1760000004000, CreateRouteRulesAndScopeUsage1760000005000, CreateWorkspaceTenancy1760000006000, CreateProviderCredentials1760000007000, SessionRotation1760000008000, WorkspaceIpPolicy1760000009000, CreateInferenceAttempts1760000010000, CreateProviderChannels1760000011000, CreateModelPriceVersions1760000012000, CreateProviders1760000013000, CreateRankingSources1760000014000, AddModelTags1760000015000, CreateAudioGenerationTasks1760000016000, SeedDemoAudioWorkspaceModel1760000017000, RequestPriceSnapshot1760000018000, BillingLedger1760000019000, ChatBilling1760000020000, BillingAdminAudit1760000021000],
   synchronize: false,
 })

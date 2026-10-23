@@ -8,6 +8,6 @@ export default defineConfig({
   resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
   server: {
     port: 5173,
-    proxy: { '/api': { target: 'http://localhost:3000', changeOrigin: true } },
+    proxy: { '/api': { target: process.env.DEV_API_PROXY_TARGET ?? 'http://localhost:3000', changeOrigin: true } },
   },
 })

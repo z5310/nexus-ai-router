@@ -513,7 +513,94 @@ export interface InferenceAttemptItem {
   createdAt: string
 }
 
+export interface RequestPriceSnapshot {
+  versionId: string | null
+  modelId: string
+  currency: 'CNY'
+  priceUnit: 'million_tokens' | 'image' | 'second' | '10k_chars'
+  inputPrice: string
+  outputPrice: string | null
+  originalInputPrice: string
+  originalOutputPrice: string | null
+  discountPercent: string
+  effectiveFrom: string
+}
+
+export interface BillingBalance {
+  currency: 'CNY'
+  available: string
+  reserved: string
+}
+
+export interface BillingLedgerEntry {
+  amount: string
+  id: string
+  kind: 'grant' | 'reserve' | 'settle' | 'release'
+  reference: string
+  availableDelta: string
+  reservedDelta: string
+  availableAfter: string
+  reservedAfter: string
+  createdAt: string
+}
+
+export interface BillingLedgerResponse {
+  data: BillingLedgerEntry[]
+  nextCursor: string | null
+}
+
+export interface BillingReservation {
+  requestId: string
+  status: 'held' | 'settled' | 'released'
+  reserved: string
+  settled: string | null
+}
+
+export interface BillingPendingListResponse {
+  data: Array<{
+    reference: string
+    requestId: string
+    reserved: string
+    actual: string | null
+    outcome: 'prepared' | 'dispatched' | 'settle' | 'release' | 'review'
+    reviewReason: string | null
+    updatedAt: string
+  }>
+}
+
+export interface BillingStatus { chatEnabled: boolean; currency: 'CNY' }
+export interface BillingAdminWorkspace {
+  id: string; name: string; slug: string; chatEnabled: boolean
+  balance: BillingBalance
+}
+export interface BillingAdminWorkspaceList { data: BillingAdminWorkspace[]; page: number; total: number }
+export interface BillingAdminActionInput {
+  operationId: string; reason: string; evidence: string
+}
+export interface BillingAdminGrantInput extends BillingAdminActionInput { amount: string }
+export interface BillingAdminResolutionInput extends BillingAdminActionInput {
+  action: 'settle' | 'release'; inputTokens?: number; outputTokens?: number
+}
+export interface BillingAdminActionResult {
+  operationId: string; workspaceId: string; balance: BillingBalance; reservation?: BillingReservation
+}
+export interface BillingAdminAuditItem {
+  operationId: string; kind: 'grant' | 'manual_settle' | 'manual_release'
+  actorUserId: string; actorName: string; reason: string; evidence: string
+  reference: string | null; beforeBalance: BillingBalance; result: BillingAdminActionResult; createdAt: string
+}
+export interface BillingAdminDetail {
+  workspace: BillingAdminWorkspace
+  pending: BillingPendingListResponse
+  ledger: BillingLedgerResponse
+  audit: BillingAdminAuditItem[]
+}
+export interface BillingResolutionPreview {
+  action: 'settle' | 'release'; amount: string; reserved: string; availableAfter: string; sufficient: boolean
+}
+
 export interface RequestLogDetail extends RequestLogItem {
+  priceSnapshot: RequestPriceSnapshot | null
   requestedModelId: string
   routeRuleId: string | null
   attemptCount: number

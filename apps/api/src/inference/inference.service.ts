@@ -1,6 +1,9 @@
-import { HttpException, Inject, Injectable, Logger } from '@nestjs/common'
+import { BadGatewayException, HttpException, Inject, Injectable, Logger, Optional, ServiceUnavailableException } from '@nestjs/common'
+import { ChatBillingService, type ChatBillingAttempt } from '../billing/chat-billing.service'
+import { ProviderNotDispatchedException } from './provider-gateway'
+import { chatSnapshotCost } from './price-snapshot'
 import { randomUUID } from 'node:crypto'
-import type { OpenAIChatCompletionChunk, OpenAIChatCompletionResponse } from '@gateway/contracts'
+import type { OpenAIChatCompletionChunk, OpenAIChatCompletionResponse, RequestPriceSnapshot } from '@gateway/contracts'
 import type { ApiKeyEntity } from '../database/entities/api-key.entity'
 import type { WorkspaceModelEntity } from '../database/entities/workspace-model.entity'
 import type { ChatCompletionDto } from './dto/chat-completion.dto'
@@ -27,6 +30,7 @@ export class InferenceService {
     private readonly config: ConfigService,
     private readonly routing: RoutingExecutorService,
     private readonly deployments: ProviderConfigurationService,
+    @Optional() private readonly chatBilling?: ChatBillingService,
   ) {}
 
   async chat(input: ChatCompletionDto, key: Pick<ApiKeyEntity, 'workspaceId' | 'userId'>, requestId: string = randomUUID()): Promise<OpenAIChatCompletionResponse> {
@@ -34,6 +38,7 @@ export class InferenceService {
     const lease = await this.acquireConcurrency(key.workspaceId)
     const startedAt = performance.now()
     const attempts: RecordedInferenceAttempt[] = []
+    let priceSnapshot: RequestPriceSnapshot | null = null
     let selected = decision.candidates[0]
     let response: OpenAIChatCompletionResponse | undefined
     let lastError: unknown
@@ -41,19 +46,28 @@ export class InferenceService {
     try {
       candidateLoop: for (const candidate of decision.candidates) {
         selected = candidate
+        priceSnapshot = await this.inference.capturePrice(candidate.model.id)
+        chatSnapshotCost(0, 0, priceSnapshot)
         await this.consumeModelRate(key.workspaceId, candidate)
         for (const target of await this.deployments.resolveTargets(candidate.model, requestId)) {
           const attemptStartedAt = performance.now()
           let channelLease: TrafficLease | undefined
           let providerCalled = false
+          let billingStarted = false
+          let billingAttempt: ChatBillingAttempt | undefined
           try {
             channelLease = await this.acquireChannelConcurrency(target)
+            billingStarted = true
+            billingAttempt = await this.chatBilling?.begin(key.workspaceId, requestId, attempts.length + 1, priceSnapshot, input)
             providerCalled = true
-            response = await this.provider.chat(input, target)
+            response = await this.provider.chat(billingAttempt ? { ...input, max_tokens: billingAttempt.maxTokens } : input, target)
+            await this.chatBilling?.finish(billingAttempt, true, response.usage)
             attempts.push(this.attempt(candidate, target, 'success', attemptStartedAt))
             await this.safeRecordResult(target)
             break candidateLoop
           } catch (error) {
+            if (billingStarted && !providerCalled && billingAttempt === undefined && this.chatBilling?.enabled(key.workspaceId)) throw error
+            await this.chatBilling?.finish(billingAttempt, false, undefined, error instanceof ProviderNotDispatchedException)
             lastError = error
             const errorInfo = this.errorInfo(error)
             attempts.push(this.attempt(candidate, target, 'failed', attemptStartedAt, error))
@@ -65,18 +79,14 @@ export class InferenceService {
       }
 
       if (!response) {
-        await this.safeRecord(this.recordInput({ decision, key, requestId, selected, attempts, status: 'failed', startedAt, error: lastError }))
-        throw lastError
+        await this.safeRecord(this.recordInput({ decision, key, requestId, selected, priceSnapshot, attempts, status: 'failed', startedAt, error: lastError }))
+        throw lastError ?? new ServiceUnavailableException('模型无可用渠道')
       }
 
-      const costCny = this.cost(
-        response.usage.prompt_tokens,
-        response.usage.completion_tokens,
-        Number(selected.model.inputPrice),
-        Number(selected.model.outputPrice ?? 0),
-      )
+      const costCny = chatSnapshotCost(response.usage.prompt_tokens, response.usage.completion_tokens, priceSnapshot!)
       await this.inference.record(this.recordInput({
         decision,
+        priceSnapshot,
         key,
         requestId,
         selected,
@@ -104,27 +114,35 @@ export class InferenceService {
     const startedAt = performance.now()
     const attempts: RecordedInferenceAttempt[] = []
     let lastError: unknown
+    let priceSnapshot: RequestPriceSnapshot | null = null
     let selected = decision.candidates[0]
+    let transferred = false
 
+    try {
     for (const candidate of decision.candidates) {
       selected = candidate
-      try {
+        priceSnapshot = await this.inference.capturePrice(candidate.model.id)
+        chatSnapshotCost(0, 0, priceSnapshot)
         await this.consumeModelRate(key.workspaceId, candidate)
-      } catch (error) {
-        await lease.release()
-        throw error
-      }
       for (const target of await this.deployments.resolveTargets(candidate.model, requestId)) {
         const attemptStartedAt = performance.now()
         let channelLease: TrafficLease | undefined
         let providerCalled = false
+        let billingStarted = false
+        let billingAttempt: ChatBillingAttempt | undefined
         let providerStream: ProviderChatStream
         try {
           channelLease = await this.acquireChannelConcurrency(target)
+          billingStarted = true
+          billingAttempt = await this.chatBilling?.begin(key.workspaceId, requestId, attempts.length + 1, priceSnapshot, input)
           providerCalled = true
-          providerStream = await this.provider.streamChat(input, target, signal)
+          providerStream = await this.provider.streamChat(billingAttempt ? { ...input, max_tokens: billingAttempt.maxTokens } : input, target, signal)
         } catch (error) {
           await channelLease?.release()
+          if (billingStarted && !providerCalled && billingAttempt === undefined && this.chatBilling?.enabled(key.workspaceId)) {
+            throw error
+          }
+          await this.chatBilling?.finish(billingAttempt, false, undefined, error instanceof ProviderNotDispatchedException)
           lastError = error
           attempts.push(this.attempt(candidate, target, signal.aborted ? 'cancelled' : 'failed', attemptStartedAt, error))
           if (!signal.aborted && providerCalled) await this.safeRecordResult(target, this.errorInfo(error).code)
@@ -132,12 +150,14 @@ export class InferenceService {
           continue
         }
 
+        transferred = true
         return {
           chunks: this.trackStream(providerStream.chunks, {
             decision,
             key,
             requestId,
             selected: candidate,
+            priceSnapshot: priceSnapshot!,
             target,
             attempts,
             attemptStartedAt,
@@ -145,9 +165,11 @@ export class InferenceService {
             signal,
             lease,
             channelLease,
+            billingAttempt,
           }),
           cancel: () => {
             providerStream.cancel()
+            void this.chatBilling?.finish(billingAttempt, false)
             void channelLease?.release()
             void lease.release()
           },
@@ -155,9 +177,11 @@ export class InferenceService {
       }
     }
 
-    await this.safeRecord(this.recordInput({ decision, key, requestId, selected, attempts, status: 'failed', startedAt, error: lastError }))
-    await lease.release()
-    throw lastError
+    await this.safeRecord(this.recordInput({ decision, key, requestId, selected, priceSnapshot, attempts, status: 'failed', startedAt, error: lastError }))
+    throw lastError ?? new ServiceUnavailableException('模型无可用渠道')
+    } finally {
+      if (!transferred) await lease.release()
+    }
   }
 
   private async *trackStream(
@@ -166,6 +190,7 @@ export class InferenceService {
       decision: RoutingDecision
       key: Pick<ApiKeyEntity, 'workspaceId' | 'userId'>
       requestId: string
+      priceSnapshot: RequestPriceSnapshot
       selected: WorkspaceModelEntity
       target: ResolvedProviderTarget
       attempts: RecordedInferenceAttempt[]
@@ -174,10 +199,12 @@ export class InferenceService {
       signal: AbortSignal
       lease: TrafficLease
       channelLease?: TrafficLease
+      billingAttempt?: ChatBillingAttempt
     },
   ): AsyncGenerator<OpenAIChatCompletionChunk> {
     let inputTokens = 0
     let outputTokens = 0
+    let usageSeen = false
     let firstTokenLatencyMs: number | null = null
     let completed = false
     let streamError: unknown
@@ -185,6 +212,8 @@ export class InferenceService {
       for await (const chunk of chunks) {
         if (firstTokenLatencyMs === null) firstTokenLatencyMs = this.elapsed(context.startedAt)
         if (chunk.usage) {
+          if (![chunk.usage.prompt_tokens, chunk.usage.completion_tokens].every((value) => Number.isSafeInteger(value) && value >= 0)) throw new BadGatewayException('上游用量无效')
+          usageSeen = true
           inputTokens = chunk.usage.prompt_tokens
           outputTokens = chunk.usage.completion_tokens
         }
@@ -197,12 +226,14 @@ export class InferenceService {
     } finally {
       await context.lease.release()
       await context.channelLease?.release()
+      await this.chatBilling?.finish(context.billingAttempt, completed && usageSeen, { prompt_tokens: inputTokens, completion_tokens: outputTokens })
       const attemptStatus = completed ? 'success' : context.signal.aborted ? 'cancelled' : 'failed'
       context.attempts.push(this.attempt(context.selected, context.target, attemptStatus, context.attemptStartedAt, streamError))
       if (completed) await this.safeRecordResult(context.target)
       else if (!context.signal.aborted) await this.safeRecordResult(context.target, this.errorInfo(streamError).code)
       await this.safeRecord(this.recordInput({
         decision: context.decision,
+        priceSnapshot: context.priceSnapshot,
         key: context.key,
         requestId: context.requestId,
         selected: context.selected,
@@ -214,7 +245,7 @@ export class InferenceService {
         inputTokens,
         outputTokens,
         costCny: completed
-          ? this.cost(inputTokens, outputTokens, Number(context.selected.model.inputPrice), Number(context.selected.model.outputPrice ?? 0))
+          ? chatSnapshotCost(inputTokens, outputTokens, context.priceSnapshot)
           : 0,
       }))
     }
@@ -224,6 +255,7 @@ export class InferenceService {
     decision: RoutingDecision
     key: Pick<ApiKeyEntity, 'workspaceId' | 'userId'>
     requestId: string
+    priceSnapshot?: RequestPriceSnapshot | null
     selected: WorkspaceModelEntity
     attempts: RecordedInferenceAttempt[]
     status: 'success' | 'failed'
@@ -235,6 +267,7 @@ export class InferenceService {
     costCny?: number
   }): RecordedInference {
     return {
+      priceSnapshot: input.priceSnapshot ?? null,
       workspaceId: input.key.workspaceId,
       userId: input.key.userId,
       requestId: input.requestId,
@@ -328,7 +361,4 @@ export class InferenceService {
     return Math.max(0, Math.round(performance.now() - startedAt))
   }
 
-  private cost(inputTokens: number, outputTokens: number, inputPrice: number, outputPrice: number): number {
-    return (inputTokens * inputPrice + outputTokens * outputPrice) / 1_000_000
-  }
 }

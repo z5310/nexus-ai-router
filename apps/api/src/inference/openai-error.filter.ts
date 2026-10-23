@@ -46,6 +46,7 @@ export class OpenAIErrorFilter implements ExceptionFilter {
   private type(status: number): string {
     if (status === 401) return 'authentication_error'
     if (status === 403) return 'permission_error'
+    if (status === 402) return 'insufficient_quota'
     if (status === 429) return 'rate_limit_error'
     if (status >= 500) return 'api_error'
     return 'invalid_request_error'
