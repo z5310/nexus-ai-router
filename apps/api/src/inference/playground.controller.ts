@@ -2,6 +2,7 @@ import { BadRequestException, Body, Controller, HttpCode, NotFoundException, Pos
 import { IsString, Length, MaxLength } from 'class-validator'
 import { JwtAuthGuard } from '../identity/auth.guard'
 import { WorkspaceContextGuard, type WorkspaceRequest } from '../workspaces/workspace-context.guard'
+import { RequireWorkspacePermission } from '../workspaces/workspace-permissions'
 import { InferenceService } from './inference.service'
 import { InferenceRepository } from './inference.repository'
 
@@ -18,6 +19,7 @@ class PlaygroundDto {
 
 @Controller('api/console/playground')
 @UseGuards(JwtAuthGuard, WorkspaceContextGuard)
+@RequireWorkspacePermission('inference:execute')
 export class PlaygroundController {
   constructor(private readonly inference: InferenceService, private readonly repository: InferenceRepository) {}
 

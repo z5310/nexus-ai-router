@@ -5,11 +5,13 @@ import { DashboardService } from './dashboard.service'
 import { ListRequestLogsQuery } from './dto/list-request-logs.query'
 import { JwtAuthGuard } from '../identity/auth.guard'
 import { WorkspaceContextGuard, type WorkspaceRequest } from '../workspaces/workspace-context.guard'
+import { RequireWorkspacePermission } from '../workspaces/workspace-permissions'
 
 @ApiTags('dashboard')
 @ApiBearerAuth()
 @ApiHeader({ name: 'x-workspace-id', required: false, description: 'Target workspace; defaults to the first active membership' })
 @UseGuards(JwtAuthGuard, WorkspaceContextGuard)
+@RequireWorkspacePermission('usage:read')
 @Controller('api/dashboard')
 export class DashboardController {
   constructor(private readonly dashboard: DashboardService) {}

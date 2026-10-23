@@ -3,6 +3,7 @@ import { ApiBearerAuth, ApiHeader, ApiNoContentResponse, ApiOperation, ApiTags }
 import type { ApiKeyListResponse, CreateApiKeyResponse } from '@gateway/contracts'
 import { JwtAuthGuard } from '../identity/auth.guard'
 import { WorkspaceContextGuard, type WorkspaceRequest } from '../workspaces/workspace-context.guard'
+import { RequireWorkspacePermission } from '../workspaces/workspace-permissions'
 import { ApiKeysService } from './api-keys.service'
 import { CreateApiKeyDto } from './dto/api-keys.dto'
 
@@ -15,14 +16,17 @@ export class ApiKeysController {
   constructor(private readonly keys: ApiKeysService) {}
 
   @Get()
+  @RequireWorkspacePermission('keys:read')
   @ApiOperation({ summary: 'List API keys owned by the current workspace' })
   list(@Req() request: WorkspaceRequest): Promise<ApiKeyListResponse> { return this.keys.list(request.workspace.id) }
 
   @Post()
+  @RequireWorkspacePermission('keys:manage')
   @ApiOperation({ summary: 'Create a named API key; the plaintext key is returned once' })
   create(@Req() request: WorkspaceRequest, @Body() input: CreateApiKeyDto): Promise<CreateApiKeyResponse> { return this.keys.create(request.workspace.id, request.user.sub, input.name) }
 
   @Delete(':id')
+  @RequireWorkspacePermission('keys:manage')
   @HttpCode(204)
   @ApiNoContentResponse()
   @ApiOperation({ summary: 'Revoke an API key owned by the current workspace' })
