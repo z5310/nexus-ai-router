@@ -71,6 +71,53 @@ export interface OpenAIChatCompletionChunk {
   } | null
 }
 
+
+export type AudioResponseFormat = 'mp3' | 'wav' | 'flac'
+export type AudioGenerationTaskStatus = 'queued' | 'processing' | 'succeeded' | 'failed' | 'cancelled'
+
+export interface AudioGenerationInput {
+  model: string
+  prompt: string
+  voice: string
+  instruction?: string
+  language?: string
+  speech_rate: number
+  pitch: number
+  volume: number
+  sample_rate: number
+  bitrate: number
+  response_format: AudioResponseFormat
+}
+
+export interface AudioGenerationTask {
+  id: string
+  model: string
+  modelName: string
+  status: AudioGenerationTaskStatus
+  promptPreview: string
+  voice: string
+  instruction: string | null
+  language: string | null
+  speechRate: number
+  pitch: number
+  volume: number
+  sampleRate: number
+  bitrate: number
+  responseFormat: AudioResponseFormat
+  estimatedCostCny: number
+  settledCostCny: number | null
+  resultUrl: string | null
+  resultExpiresAt: string | null
+  durationMs: number | null
+  errorCode: string | null
+  errorMessage: string | null
+  createdAt: string
+  startedAt: string | null
+  completedAt: string | null
+}
+
+export interface AudioGenerationTaskListResponse { data: AudioGenerationTask[] }
+
 export type ModelType = 'text' | 'image' | 'video' | 'audio' | 'embedding'
 export type ModelStatus = 'stable' | 'observing'
 export type RankingMetric = 'overall' | 'coding' | 'cost' | 'speed'

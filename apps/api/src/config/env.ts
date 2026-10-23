@@ -21,6 +21,8 @@ const envSchema = z.object({
   PROVIDER_GATEWAY_URL: z.preprocess((value) => value === '' ? undefined : value, z.string().url().optional()),
   PROVIDER_GATEWAY_API_KEY: optionalSecret,
   PROVIDER_GATEWAY_TIMEOUT_MS: z.coerce.number().int().min(1_000).max(300_000).default(60_000),
+  AUDIO_GENERATION_GATEWAY_URL: z.preprocess((value) => value === '' ? undefined : value, z.string().url().optional()),
+  AUDIO_GENERATION_TIMEOUT_MS: z.coerce.number().int().min(10_000).max(900_000).default(300_000),
   TRUSTED_PROXY_CIDRS: z.string().optional(),
   REQUEST_BODY_LIMIT_BYTES: z.coerce.number().int().min(16_384).max(10_485_760).default(1_048_576),
   GLOBAL_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().min(10).max(1_000_000).default(600),

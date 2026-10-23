@@ -25,7 +25,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint \"src/**/*.ts\"",
     "migration:run": "typeorm-ts-node-commonjs migration:run -d src/database/data-source.ts",
-    "migration:revert": "typeorm-ts-node-commonjs migration:revert -d src/database/data-source.ts"
+    "migration:revert": "typeorm-ts-node-commonjs migration:revert -d src/database/data-source.ts",
+    "test:audio-generation-tasks": "node test/audio-generation-tasks.integration.cjs"
   },
   "dependencies": {
     "@fastify/cookie": "^11.1.3",

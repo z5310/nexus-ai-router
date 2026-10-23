@@ -79,6 +79,9 @@ npm run db:migrate
 | `GET/POST` | `/api/admin/provider-credentials` | 查询或创建加密的供应商凭证元数据 |
 | `PATCH/DELETE` | `/api/admin/provider-credentials/:id` | 轮换、启停或删除供应商凭证 |
 | `POST` | `/api/console/playground/chat` | 使用当前工作区权限进行文字模型在线调用 |
+| `GET/POST` | `/api/console/audio-generations` | 查询本人音频任务或创建工作区音频生成任务 |
+| `GET` | `/api/console/audio-generations/:id` | 查询本人音频任务状态与结果地址 |
+| `POST` | `/api/console/audio-generations/:id/cancel` | 取消尚未进入处理阶段的音频任务 |
 | `GET` | `/v1/models` | API Key 鉴权的当前工作区 OpenAI 兼容模型列表 |
 | `POST` | `/v1/chat/completions` | API Key 鉴权的 OpenAI 兼容模型调用，支持 JSON 与 SSE 流式响应 |
 
@@ -96,6 +99,8 @@ curl -N 'http://localhost:3000/v1/chat/completions' \
 
 Swagger 文档位于 `http://localhost:3000/docs`。接口错误统一返回 Problem Details，包含 `status`、`detail`、`instance` 和 `request_id`。
 工作区接口可通过 `x-workspace-id` 指定目标租户；未传时自动使用当前用户最早加入的有效工作区。
+音频控制台任务通过登录会话与 `x-workspace-id` 鉴权，完整文本仅保存在任务表供 Worker 调用，列表和详情响应只返回截断预览。配置 `AUDIO_GENERATION_GATEWAY_URL` 后，Worker 调用内部数据面的 `/audios/generations`，兼容直接结果 URL 和异步任务 ID 两种响应。未配置数据面时任务会明确失败为 `upstream_503`，不会生成假结果。
+
 推理接口使用控制台生成的 `nxs_live_` API Key。调用模型必须已在对应工作区启用；启用的路由规则会按请求类型和稳定流量分桶参与选择，支持优先级、最低成本、最低延迟及连接前主备故障转移。成功和失败请求都会写入工作区请求日志、上游尝试明细与小时用量桶。
 
 ## 前端页面
@@ -104,7 +109,7 @@ Swagger 文档位于 `http://localhost:3000/docs`。接口错误统一返回 Pro
 | --- | --- |
 | `/` | 首页，已完成 |
 | `/models` | 模型搜索、筛选、排序，已接模型目录 API |
-| `/models/:provider/:model` | 模型详情，已接数据库目录详情 API |
+| `/models/:provider/:model` | 模型详情，已接数据库目录详情 API；音频模型已接任务提交、状态轮询、试听与历史 |
 | `/rankings` | 分类 Top 5、综合/使用率/7 日热度专项榜与四种完整指标排行，已接排行 API |
 | `/docs` | 独立开发文档页 |
 | `/login` | 邮箱密码、GitHub 和 Google 登录，会话恢复与角色分流 |

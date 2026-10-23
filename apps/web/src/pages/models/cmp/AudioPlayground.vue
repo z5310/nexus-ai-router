@@ -1,14 +1,17 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { useRoute, useRouter } from 'vue-router'
 import { AudioLines, Code2, Download, History, RotateCcw, SlidersHorizontal, Volume2 } from 'lucide-vue-next'
-import type { CatalogModel } from '@gateway/contracts'
-import type { AudioGenerationInput, AudioResponseFormat } from '../api'
+import type { AudioGenerationInput, AudioGenerationTask, AudioResponseFormat, CatalogModel } from '@gateway/contracts'
 import { authState } from '../../../lib/auth'
+import { workspaceQueryKey } from '../../../lib/workspace'
+import { cancelAudioGeneration, createAudioGeneration, getAudioGeneration, listAudioGenerations } from '../api'
 
 const props = defineProps<{ model: CatalogModel }>()
 const route = useRoute()
 const router = useRouter()
+const queryClient = useQueryClient()
 const text = ref('欢迎使用 Nexus API。请把这段文字转换为自然、清晰的中文语音。')
 const voice = ref('male-qn-qingse')
 const instruction = ref('自然、沉稳，保持适中的停顿和语速')
@@ -20,6 +23,7 @@ const sampleRate = ref(32000)
 const bitrate = ref(128000)
 const format = ref<AudioResponseFormat>('mp3')
 const preview = ref<'audio' | 'json'>('audio')
+const currentTaskId = ref<string | null>(null)
 const voices = [
   { value: 'male-qn-qingse', label: '青涩青年' },
   { value: 'female-shaonv', label: '少女音色' },
@@ -40,6 +44,48 @@ const payload = computed<AudioGenerationInput>(() => ({
 }))
 const estimatedCost = computed(() => props.model.inputPrice * text.value.length / 10_000)
 const formatLabel = computed(() => format.value.toUpperCase())
+const canGenerate = computed(() => Boolean(text.value.trim() && voice.value.trim()))
+const historyKey = computed(() => workspaceQueryKey('audio-generations', props.model.slug))
+const historyQuery = useQuery({
+  queryKey: historyKey,
+  queryFn: ({ signal }) => listAudioGenerations(props.model.slug, signal),
+  enabled: computed(() => Boolean(authState.user)),
+  staleTime: 5_000,
+  retry: 1,
+})
+const taskQuery = useQuery({
+  queryKey: computed(() => workspaceQueryKey('audio-generation', currentTaskId.value)),
+  queryFn: ({ signal }) => getAudioGeneration(currentTaskId.value!, signal),
+  enabled: computed(() => Boolean(authState.user && currentTaskId.value)),
+  refetchInterval: (query) => {
+    const task = query.state.data as AudioGenerationTask | undefined
+    return task && ['queued', 'processing'].includes(task.status) ? 1_500 : false
+  },
+  retry: 1,
+})
+const createMutation = useMutation({
+  mutationFn: () => createAudioGeneration(payload.value),
+  onSuccess: async (task) => {
+    currentTaskId.value = task.id
+    preview.value = 'audio'
+    await queryClient.invalidateQueries({ queryKey: historyKey.value })
+  },
+})
+const cancelMutation = useMutation({
+  mutationFn: (id: string) => cancelAudioGeneration(id),
+  onSuccess: async (task) => {
+    queryClient.setQueryData(workspaceQueryKey('audio-generation', task.id), task)
+    await queryClient.invalidateQueries({ queryKey: historyKey.value })
+  },
+})
+const currentTask = computed(() => taskQuery.data.value ?? createMutation.data.value ?? null)
+const isWorking = computed(() => currentTask.value ? ['queued', 'processing'].includes(currentTask.value.status) : false)
+const statusLabels: Record<string, string> = { queued: '排队中', processing: '生成中', succeeded: '已完成', failed: '生成失败', cancelled: '已取消' }
+const taskStatus = computed(() => statusLabels[currentTask.value?.status ?? ''] ?? '未提交')
+
+watch(() => taskQuery.data.value?.status, async (status) => {
+  if (status && !['queued', 'processing'].includes(status)) await queryClient.invalidateQueries({ queryKey: historyKey.value })
+})
 
 function reset() {
   text.value = ''
@@ -54,6 +100,13 @@ function reset() {
   format.value = 'mp3'
 }
 function signIn() { router.push({ path: '/login', query: { redirect: route.fullPath } }) }
+function generate() { if (canGenerate.value && !createMutation.isPending.value) createMutation.mutate() }
+function selectTask(task: AudioGenerationTask) { currentTaskId.value = task.id; preview.value = 'audio' }
+function durationLabel(durationMs: number | null) {
+  if (!durationMs) return '时长待返回'
+  const seconds = Math.round(durationMs / 1000)
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`
+}
 </script>
 
 <template>
@@ -106,28 +159,60 @@ function signIn() { router.push({ path: '/login', query: { redirect: route.fullP
         <div class="min-w-0 flex-1"><span class="block text-[11px] text-[#718078]">预计费用</span><b class="mt-1 block text-sm text-[#dce7de]">约 ¥{{ estimatedCost.toFixed(4) }}</b></div>
         <button type="button" class="inline-flex h-10 items-center gap-2 rounded-2 border border-white/9 bg-transparent px-3.5 text-xs text-[#a8b6ad] active:scale-98" @click="reset"><RotateCcw :size="14" />重置</button>
         <button v-if="!authState.user" type="button" class="h-10 rounded-2 border-0 bg-[#DCE7DE] px-5 text-sm font-700 text-[#09110c] active:scale-98" @click="signIn">登录后生成</button>
-        <button v-else type="button" class="h-10 rounded-2 border-0 bg-[#DCE7DE] px-5 text-sm font-700 text-[#09110c] disabled:cursor-not-allowed disabled:opacity-45" disabled>生成接口接入中</button>
+        <button v-else type="button" class="h-10 rounded-2 border-0 bg-[#DCE7DE] px-5 text-sm font-700 text-[#09110c] disabled:cursor-not-allowed disabled:opacity-45" :disabled="!canGenerate || createMutation.isPending.value || isWorking" @click="generate">{{ createMutation.isPending.value ? '正在提交…' : isWorking ? '任务处理中' : '生成音频' }}</button>
       </footer>
     </section>
 
     <section class="min-w-0 overflow-hidden rounded-3 border border-[#203126] bg-white/1">
       <header class="mb-0 flex items-center justify-between border-b border-[#203126] px-5 py-4">
         <div class="flex gap-5"><button type="button" :class="['inline-flex items-center gap-2 border-0 bg-transparent px-0 py-1 text-sm', preview === 'audio' ? 'text-[#63e495]' : 'text-[#7f8d84]']" @click="preview = 'audio'"><Volume2 :size="16" />音频预览</button><button type="button" :class="['inline-flex items-center gap-2 border-0 bg-transparent px-0 py-1 text-sm', preview === 'json' ? 'text-[#63e495]' : 'text-[#7f8d84]']" @click="preview = 'json'"><Code2 :size="16" />参数 JSON</button></div>
-        <span class="text-[11px] text-[#65736a]">未提交</span>
+        <span :class="['text-[11px]', currentTask?.status === 'failed' ? 'text-[#f39a9a]' : currentTask?.status === 'succeeded' ? 'text-[#63e495]' : 'text-[#829087]']">{{ taskStatus }}</span>
       </header>
 
       <pre v-if="preview === 'json'" class="m-5 max-h-[590px] overflow-auto whitespace-pre-wrap break-words rounded-2 bg-[#08100b] p-5 text-xs leading-6 text-[#b9c9bf]">{{ JSON.stringify(payload, null, 2) }}</pre>
       <div v-else class="grid min-h-[420px] place-items-center p-6">
         <div class="w-full max-w-xl rounded-4 border border-[#254330] bg-[radial-gradient(circle_at_50%_0%,rgba(99,228,149,.1),transparent_58%)] p-6 text-center">
           <span class="mx-auto grid h-16 w-16 place-items-center rounded-full border border-[#63e495]/22 bg-[#63e495]/8 text-[#63e495]"><AudioLines :size="28" /></span>
-          <h3 class="mb-2 mt-5 text-lg">等待生成音频</h3>
-          <p class="m-auto max-w-sm text-[13px] leading-6 text-[#839188]">配置左侧文本与声音参数，任务完成后可在此试听并下载 {{ formatLabel }} 文件。</p>
-          <div class="mx-auto my-7 flex h-16 max-w-md items-center justify-center gap-1.5" aria-hidden="true"><i v-for="height in [18,32,46,28,54,38,24,50,34,20,42,26,48,30,16]" :key="height" class="w-1.5 rounded-full bg-[#63e495]/22" :style="{ height: `${height}px` }" /></div>
-          <div class="flex items-center gap-3 rounded-3 border border-white/7 bg-[#08100b] px-4 py-3 text-left"><button type="button" class="grid h-9 w-9 place-items-center rounded-full border-0 bg-[#DCE7DE] text-[#09110c]" disabled><Volume2 :size="16" /></button><div class="min-w-0 flex-1"><b class="block text-xs text-[#dce7de]">尚未生成</b><span class="mt-1 block text-[10px] text-[#65736a]">0:00 / 0:00</span></div><button type="button" class="grid h-8 w-8 place-items-center border-0 bg-transparent text-[#65736a]" aria-label="下载音频" disabled><Download :size="16" /></button></div>
+          <template v-if="!currentTask">
+            <h3 class="mb-2 mt-5 text-lg">等待生成音频</h3>
+            <p class="m-auto max-w-sm text-[13px] leading-6 text-[#839188]">配置左侧文本与声音参数，任务完成后可在此试听并下载 {{ formatLabel }} 文件。</p>
+          </template>
+          <template v-else-if="isWorking">
+            <h3 class="mb-2 mt-5 text-lg">{{ taskStatus }}</h3>
+            <p class="m-auto max-w-sm text-[13px] leading-6 text-[#839188]">任务已持久化，页面会自动查询供应商处理状态。</p>
+            <button v-if="currentTask.status === 'queued'" type="button" class="mt-4 h-9 rounded-2 border border-white/10 bg-transparent px-4 text-xs text-[#aebbb3]" :disabled="cancelMutation.isPending.value" @click="cancelMutation.mutate(currentTask.id)">取消任务</button>
+          </template>
+          <template v-else-if="currentTask.status === 'failed'">
+            <h3 class="mb-2 mt-5 text-lg text-[#efaaaa]">生成失败</h3>
+            <p class="m-auto max-w-sm text-[13px] leading-6 text-[#a98282]">{{ currentTask.errorMessage || '供应商暂时无法完成此任务，请稍后重试。' }}</p>
+          </template>
+          <template v-else-if="currentTask.status === 'cancelled'">
+            <h3 class="mb-2 mt-5 text-lg">任务已取消</h3>
+            <p class="m-auto max-w-sm text-[13px] leading-6 text-[#839188]">本次请求未继续处理，可以调整参数后重新提交。</p>
+          </template>
+          <template v-else>
+            <h3 class="mb-2 mt-5 text-lg">音频已生成</h3>
+            <p class="m-auto max-w-sm text-[13px] leading-6 text-[#839188]">{{ currentTask.promptPreview }}</p>
+          </template>
+          <div class="mx-auto my-7 flex h-16 max-w-md items-center justify-center gap-1.5" aria-hidden="true"><i v-for="height in [18,32,46,28,54,38,24,50,34,20,42,26,48,30,16]" :key="height" :class="['w-1.5 rounded-full', isWorking ? 'animate-pulse bg-[#63e495]/50' : 'bg-[#63e495]/22']" :style="{ height: `${height}px` }" /></div>
+          <audio v-if="currentTask?.status === 'succeeded' && currentTask.resultUrl" class="w-full" :src="currentTask.resultUrl" controls preload="metadata" />
+          <div v-else class="flex items-center gap-3 rounded-3 border border-white/7 bg-[#08100b] px-4 py-3 text-left"><button type="button" class="grid h-9 w-9 place-items-center rounded-full border-0 bg-[#DCE7DE] text-[#09110c]" disabled><Volume2 :size="16" /></button><div class="min-w-0 flex-1"><b class="block text-xs text-[#dce7de]">{{ currentTask ? taskStatus : '尚未生成' }}</b><span class="mt-1 block text-[10px] text-[#65736a]">{{ currentTask ? durationLabel(currentTask.durationMs) : '0:00 / 0:00' }}</span></div><a v-if="currentTask?.resultUrl" class="grid h-8 w-8 place-items-center text-[#63e495]" :href="currentTask.resultUrl" target="_blank" rel="noopener noreferrer" aria-label="下载音频"><Download :size="16" /></a><button v-else type="button" class="grid h-8 w-8 place-items-center border-0 bg-transparent text-[#65736a]" aria-label="下载音频" disabled><Download :size="16" /></button></div>
         </div>
       </div>
 
-      <div class="mx-5 border-t border-[#203126] py-5"><h3 class="m-0 flex items-center gap-2 text-sm"><History :size="16" class="text-[#63e495]" />生成记录</h3><p class="mb-0 mt-3 text-xs leading-6 text-[#718078]">暂无音频任务。真实任务链接入后，这里将显示处理状态、时长、费用和下载链接。</p></div>
+      <div class="mx-5 border-t border-[#203126] py-5">
+        <h3 class="m-0 flex items-center gap-2 text-sm"><History :size="16" class="text-[#63e495]" />生成记录</h3>
+        <p v-if="createMutation.isError.value" class="mb-0 mt-3 text-xs leading-6 text-[#efaaaa]">{{ createMutation.error.value?.message }}</p>
+        <p v-if="historyQuery.isPending.value" class="mb-0 mt-3 text-xs leading-6 text-[#718078]">正在加载任务记录…</p>
+        <p v-else-if="historyQuery.isError.value" class="mb-0 mt-3 text-xs leading-6 text-[#efaaaa]">任务记录加载失败，请检查登录和工作区状态。</p>
+        <p v-else-if="!historyQuery.data.value?.data.length" class="mb-0 mt-3 text-xs leading-6 text-[#718078]">暂无音频任务，提交后会在这里显示处理状态、费用和结果。</p>
+        <div v-else class="mt-3 grid max-h-52 gap-2 overflow-y-auto pr-1">
+          <button v-for="task in historyQuery.data.value?.data" :key="task.id" type="button" :class="['grid grid-cols-[1fr_auto] gap-2 rounded-2 border px-3 py-2.5 text-left', currentTaskId === task.id ? 'border-[#63e495]/35 bg-[#63e495]/7' : 'border-white/7 bg-white/2']" @click="selectTask(task)">
+            <span class="min-w-0"><b class="block truncate text-xs text-[#dce7de]">{{ task.promptPreview }}</b><small class="mt-1 block text-[10px] text-[#718078]">{{ task.voice }} · 约 ¥{{ task.estimatedCostCny.toFixed(4) }}</small></span>
+            <span :class="['self-center text-[11px]', task.status === 'succeeded' ? 'text-[#63e495]' : task.status === 'failed' ? 'text-[#efaaaa]' : 'text-[#8d9a92]']">{{ { queued: '排队中', processing: '生成中', succeeded: '已完成', failed: '失败', cancelled: '已取消' }[task.status] }}</span>
+          </button>
+        </div>
+      </div>
     </section>
   </div>
 </template>
