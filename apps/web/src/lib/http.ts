@@ -4,6 +4,7 @@ import type { AuthResponse } from '@gateway/contracts'
 
 const baseURL = import.meta.env.VITE_API_BASE_URL ?? ''
 let accessToken: string | null = null
+let workspaceId: string | null = null
 
 
 type RetryConfig = InternalAxiosRequestConfig & { _retry?: boolean }
@@ -18,9 +19,11 @@ export class ApiError extends Error {
 export const http = axios.create({ baseURL, withCredentials: true, headers: { Accept: 'application/json' } })
 
 export function setAccessToken(token: string | null) { accessToken = token }
+export function setWorkspaceId(id: string | null) { workspaceId = id }
 
 http.interceptors.request.use((config) => {
   if (accessToken) config.headers.Authorization = `Bearer ${accessToken}`
+  if (workspaceId) config.headers['x-workspace-id'] = workspaceId
   return config
 })
 

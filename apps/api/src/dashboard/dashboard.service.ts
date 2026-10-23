@@ -20,16 +20,12 @@ export class DashboardService {
 
     return {
       stats: {
-        requests: this.stat(requests, 18.4),
-        tokens: this.stat(tokens, 12.1),
-        latency: this.stat(Math.round(latency), -8.2),
-        spending: this.stat(Number(spending.toFixed(2)), 6.7),
+        requests: this.stat(requests),
+        tokens: this.stat(tokens),
+        latency: this.stat(Math.round(latency)),
+        spending: this.stat(Number(spending.toFixed(2))),
       },
-      balance: {
-        availableCny: 328.42,
-        usedThisMonthCny: 171.58,
-        usagePercent: 34,
-      },
+      balance: null,
       trend: trend.map((point) => ({
         timestamp: point.bucketStart.toISOString(),
         requestCount: point.requestCount,
@@ -46,8 +42,8 @@ export class DashboardService {
     return { data: rows.map((row) => this.mapRequest(row)) }
   }
 
-  private stat(value: number, changePercent: number): DashboardStat {
-    return { value, changePercent, direction: changePercent >= 0 ? 'up' : 'down' }
+  private stat(value: number): DashboardStat {
+    return { value, changePercent: 0, direction: 'up' }
   }
 
   private mapRequest(row: RequestLogRow): RequestLogItem {

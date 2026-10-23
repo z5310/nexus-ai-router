@@ -283,7 +283,7 @@ export interface DashboardOverviewResponse {
     availableCny: number
     usedThisMonthCny: number
     usagePercent: number
-  }
+  } | null
   trend: UsagePoint[]
   recentRequests: RequestLogItem[]
 }

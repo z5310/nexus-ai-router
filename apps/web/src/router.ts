@@ -14,6 +14,7 @@ import ModelDetailView from './pages/models/detail.vue'
 import AdminRedirectView from './pages/admin-redirect/index.vue'
 import { authState, restoreSession } from './lib/auth'
 import { safeRedirect } from './lib/redirect'
+import { ensureWorkspaceContext } from './lib/workspace'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -47,6 +48,9 @@ router.beforeEach(async (to) => {
   if (!to.meta.requiresAuth) return true
   if (!user) return { path: '/login', query: { redirect: to.fullPath, ...(to.meta.requiresAdmin ? { admin: '1' } : {}) } }
   if (to.meta.requiresAdmin && user.role !== 'admin') return { path: '/console' }
+  if (to.path.startsWith('/console')) {
+    try { await ensureWorkspaceContext(user.id) } catch { /* Console renders a retryable workspace error. */ }
+  }
   return true
 })
 

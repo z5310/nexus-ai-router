@@ -2,6 +2,7 @@ import { reactive, readonly } from 'vue'
 import type { AuthResponse, AuthUser } from '@gateway/contracts'
 import { login, logout, refreshSession, register } from '../pages/login/api'
 import { ApiError, setAccessToken } from './http'
+import { resetWorkspaceContext } from './workspace'
 
 const state = reactive<{ user: AuthUser | null; ready: boolean }>({ user: null, ready: false })
 export const authState = readonly(state)
@@ -23,5 +24,5 @@ export async function restoreSession(): Promise<AuthUser | null> {
   }
 }
 export async function signOut() {
-  try { await logout() } finally { setAccessToken(null); state.user = null; state.ready = true }
+  try { await logout() } finally { setAccessToken(null); resetWorkspaceContext(); state.user = null; state.ready = true }
 }

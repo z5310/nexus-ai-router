@@ -1,19 +1,18 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
 import { getWorkspaceIpPolicy, saveWorkspaceIpPolicy } from '../api'
+import { activeWorkspace, workspaceQueryKey } from '../../../lib/workspace'
 
 const client = useQueryClient()
 const enabled = ref(false)
 const text = ref('')
 const saved = ref(false)
-const query = useQuery({ queryKey: ['workspace-ip-policy'], queryFn: ({ signal }) => getWorkspaceIpPolicy(signal) })
-const workspace = useQuery({ queryKey: ['workspace-settings'], queryFn: ({ signal }) => getWorkspaceSettings(signal) })
-import { getWorkspaceSettings } from '../api'
+const query = useQuery({ queryKey: computed(() => workspaceQueryKey('workspace-ip-policy')), queryFn: ({ signal }) => getWorkspaceIpPolicy(signal) })
 watch(query.data, (value) => { if(value) { enabled.value = value.enabled; text.value = value.networks.join('\n') } }, { immediate: true })
 const mutation = useMutation({
   mutationFn: () => saveWorkspaceIpPolicy({ enabled: enabled.value, networks: text.value.split(/[\n,]+/).map((item) => item.trim()).filter(Boolean) }),
-  onSuccess: (value) => { client.setQueryData(['workspace-ip-policy'], value); saved.value = true },
+  onSuccess: (value) => { client.setQueryData(workspaceQueryKey('workspace-ip-policy'), value); saved.value = true },
 })
 </script>
 
@@ -24,7 +23,7 @@ const mutation = useMutation({
     <p v-if="query.isPending.value">正在加载…</p>
     <p v-else-if="query.isError.value" role="alert">加载失败。<button @click="query.refetch()">重试</button></p>
     <form v-else @submit.prevent="saved = false; mutation.mutate()">
-      <fieldset :disabled="mutation.isPending.value || !['owner', 'admin'].includes(workspace.data.value?.role ?? '')">
+      <fieldset :disabled="mutation.isPending.value || !['owner', 'admin'].includes(activeWorkspace?.role ?? '')">
         <label class="toggle-label"><input v-model="enabled" type="checkbox" @change="saved = false" />启用允许列表</label>
         <label>允许的 IP / CIDR 网段<textarea v-model="text" rows="6" placeholder="203.0.113.10&#10;198.51.100.0/24&#10;2001:db8::/32" @input="saved = false" /></label>
         <p>每行一项，最多 100 项。0.0.0.0/0 允许所有 IPv4，::/0 允许所有 IPv6。启用时不能为空。</p>

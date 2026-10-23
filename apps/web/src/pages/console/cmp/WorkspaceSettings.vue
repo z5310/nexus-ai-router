@@ -1,18 +1,20 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { SlidersHorizontal } from 'lucide-vue-next'
 import { getWorkspaceSettings, saveWorkspaceSettings } from '../api'
+import { updateWorkspaceContext, workspaceQueryKey } from '../../../lib/workspace'
 
 const client = useQueryClient()
 const name = ref('')
 const currency = ref('CNY')
 const saved = ref(false)
-const query = useQuery({ queryKey: ['workspace-settings'], queryFn: ({ signal }) => getWorkspaceSettings(signal) })
+const settingsKey = computed(() => workspaceQueryKey('workspace-settings'))
+const query = useQuery({ queryKey: settingsKey, queryFn: ({ signal }) => getWorkspaceSettings(signal) })
 watch(query.data, (value) => { if (value) { name.value = value.name; currency.value = value.defaultCurrency } }, { immediate: true })
 const mutation = useMutation({
   mutationFn: () => saveWorkspaceSettings({ name: name.value.trim(), defaultCurrency: currency.value }),
-  onSuccess: (value) => { client.setQueryData(['workspace-settings'], value); saved.value = true },
+  onSuccess: (value) => { client.setQueryData(workspaceQueryKey('workspace-settings'), value); updateWorkspaceContext(value); saved.value = true },
 })
 </script>
 
