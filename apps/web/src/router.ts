@@ -15,10 +15,11 @@ import AdminRedirectView from './pages/admin-redirect/index.vue'
 import { authState, restoreSession } from './lib/auth'
 import { safeRedirect } from './lib/redirect'
 import { ensureWorkspaceContext } from './lib/workspace'
+import { readScrollPosition, rememberWindowScroll } from './lib/scroll-restoration'
 
 const router = createRouter({
   history: createWebHistory(),
-  scrollBehavior: () => ({ top: 0 }),
+  scrollBehavior: (to, _from, savedPosition) => savedPosition ?? readScrollPosition(to.fullPath) ?? { left: 0, top: 0 },
   routes: [
     { path: '/', component: HomeView, meta: { titleKey: 'pageTitles.home' } },
     { path: '/models', component: ModelsView, meta: { titleKey: 'pageTitles.models' } },
@@ -42,7 +43,8 @@ const router = createRouter({
   ],
 })
 
-router.beforeEach(async (to) => {
+router.beforeEach(async (to, from) => {
+  if (from.matched.length) rememberWindowScroll(from.fullPath)
   const user = authState.ready ? authState.user : await restoreSession()
   if (user && (to.path === '/login' || to.path === '/register')) return safeRedirect(to.query.redirect)
   if (!to.meta.requiresAuth) return true

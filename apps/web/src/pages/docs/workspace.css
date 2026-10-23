@@ -14,6 +14,8 @@
   --docs-green: #63e495;
   --docs-green-soft: #a9efbf;
   --docs-shadow: 0 22px 60px rgba(0, 0, 0, .3);
+  --nexus-scrollbar-thumb: var(--docs-line-strong);
+  --nexus-scrollbar-thumb-hover: color-mix(in srgb, var(--docs-green) 38%, transparent);
   position: relative;
   height: 100vh;
   min-height: 100vh;

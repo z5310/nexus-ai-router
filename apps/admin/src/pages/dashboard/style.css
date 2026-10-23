@@ -338,6 +338,10 @@
 .model-cell > div, .person > div { display: flex; flex-direction: column; gap: 3px; }
 .model-cell b, .person b { color: #ffffff; font-size: 13px; }
 .model-cell small, .person small { color: #a6b5ab; font-size: 13px; line-height: 1.6; }
+.admin-model-tags { display: flex; align-items: center; gap: 4px; }
+.admin-model-tags i { padding: 2px 6px; color: #8ee4aa; border-radius: 999px; background: rgba(99, 228, 149, 0.08); font-size: 10px; font-style: normal; }
+.admin-model-tags button { display: inline-flex; align-items: center; gap: 4px; padding: 2px 5px; color: #86968b; border: 0; background: transparent; font-size: 10px; }
+.admin-model-tags button:hover { color: #b5efc6; }
 .price-cell { display: flex; align-items: baseline; gap: 6px; }
 .price-cell del { color: #65736a; font-size: 12px; }
 .price-cell small { color: #79d896; font-size: 11px; }

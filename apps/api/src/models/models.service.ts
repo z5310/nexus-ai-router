@@ -96,12 +96,13 @@ export class ModelsService {
 
   adminSummary(): Promise<AdminModelSummaryResponse> { return this.models.adminSummary() }
 
-  async updateAdminModel(id: string, input: { enabled?: boolean; featured?: boolean; status?: 'stable' | 'observing' }): Promise<AdminModel> {
+  async updateAdminModel(id: string, input: { enabled?: boolean; featured?: boolean; status?: 'stable' | 'observing'; tags?: string[] }): Promise<AdminModel> {
     const model = await this.models.findAdmin(id)
     if (!model) throw new NotFoundException('模型不存在')
     if (input.enabled !== undefined) model.isEnabled = input.enabled
     if (input.featured !== undefined) model.isFeatured = input.featured
     if (input.status !== undefined) model.status = input.status
+    if (input.tags !== undefined) model.tags = [...new Set(input.tags.map((tag) => tag.trim()).filter(Boolean))]
     return this.mapAdminModel(await this.models.save(model))
   }
 
@@ -138,7 +139,7 @@ export class ModelsService {
       costPerTask: Number(model.costPerTask),
       context: model.contextLabel,
       accent: model.accent,
-      ...(model.tagKey ? { tagKey: model.tagKey } : {}),
+      tags: model.tags,
       capabilities: model.capabilities,
       status: model.status,
       trend: model.trend,

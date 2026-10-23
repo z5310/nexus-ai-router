@@ -98,7 +98,7 @@ export interface CatalogModel {
   costPerTask: number
   context: string
   accent: string
-  tagKey?: string
+  tags: string[]
   capabilities: string[]
   status: ModelStatus
   trend: number | null

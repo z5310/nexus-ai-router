@@ -1,0 +1,37 @@
+:root {
+  --nexus-scrollbar-size: 8px;
+  --nexus-scrollbar-thumb: rgba(129, 245, 168, .2);
+  --nexus-scrollbar-thumb-hover: rgba(129, 245, 168, .38);
+  --nexus-scrollbar-track: transparent;
+}
+
+html,
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--nexus-scrollbar-thumb) var(--nexus-scrollbar-track);
+}
+
+*::-webkit-scrollbar {
+  width: var(--nexus-scrollbar-size);
+  height: var(--nexus-scrollbar-size);
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--nexus-scrollbar-track);
+}
+
+*::-webkit-scrollbar-thumb {
+  min-height: 40px;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background-color: var(--nexus-scrollbar-thumb);
+  background-clip: content-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--nexus-scrollbar-thumb-hover);
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}

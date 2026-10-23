@@ -25,15 +25,17 @@ import {
   WalletCards,
   X,
 } from 'lucide-vue-next'
-import { ref, watch } from 'vue'
+import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import BrandLogo from '../../components/BrandLogo.vue'
 import { setLocale, type SupportedLocale } from '../../i18n'
+import { readScrollPosition, writeScrollPosition } from '../../lib/scroll-restoration'
 
 type DocsTheme = 'dark' | 'light'
 
 const copied = ref(false)
 const sideOpen = ref(false)
+const docsLayout = ref<HTMLElement | null>(null)
 const storedTheme = localStorage.getItem('nexus-docs-theme')
 const theme = ref<DocsTheme>(
   storedTheme === 'light' || storedTheme === 'dark'
@@ -43,6 +45,17 @@ const theme = ref<DocsTheme>(
 const { t, locale } = useI18n()
 
 watch(theme, (value) => localStorage.setItem('nexus-docs-theme', value), { immediate: true })
+
+onMounted(async () => {
+  await nextTick()
+  const saved = readScrollPosition('/docs:content')
+  if (saved && docsLayout.value) docsLayout.value.scrollTo(saved)
+})
+
+onBeforeUnmount(() => {
+  if (!docsLayout.value) return
+  writeScrollPosition('/docs:content', { left: docsLayout.value.scrollLeft, top: docsLayout.value.scrollTop })
+})
 
 const toggleTheme = () => {
   theme.value = theme.value === 'dark' ? 'light' : 'dark'
@@ -104,7 +117,7 @@ const copyCode = async () => {
 
     <button v-if="sideOpen" class="docs-overlay" aria-label="Close" @click="sideOpen = false" />
 
-    <div class="docs-layout">
+    <div ref="docsLayout" class="docs-layout">
       <aside :class="['docs-sidebar', { open: sideOpen }]">
         <nav>
           <section>

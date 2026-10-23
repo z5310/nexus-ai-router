@@ -7,7 +7,7 @@ export const getModelSummary = () => request<AdminModelSummaryResponse>({ url: a
 export const getUserSummary = () => request<UserSummaryResponse>({ url: adminEndpoints.userSummary })
 export const getAdminModels = (params: AdminListQuery) => request<AdminModelListResponse>({ url: adminEndpoints.models, params })
 export const getAdminUsers = (params: AdminListQuery) => request<UserListResponse>({ url: adminEndpoints.users, params })
-export const updateAdminModel = (id: string, data: Partial<Pick<AdminModel, 'enabled' | 'featured' | 'status'>>) => request<AdminModel>({ method: 'PATCH', url: adminEndpoints.model(id), data })
+export const updateAdminModel = (id: string, data: Partial<Pick<AdminModel, 'enabled' | 'featured' | 'status' | 'tags'>>) => request<AdminModel>({ method: 'PATCH', url: adminEndpoints.model(id), data })
 export const getModelPricing = (id: string) => request<ModelPricingResponse>({ url: adminEndpoints.modelPricing(id) })
 export const updateModelPricing = (id: string, data: UpdateModelPricingInput) => request<ModelPricingResponse>({ method: 'PUT', url: adminEndpoints.modelPricing(id), data })
 export const getProviders = () => request<ProviderDefinitionListResponse>({ url: adminEndpoints.providers })

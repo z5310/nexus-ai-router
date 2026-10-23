@@ -21,6 +21,7 @@ async function main() {
     assert.equal(detail.id, catalog.data[0].id)
     assert.ok(detail.originalInputPrice >= detail.inputPrice)
     assert.ok(detail.discountPercent >= 0 && detail.discountPercent <= 100)
+    assert.ok(Array.isArray(detail.tags), 'model tags must be returned as an array')
     assert.ok(Date.parse(detail.priceEffectiveFrom) > 0)
 
     const ranking = await service.rankings({ metric: 'overall', limit: 100 })

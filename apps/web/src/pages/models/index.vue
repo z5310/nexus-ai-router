@@ -43,6 +43,7 @@ const filteredModels = computed(() => {
 
 const typeLabel = (type: ModelType | 'all') => t(`common.types.${type}`)
 const providerLabel = (provider: string) => provider === 'all' ? t('common.providers.all') : provider === '阿里云' ? t('common.providers.alibaba') : provider === '字节跳动' ? t('common.providers.bytedance') : provider
+const tagLabel = (tag: string) => tag.startsWith('tags.') ? t(tag) : tag
 const priceSuffix = (unit: ModelListResponse['data'][number]['priceUnit']) => ({
   million_tokens: '', image: locale.value === 'en-US' ? '/ image' : '/张', second: locale.value === 'en-US' ? '/ sec' : '/秒', '10k_chars': locale.value === 'en-US' ? '/ 10K chars' : '/万字',
 })[unit]
@@ -90,9 +91,17 @@ const providerCount = (provider: string) => provider === 'all' ? catalogModels.v
           <div class="results-meta"><span>{{ t('catalog.found', { count: filteredModels.length }) }}</span><span>{{ t('catalog.cny') }}</span></div>
           <div class="model-grid">
             <article v-for="(model, index) in filteredModels" :key="model.slug" v-reveal="{ delay: (index % 3) * 70 }" class="model-card">
-              <div class="card-top"><ModelLogo :owner="model.owner" :provider="model.provider" :name="model.name" :accent="model.accent" :size="32" /><span v-if="model.tagKey" class="model-tag">{{ t(model.tagKey) }}</span><button aria-label="Compare model">+</button></div>
-              <RouterLink :to="`/models/${model.slug}`"><h3>{{ model.name }}</h3></RouterLink><p class="provider-line">{{ providerLabel(model.provider) }} · {{ typeLabel(model.type) }}</p><p class="model-description">{{ t(model.descriptionKey) }}</p>
-              <div class="model-specs"><span><small>{{ t('catalog.inputPrice') }}</small><b>{{ displayPrice(model.inputPrice, model.priceUnit) }}</b><del v-if="model.discountPercent>0">{{ displayPrice(model.originalInputPrice, model.priceUnit) }}</del></span><span><small>{{ t('catalog.outputPrice') }}</small><b>{{ displayPrice(model.outputPrice, model.priceUnit) }}</b><del v-if="model.discountPercent>0&&model.originalOutputPrice!==null">{{ displayPrice(model.originalOutputPrice, model.priceUnit) }}</del></span><span><small>{{ t('catalog.firstToken') }}</small><b>{{ model.latencyMs > 1000 ? `${(model.latencyMs / 1000).toFixed(1)}s` : `${model.latencyMs}ms` }}</b><em v-if="model.discountPercent>0">-{{ model.discountPercent }}%</em></span></div>
+              <div class="card-top"><ModelLogo :owner="model.owner" :provider="model.provider" :name="model.name" :accent="model.accent" :size="32" /><div v-if="model.tags.length" class="model-tags"><span v-for="tag in model.tags" :key="tag" class="model-tag">{{ tagLabel(tag) }}</span></div></div>
+              <div class="model-title-row">
+                <RouterLink :to="`/models/${model.slug}`"><h3>{{ model.name }}</h3></RouterLink>
+                <em v-if="model.discountPercent > 0" class="discount-badge">-{{ model.discountPercent }}%</em>
+              </div>
+              <p class="provider-line">{{ providerLabel(model.provider) }} · {{ typeLabel(model.type) }}</p><p class="model-description">{{ t(model.descriptionKey) }}</p>
+              <div class="model-specs">
+                <span class="price-metric"><small class="price-label">{{ t('catalog.inputPrice') }}</small><b class="price-value">{{ displayPrice(model.inputPrice, model.priceUnit) }}</b><del v-if="model.discountPercent > 0" class="original-price">{{ displayPrice(model.originalInputPrice, model.priceUnit) }}</del></span>
+                <span class="price-metric"><small class="price-label">{{ t('catalog.outputPrice') }}</small><b class="price-value">{{ displayPrice(model.outputPrice, model.priceUnit) }}</b><del v-if="model.discountPercent > 0 && model.originalOutputPrice !== null" class="original-price">{{ displayPrice(model.originalOutputPrice, model.priceUnit) }}</del></span>
+                <span class="latency-metric"><small class="latency-label">{{ t('catalog.firstToken') }}</small><b class="latency-value">{{ model.latencyMs > 1000 ? `${(model.latencyMs / 1000).toFixed(1)}s` : `${model.latencyMs}ms` }}</b></span>
+              </div>
               <div class="card-bottom"><code>{{ model.slug }}</code><RouterLink :to="`/models/${model.slug}`">{{ t('catalog.call') }} <ArrowRight :size="13" /></RouterLink></div>
             </article>
           </div>

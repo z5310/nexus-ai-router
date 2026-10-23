@@ -1,6 +1,6 @@
 import { Type } from 'class-transformer'
 import { ApiPropertyOptional } from '@nestjs/swagger'
-import { IsBoolean, IsEnum, IsInt, IsNumber, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator'
+import { ArrayMaxSize, IsArray, IsBoolean, IsEnum, IsInt, IsNumber, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator'
 
 export class ListAdminModelsQuery {
   @ApiPropertyOptional()
@@ -24,6 +24,14 @@ export class ListAdminModelsQuery {
 }
 
 export class UpdateAdminModelDto {
+  @ApiPropertyOptional({ type: [String], description: 'Public model labels, up to 8 entries' })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(8)
+  @IsString({ each: true })
+  @MaxLength(24, { each: true })
+  tags?: string[]
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsBoolean()
