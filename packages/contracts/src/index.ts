@@ -645,6 +645,49 @@ export interface AuthSessionListResponse {
   data: AuthSession[]
 }
 
+
+export type AuditOutcome = 'success' | 'failure'
+
+export interface AuditLogItem {
+  id: string
+  actorUserId: string | null
+  actorEmail: string | null
+  action: string
+  resourceType: string
+  resourceId: string | null
+  outcome: AuditOutcome
+  metadata: Record<string, unknown>
+  ipAddress: string | null
+  userAgent: string | null
+  requestId: string | null
+  createdAt: string
+}
+
+export interface AuditLogListResponse {
+  data: AuditLogItem[]
+  pagination: PaginationMeta
+}
+
+export type AdminSessionStatus = 'active' | 'revoked' | 'expired'
+
+export interface AdminSessionItem {
+  id: string
+  user: Pick<AuthUser, 'id' | 'name' | 'email' | 'role' | 'status'>
+  status: AdminSessionStatus
+  current: boolean
+  userAgent: string | null
+  ipAddress: string | null
+  lastSeenAt: string
+  createdAt: string
+  expiresAt: string
+  revokedAt: string | null
+}
+
+export interface AdminSessionListResponse {
+  data: AdminSessionItem[]
+  pagination: PaginationMeta
+}
+
 export interface PasswordResetRequestResponse {
   accepted: true
   expiresIn: number

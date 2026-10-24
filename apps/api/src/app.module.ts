@@ -50,6 +50,9 @@ import { AddModelTags1760000015000 } from './database/migrations/1760000015000-A
 import { AudioGenerationTaskEntity } from './database/entities/audio-generation-task.entity'
 import { CreateAudioGenerationTasks1760000016000 } from './database/migrations/1760000016000-CreateAudioGenerationTasks'
 import { SeedDemoAudioWorkspaceModel1760000017000 } from './database/migrations/1760000017000-SeedDemoAudioWorkspaceModel'
+import { AuditLogEntity } from './database/entities/audit-log.entity'
+import { CreateAuditLogs1760000022000 } from './database/migrations/1760000022000-CreateAuditLogs'
+import { AuditModule } from './audit/audit.module'
 import { DashboardModule } from './dashboard/dashboard.module'
 import { HealthController } from './health/health.controller'
 import { ModelsModule } from './models/models.module'
@@ -85,8 +88,8 @@ import { AudioGenerationModule } from './audio-generation/audio-generation.modul
       useFactory: (config: ConfigService) => ({
         type: 'postgres',
         url: config.getOrThrow<string>('DATABASE_URL'),
-        entities: [ModelEntity, ModelPriceVersionEntity, RequestLogEntity, InferenceAttemptEntity, UsageBucketEntity, UserEntity, AuthSessionEntity, AuthActionTokenEntity, ApiKeyEntity, WorkspaceModelEntity, RouteRuleEntity, WorkspaceEntity, WorkspaceMemberEntity, ProjectEntity, ProviderEntity, ProviderCredentialEntity, ProviderChannelEntity, ModelDeploymentEntity, RankingSourceEntity, ModelBenchmarkMappingEntity, BenchmarkSnapshotEntity, AudioGenerationTaskEntity],
-        migrations: [CreateModels1760000000000, ExpandCatalogAndUsage1760000001000, CreateIdentity1760000002000, HardenIdentity1760000003000, CreateWorkspaceConfiguration1760000004000, CreateRouteRulesAndScopeUsage1760000005000, CreateWorkspaceTenancy1760000006000, CreateProviderCredentials1760000007000, SessionRotation1760000008000, WorkspaceIpPolicy1760000009000, CreateInferenceAttempts1760000010000, CreateProviderChannels1760000011000, CreateModelPriceVersions1760000012000, CreateProviders1760000013000, CreateRankingSources1760000014000, AddModelTags1760000015000, CreateAudioGenerationTasks1760000016000, SeedDemoAudioWorkspaceModel1760000017000, RequestPriceSnapshot1760000018000, BillingLedger1760000019000, ChatBilling1760000020000, BillingAdminAudit1760000021000],
+        entities: [ModelEntity, ModelPriceVersionEntity, RequestLogEntity, InferenceAttemptEntity, UsageBucketEntity, UserEntity, AuthSessionEntity, AuthActionTokenEntity, ApiKeyEntity, WorkspaceModelEntity, RouteRuleEntity, WorkspaceEntity, WorkspaceMemberEntity, ProjectEntity, ProviderEntity, ProviderCredentialEntity, ProviderChannelEntity, ModelDeploymentEntity, RankingSourceEntity, ModelBenchmarkMappingEntity, BenchmarkSnapshotEntity, AudioGenerationTaskEntity, AuditLogEntity],
+        migrations: [CreateModels1760000000000, ExpandCatalogAndUsage1760000001000, CreateIdentity1760000002000, HardenIdentity1760000003000, CreateWorkspaceConfiguration1760000004000, CreateRouteRulesAndScopeUsage1760000005000, CreateWorkspaceTenancy1760000006000, CreateProviderCredentials1760000007000, SessionRotation1760000008000, WorkspaceIpPolicy1760000009000, CreateInferenceAttempts1760000010000, CreateProviderChannels1760000011000, CreateModelPriceVersions1760000012000, CreateProviders1760000013000, CreateRankingSources1760000014000, AddModelTags1760000015000, CreateAudioGenerationTasks1760000016000, SeedDemoAudioWorkspaceModel1760000017000, RequestPriceSnapshot1760000018000, BillingLedger1760000019000, ChatBilling1760000020000, BillingAdminAudit1760000021000, CreateAuditLogs1760000022000],
         synchronize: false,
         migrationsRun: false,
         retryAttempts: 10,
@@ -109,6 +112,7 @@ import { AudioGenerationModule } from './audio-generation/audio-generation.modul
     InferenceModule,
     AudioGenerationModule,
     BillingModule,
+    AuditModule,
   ],
   controllers: [HealthController],
 })

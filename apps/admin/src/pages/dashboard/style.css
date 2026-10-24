@@ -25,6 +25,7 @@
   width: 228px;
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
   padding: 16px 14px;
   border-right: 1px solid var(--border);
   background: rgba(8, 17, 12, 0.92);

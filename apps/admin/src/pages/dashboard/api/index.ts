@@ -1,10 +1,13 @@
-import type { AdminModel, AdminModelListResponse, AdminModelSummaryResponse, ModelDeployment, ModelDeploymentListResponse, ModelPricingResponse, ProviderChannel, ProviderChannelListResponse, ProviderCredentialListResponse, ProviderDefinition, ProviderDefinitionListResponse, RankingSource, RankingSourceDetailResponse, RankingSourceListResponse, UpdateModelPricingInput, UserListResponse, UserSummaryResponse } from '@gateway/contracts'
+import type { AdminModel, AdminModelListResponse, AdminModelSummaryResponse, AdminSessionListResponse, AuditLogListResponse, ModelDeployment, ModelDeploymentListResponse, ModelPricingResponse, ProviderChannel, ProviderChannelListResponse, ProviderCredentialListResponse, ProviderDefinition, ProviderDefinitionListResponse, RankingSource, RankingSourceDetailResponse, RankingSourceListResponse, UpdateModelPricingInput, UserListResponse, UserSummaryResponse } from '@gateway/contracts'
 import { request } from '../../../lib/http'
 import { adminEndpoints } from './endpoints'
 import type { AdminListQuery, CreateModelDeploymentInput, CreateProviderChannelInput, CreateProviderCredentialInput, CreateProviderDefinitionInput, CreateRankingSourceInput } from './types'
 
 export const getModelSummary = () => request<AdminModelSummaryResponse>({ url: adminEndpoints.modelSummary })
 export const getUserSummary = () => request<UserSummaryResponse>({ url: adminEndpoints.userSummary })
+export const getAuditLogs = (params: { query?: string; outcome?: 'success' | 'failure'; page: number; pageSize: number }) => request<AuditLogListResponse>({ url: adminEndpoints.auditLogs, params })
+export const getAdminSessions = (params: { query?: string; status?: 'active' | 'revoked' | 'expired'; page: number; pageSize: number }) => request<AdminSessionListResponse>({ url: adminEndpoints.sessions, params })
+export const revokeAdminSession = (id: string) => request<void>({ method: 'DELETE', url: adminEndpoints.session(id) })
 export const getAdminModels = (params: AdminListQuery) => request<AdminModelListResponse>({ url: adminEndpoints.models, params })
 export const getAdminUsers = (params: AdminListQuery) => request<UserListResponse>({ url: adminEndpoints.users, params })
 export const updateAdminModel = (id: string, data: Partial<Pick<AdminModel, 'enabled' | 'featured' | 'status' | 'tags'>>) => request<AdminModel>({ method: 'PATCH', url: adminEndpoints.model(id), data })

@@ -10,6 +10,13 @@ export interface SessionMetadata {
   ipAddress?: string
 }
 
+export interface AdminSessionListFilter {
+  query?: string
+  status?: 'active' | 'revoked' | 'expired'
+  page: number
+  pageSize: number
+}
+
 @Injectable()
 export class SessionsRepository {
   constructor(@InjectRepository(AuthSessionEntity) private readonly repository: Repository<AuthSessionEntity>) {}
@@ -93,5 +100,21 @@ export class SessionsRepository {
 
   async revokeAll(userId: string): Promise<void> {
     await this.repository.update({ userId, revokedAt: IsNull() }, { revokedAt: new Date() })
+  }
+
+  async listForAdmin(query: AdminSessionListFilter): Promise<[AuthSessionEntity[], number]> {
+    const builder = this.repository.createQueryBuilder('session').leftJoinAndSelect('session.user', 'user')
+    if (query.query?.trim()) builder.andWhere('(user.name ILIKE :query OR user.email ILIKE :query OR session.ipAddress ILIKE :query)', { query: `%${query.query.trim()}%` })
+    const now = new Date()
+    if (query.status === 'active') builder.andWhere('session.revokedAt IS NULL AND session.expiresAt > :now', { now })
+    if (query.status === 'revoked') builder.andWhere('session.revokedAt IS NOT NULL')
+    if (query.status === 'expired') builder.andWhere('session.revokedAt IS NULL AND session.expiresAt <= :now', { now })
+    return builder.orderBy('session.lastSeenAt', 'DESC').addOrderBy('session.id', 'DESC')
+      .skip((query.page - 1) * query.pageSize).take(query.pageSize).getManyAndCount()
+  }
+
+  async revokeByAdmin(id: string): Promise<boolean> {
+    const result = await this.repository.update({ id, revokedAt: IsNull(), expiresAt: MoreThan(new Date()) }, { revokedAt: new Date() })
+    return (result.affected ?? 0) > 0
   }
 }

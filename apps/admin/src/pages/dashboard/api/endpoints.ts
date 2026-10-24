@@ -18,4 +18,7 @@ export const adminEndpoints = {
   rankingSourceSync: (id: string) => `/api/admin/ranking-sources/${id}/sync`,
   rankingSourceMappings: (id: string) => `/api/admin/ranking-sources/${id}/mappings`,
   rankingSourceMapping: (id: string) => `/api/admin/ranking-sources/mappings/${id}`,
+  auditLogs: '/api/admin/audit-logs',
+  sessions: '/api/admin/sessions',
+  session: (id: string) => `/api/admin/sessions/${id}`,
 } as const
