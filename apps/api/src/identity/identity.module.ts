@@ -17,6 +17,7 @@ import { UsersService } from './users.service'
 import { ActionTokensRepository } from './action-tokens.repository'
 import { WorkspacesModule } from '../workspaces/workspaces.module'
 import { WorkspacesController } from '../workspaces/workspaces.controller'
+import { WorkspaceInvitationsController } from '../workspaces/workspace-invitations.controller'
 
 @Module({
   imports: [
@@ -24,7 +25,7 @@ import { WorkspacesController } from '../workspaces/workspaces.controller'
     WorkspacesModule,
     JwtModule.registerAsync({ inject: [ConfigService], useFactory: (config: ConfigService) => ({ secret: config.getOrThrow<string>('JWT_SECRET') }) }),
   ],
-  controllers: [AuthController, AdminUsersController, WorkspacesController],
+  controllers: [AuthController, AdminUsersController, WorkspacesController, WorkspaceInvitationsController],
   providers: [AuthService, UsersService, UsersRepository, SessionsRepository, ActionTokensRepository, PasswordService, JwtAuthGuard, RolesGuard],
   exports: [JwtModule, JwtAuthGuard, RolesGuard, UsersService, SessionsRepository, WorkspacesModule],
 })

@@ -12,6 +12,7 @@ import ForgotPasswordView from './pages/login/forgot-password.vue'
 import ResetPasswordView from './pages/login/reset-password.vue'
 import ModelDetailView from './pages/models/detail.vue'
 import AdminRedirectView from './pages/admin-redirect/index.vue'
+import WorkspaceInvitationView from './pages/workspace-invitations/index.vue'
 import { authState, restoreSession } from './lib/auth'
 import { safeRedirect } from './lib/redirect'
 import { ensureWorkspaceContext } from './lib/workspace'
@@ -34,6 +35,7 @@ const router = createRouter({
     { path: '/console/billing', component: ConsoleSectionView, meta: { titleKey: 'pageTitles.consoleBilling', section: 'billing', requiresAuth: true } },
     { path: '/console/members', component: ConsoleSectionView, meta: { titleKey: 'pageTitles.consoleMembers', section: 'members', requiresAuth: true } },
     { path: '/console/settings', component: ConsoleSectionView, meta: { titleKey: 'pageTitles.consoleSettings', section: 'settings', requiresAuth: true } },
+    { path: '/workspace-invitations/:token', component: WorkspaceInvitationView, meta: { titleKey: 'pageTitles.workspaceInvitation', requiresAuth: true } },
     { path: '/admin/:pathMatch(.*)*', component: AdminRedirectView, meta: { titleKey: 'pageTitles.admin', requiresAuth: true, requiresAdmin: true } },
     { path: '/login', component: LoginView, meta: { titleKey: 'pageTitles.login' } },
     { path: '/register', component: RegisterView, meta: { titleKey: 'pageTitles.login' } },

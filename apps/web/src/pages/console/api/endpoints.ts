@@ -8,4 +8,9 @@ export const consoleEndpoints = {
   route: (id: string) => `/api/console/routes/${id}`,
   keys: '/api/keys',
   key: (id: string) => `/api/keys/${id}`,
+  invitations: '/api/workspaces/current/invitations',
+  invitation: (id: string) => `/api/workspaces/current/invitations/${id}`,
+  resendInvitation: (id: string) => `/api/workspaces/current/invitations/${id}/resend`,
+  acceptInvitation: '/api/workspace-invitations/accept',
+  transferOwnership: '/api/workspaces/current/transfer-ownership',
 } as const

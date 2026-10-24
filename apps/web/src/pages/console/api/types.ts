@@ -1,4 +1,4 @@
-export type { ApiKeyListResponse, CreateApiKeyResponse, DashboardOverviewResponse, ModelListResponse, RequestLogListResponse, RouteRule, RouteRuleListResponse, WorkspaceModelConfig, WorkspaceModelListResponse } from '@gateway/contracts'
+export type { AcceptWorkspaceInvitationResponse, ApiKeyListResponse, CreateApiKeyResponse, CreateWorkspaceInvitationInput, DashboardOverviewResponse, ModelListResponse, RequestLogListResponse, RouteRule, RouteRuleListResponse, TransferWorkspaceOwnershipInput, TransferWorkspaceOwnershipResponse, WorkspaceInvitation, WorkspaceInvitationListResponse, WorkspaceInvitationSecret, WorkspaceModelConfig, WorkspaceModelListResponse } from '@gateway/contracts'
 import type { RouteMatchType, RouteStrategy } from '@gateway/contracts'
 
 export interface CreateApiKeyInput { name: string }

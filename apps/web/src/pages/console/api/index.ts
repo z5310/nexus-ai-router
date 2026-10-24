@@ -30,3 +30,10 @@ export const saveWorkspaceIpPolicy = (data: import('@gateway/contracts').Workspa
 
 export const changeWorkspaceMember = (id: string, data: import('@gateway/contracts').UpdateWorkspaceMemberInput) => request<void>({ method: 'PATCH', url: '/api/workspaces/current/members/' + id, data })
 export const removeWorkspaceMember = (id: string) => request<void>({ method: 'DELETE', url: '/api/workspaces/current/members/' + id })
+
+export const getWorkspaceInvitations = (signal?: AbortSignal) => request<import('@gateway/contracts').WorkspaceInvitationListResponse>({ url: consoleEndpoints.invitations, signal })
+export const createWorkspaceInvitation = (data: import('@gateway/contracts').CreateWorkspaceInvitationInput) => request<import('@gateway/contracts').WorkspaceInvitationSecret>({ method: 'POST', url: consoleEndpoints.invitations, data })
+export const resendWorkspaceInvitation = (id: string) => request<import('@gateway/contracts').WorkspaceInvitationSecret>({ method: 'POST', url: consoleEndpoints.resendInvitation(id) })
+export const revokeWorkspaceInvitation = (id: string) => request<void>({ method: 'DELETE', url: consoleEndpoints.invitation(id) })
+export const acceptWorkspaceInvitation = (token: string) => request<import('@gateway/contracts').AcceptWorkspaceInvitationResponse>({ method: 'POST', url: consoleEndpoints.acceptInvitation, data: { token } })
+export const transferWorkspaceOwnership = (data: import('@gateway/contracts').TransferWorkspaceOwnershipInput) => request<import('@gateway/contracts').TransferWorkspaceOwnershipResponse>({ method: 'POST', url: consoleEndpoints.transferOwnership, data })

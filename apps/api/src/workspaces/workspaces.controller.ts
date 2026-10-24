@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Patch, Req, UseGuards } from '@nestjs/common'
+import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Patch, Post, Req, UseGuards } from '@nestjs/common'
 import { UpdateMemberDto } from './update-member.dto'
 import { WorkspaceContextGuard, type WorkspaceRequest } from './workspace-context.guard'
 import { UpdateWorkspaceDto } from './update-workspace.dto'
@@ -8,6 +8,7 @@ import type { WorkspaceListResponse } from '@gateway/contracts'
 import { JwtAuthGuard, type AuthenticatedRequest } from '../identity/auth.guard'
 import { WorkspacesService } from './workspaces.service'
 import { RequireWorkspacePermission } from './workspace-permissions'
+import { TransferWorkspaceOwnershipDto } from './workspace-invitation.dto'
 
 @ApiTags('workspaces')
 @ApiBearerAuth()
@@ -30,6 +31,13 @@ export class WorkspacesController {
   @UseGuards(WorkspaceContextGuard)
   async removeMember(@Req() request: WorkspaceRequest, @Param('id', new ParseUUIDPipe()) id: string) {
     await this.workspaces.manageMember(request.user.sub, request.workspace.id, id, null)
+  }
+
+  @Post('current/transfer-ownership')
+  @RequireWorkspacePermission('workspace:manage')
+  @UseGuards(WorkspaceContextGuard)
+  transferOwnership(@Req() request: WorkspaceRequest, @Body() input: TransferWorkspaceOwnershipDto) {
+    return this.workspaces.transferOwnership(request.user.sub, request.workspace.id, input.memberId)
   }
 
   @Get('current/ip-policy')

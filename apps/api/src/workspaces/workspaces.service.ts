@@ -1,7 +1,7 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common'
 import { ApiKeyEntity } from '../database/entities/api-key.entity'
 import type { UpdateWorkspaceMemberInput } from '@gateway/contracts'
-import type { WorkspaceContext, WorkspaceListResponse, WorkspaceMemberListResponse } from '@gateway/contracts'
+import type { TransferWorkspaceOwnershipResponse, WorkspaceContext, WorkspaceListResponse, WorkspaceMemberListResponse } from '@gateway/contracts'
 import { UserEntity } from '../database/entities/user.entity'
 import { DataSource, IsNull, Repository } from 'typeorm'
 import { InjectRepository } from '@nestjs/typeorm'
@@ -100,6 +100,22 @@ export class WorkspacesService {
         await manager.getRepository(ApiKeyEntity).update({ workspaceId, userId: target.userId, revokedAt: IsNull() }, { revokedAt: new Date() })
         await members.delete(target.id)
       }
+    })
+  }
+
+  async transferOwnership(actorId: string, workspaceId: string, targetMemberId: string): Promise<TransferWorkspaceOwnershipResponse> {
+    return this.dataSource.transaction(async (manager) => {
+      const workspace = await manager.getRepository(WorkspaceEntity).findOne({ where: { id: workspaceId, status: 'active' }, lock: { mode: 'pessimistic_write' } })
+      if (!workspace) throw new ForbiddenException('工作区不可用')
+      const members = manager.getRepository(WorkspaceMemberEntity)
+      const actor = await members.findOne({ where: { workspaceId, userId: actorId, status: 'active' }, lock: { mode: 'pessimistic_write' } })
+      if (!actor || actor.role !== 'owner') throw new ForbiddenException('仅工作区所有者可转移所有权')
+      const target = await members.findOne({ where: { id: targetMemberId, workspaceId, status: 'active' }, lock: { mode: 'pessimistic_write' } })
+      if (!target) throw new NotFoundException('目标成员不存在')
+      if (target.id === actor.id) throw new BadRequestException('目标成员不能是当前所有者')
+      await members.update(actor.id, { role: 'admin' })
+      await members.update(target.id, { role: 'owner' })
+      return { workspaceId, previousOwnerMemberId: actor.id, ownerMemberId: target.id }
     })
   }
 

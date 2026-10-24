@@ -115,7 +115,7 @@ Nexus AI Router 是面向 AI 应用团队的多模型接入、路由、观测与
 
 ### P1：增强团队协作与运营效率
 
-1. 工作区成员邀请、Owner/Admin/Developer/Billing/Viewer 权限。
+1. 工作区成员邀请、Owner/Admin/Developer/Billing/Viewer 权限已完成第一阶段；邮件投递、成员分页、所有权转移二次认证与 Project 隔离待开发。
 2. 请求详情、失败原因、trace、导出、日志保留策略。
 3. 账单、充值、交易、发票和低余额提醒。
 4. 路由权重、A/B 分流、灰度发布、健康检查和熔断。

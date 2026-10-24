@@ -10,14 +10,14 @@ const page = ref(1)
 const params = computed(() => ({ query: search.value || undefined, outcome: outcome.value as 'success' | 'failure' || undefined, page: page.value, pageSize: 30 }))
 const logs = useQuery({ queryKey: computed(() => ['admin-audit-logs', params.value]), queryFn: () => getAuditLogs(params.value) })
 const pages = computed(() => logs.data.value?.pagination.totalPages || 1)
-const resourceLabels: Record<string, string> = { models: '模型', users: '用户', sessions: '登录会话', providers: '供应商', provider_credentials: '供应商凭证', provider_channels: '供应商渠道', model_deployments: '模型部署', ranking_sources: '排行榜来源' }
+const resourceLabels: Record<string, string> = { models: '模型', users: '用户', sessions: '登录会话', providers: '供应商', provider_credentials: '供应商凭证', provider_channels: '供应商渠道', model_deployments: '模型部署', ranking_sources: '排行榜来源', workspace: '工作区', workspace_member: '工作区成员', workspace_invitation: '成员邀请', workspace_ownership: '工作区所有权', workspace_ip_policy: 'IP 策略', api_key: 'API 密钥', route_rule: '路由规则' }
 function date(value: string) { return new Intl.DateTimeFormat('zh-CN', { dateStyle: 'short', timeStyle: 'medium' }).format(new Date(value)) }
-function action(value: string) { return ({ 'admin.post': '创建', 'admin.put': '发布', 'admin.patch': '更新', 'admin.delete': '删除 / 撤销' }[value] ?? value) }
+function action(value: string) { return ({ 'admin.post': '创建', 'admin.put': '发布', 'admin.patch': '更新', 'admin.delete': '删除 / 撤销', 'workspace.post': '创建 / 执行', 'workspace.put': '发布', 'workspace.patch': '更新', 'workspace.delete': '删除 / 撤销' }[value] ?? value) }
 </script>
 
 <template>
   <section class="overflow-hidden rounded-14px border border-white/9 bg-white/2">
-    <header class="min-h-68px flex items-center border-b border-white/7 px-18px py-4"><div><h2 class="m-0 text-15px">不可变审计日志</h2><p class="mb-0 mt-1 text-13px text-[#647268]">记录平台管理接口的成功与失败变更，不保存密码、密钥或请求正文。</p></div></header>
+    <header class="min-h-68px flex items-center border-b border-white/7 px-18px py-4"><div><h2 class="m-0 text-15px">不可变审计日志</h2><p class="mb-0 mt-1 text-13px text-[#647268]">记录平台管理与工作区敏感操作的成功和失败，不保存密码、密钥、邀请令牌或请求正文。</p></div></header>
     <div class="flex flex-wrap items-center gap-3 border-b border-white/7 px-14px py-10px">
       <label class="h-36px w-full max-w-420px flex items-center gap-2 rounded-9px border border-white/9 bg-white/2 px-3 text-[#69776e]"><Search :size="15" /><input v-model="search" class="w-full border-0 bg-transparent text-13px text-white outline-none" placeholder="搜索操作者、动作或资源 ID…" @input="page=1"></label>
       <select v-model="outcome" class="h-36px rounded-9px border border-white/9 bg-[#0f1a14] px-3 text-13px text-white" @change="page=1"><option value="">全部结果</option><option value="success">成功</option><option value="failure">失败</option></select>

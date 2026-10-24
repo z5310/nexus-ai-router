@@ -345,6 +345,35 @@ export interface WorkspaceMemberSummary {
 export interface WorkspaceMemberListResponse { data: WorkspaceMemberSummary[] }
 export interface UpdateWorkspaceMemberInput { role: Exclude<WorkspaceRole, 'owner'> }
 
+export type WorkspaceInvitationStatus = 'pending' | 'accepted' | 'revoked' | 'expired'
+export interface WorkspaceInvitation {
+  id: string
+  workspaceId: string
+  email: string
+  role: Exclude<WorkspaceRole, 'owner'>
+  status: WorkspaceInvitationStatus
+  invitedByUserId: string
+  acceptedByUserId: string | null
+  expiresAt: string
+  acceptedAt: string | null
+  revokedAt: string | null
+  lastSentAt: string
+  createdAt: string
+}
+export interface WorkspaceInvitationListResponse { data: WorkspaceInvitation[] }
+export interface CreateWorkspaceInvitationInput {
+  email: string
+  role: Exclude<WorkspaceRole, 'owner'>
+}
+export interface WorkspaceInvitationSecret extends WorkspaceInvitation { token: string }
+export interface AcceptWorkspaceInvitationResponse { workspace: WorkspaceContext }
+export interface TransferWorkspaceOwnershipInput { memberId: string }
+export interface TransferWorkspaceOwnershipResponse {
+  workspaceId: string
+  previousOwnerMemberId: string
+  ownerMemberId: string
+}
+
 export interface WorkspaceModelConfig {
   id: string
   modelId: string
