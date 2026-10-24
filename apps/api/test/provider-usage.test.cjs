@@ -4,6 +4,7 @@ const assert = require('node:assert/strict')
 const { createServer } = require('node:http')
 const { OpenAICompatibleProviderAdapter } = require('../src/inference/openai-compatible-provider.adapter')
 const { ProviderNotDispatchedException } = require('../src/inference/provider-gateway')
+const { ProviderDispatchNotStartedError } = require('../src/providers/provider-runtime.service')
 
 test('provider requires trustworthy JSON usage and a complete SSE terminator', async () => {
   let mode = 'json'
@@ -21,8 +22,9 @@ test('provider requires trustworthy JSON usage and a complete SSE terminator', a
   })
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve))
   try {
-    const config = { get: (key, fallback) => key === 'PROVIDER_GATEWAY_URL' ? `http://127.0.0.1:${server.address().port}` : fallback }
-    const adapter = new OpenAICompatibleProviderAdapter(config)
+    const config = { get: (_key, fallback) => fallback }
+    const runtime = { dispatch: (_target, path, init) => fetch(`http://127.0.0.1:${server.address().port}/${path}`, init) }
+    const adapter = new OpenAICompatibleProviderAdapter(config, runtime)
     const input = { model: 'test/model', messages: [{ role: 'user', content: 'test' }] }
     const target = { provider: 'test', model: 'test' }
     assert.deepEqual((await adapter.chat(input, target)).usage, usage)
@@ -38,7 +40,8 @@ test('provider requires trustworthy JSON usage and a complete SSE terminator', a
     await assert.rejects(async () => { for await (const chunk of truncated.chunks) assert.ok(chunk) }, { status: 502 })
     const abort = new AbortController(); abort.abort()
     await assert.rejects(adapter.streamChat(input, target, abort.signal), ProviderNotDispatchedException)
-    await assert.rejects(new OpenAICompatibleProviderAdapter({ get: (_key, fallback) => fallback }).chat(input, target), ProviderNotDispatchedException)
+    const unavailable = { dispatch: async () => { throw new ProviderDispatchNotStartedError('not configured') } }
+    await assert.rejects(new OpenAICompatibleProviderAdapter(config, unavailable).chat(input, target), ProviderNotDispatchedException)
   } finally {
     await new Promise((resolve) => server.close(resolve))
   }

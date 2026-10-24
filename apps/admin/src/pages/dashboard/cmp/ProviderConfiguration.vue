@@ -1,18 +1,19 @@
 <script setup lang="ts">
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { computed, reactive, ref } from 'vue'
-import { Activity, Boxes, KeyRound, Plus, ServerCog, Trash2, X } from 'lucide-vue-next'
+import { Activity, Boxes, KeyRound, LoaderCircle, PlugZap, Plus, ServerCog, Trash2, X } from 'lucide-vue-next'
 import type { ModelDeployment, ProviderChannel, ProviderCredential } from '../api'
 import {
   createModelDeployment, createProviderChannel, createProviderCredential, deleteModelDeployment, deleteProviderChannel, deleteProviderCredential,
   getAdminModels, getModelDeployments, getProviderChannels, getProviderCredentials, getProviders,
-  updateModelDeployment, updateProviderChannel, updateProviderCredential,
+  testModelDeployment, updateModelDeployment, updateProviderChannel, updateProviderCredential,
 } from '../api'
 import ProviderRegistry from './ProviderRegistry.vue'
 
 const queryClient = useQueryClient()
 const dialog = ref<'credential' | 'channel' | 'deployment' | null>(null)
 const errorMessage = ref('')
+const successMessage = ref('')
 const providers = useQuery({ queryKey: ['admin-providers'], queryFn: getProviders })
 const credentials = useQuery({ queryKey: ['admin-provider-credentials'], queryFn: getProviderCredentials })
 const channels = useQuery({ queryKey: ['admin-provider-channels'], queryFn: getProviderChannels })
@@ -57,6 +58,15 @@ const credentialMutation = useMutation({ mutationFn: ({ item, enabled }: { item:
 const removeCredentialMutation = useMutation({ mutationFn: deleteProviderCredential, onSuccess: invalidate, onError: (error) => { errorMessage.value = error.message } })
 const removeChannelMutation = useMutation({ mutationFn: deleteProviderChannel, onSuccess: invalidate, onError: (error) => { errorMessage.value = error.message } })
 const removeDeploymentMutation = useMutation({ mutationFn: deleteModelDeployment, onSuccess: invalidate, onError: (error) => { errorMessage.value = error.message } })
+const testDeploymentMutation = useMutation({
+  mutationFn: testModelDeployment,
+  onMutate: () => { errorMessage.value = ''; successMessage.value = '' },
+  onSuccess: async (result) => {
+    successMessage.value = `${result.provider} / ${result.upstreamModelId} 连接正常，${result.latencyMs}ms`
+    await invalidate()
+  },
+  onError: (error) => { errorMessage.value = error.message },
+})
 
 function open(value: 'credential' | 'channel' | 'deployment') {
   errorMessage.value = ''
@@ -94,6 +104,7 @@ function removeDeployment(item: ModelDeployment) {
 <template>
   <div class="mt-6 grid gap-4">
     <p v-if="errorMessage" class="m-0 rounded-2 border border-red-400/20 bg-red-400/8 px-4 py-3 text-13px text-red-300">{{ errorMessage }}</p>
+    <p v-if="successMessage" class="m-0 rounded-2 border border-emerald-300/20 bg-emerald-300/8 px-4 py-3 text-13px text-emerald-200">{{ successMessage }}</p>
     <ProviderRegistry />
     <section class="overflow-hidden rounded-14px border border-white/9 bg-white/2">
       <header class="min-h-68px flex items-center justify-between gap-4 border-b border-white/7 px-18px py-4">
@@ -154,7 +165,7 @@ function removeDeployment(item: ModelDeployment) {
               <td class="font-mono">{{ item.upstreamModelId }}</td><td>{{ item.channelName }} · {{ item.region }}</td><td>{{ item.priority }} / {{ item.weight }}</td>
               <td><span class="inline-flex items-center gap-1 text-[#91a097]"><Activity :size="14" />{{ statusLabel(item.healthStatus) }}</span></td>
               <td><button :class="['rounded-7px border-0 px-2 py-1 text-12px',item.enabled?'bg-emerald-300/8 text-emerald-300':'bg-white/4 text-[#7c8980]']" @click="deploymentMutation.mutate({item,enabled:!item.enabled})">{{ item.enabled?'参与路由':'已停用' }}</button></td>
-              <td class="pr-14px text-right"><button class="h-8 w-8 inline-grid place-items-center rounded-8px border border-white/8 bg-transparent text-[#77867c] hover:text-red-300" aria-label="删除部署" @click="removeDeployment(item)"><Trash2 :size="15" /></button></td>
+              <td class="pr-14px text-right"><div class="inline-flex items-center gap-2"><button class="h-8 inline-flex items-center gap-1.5 rounded-8px border-0 bg-[#DCE7DE] px-3 text-12px font-700 text-[#07100a] disabled:opacity-50" :disabled="testDeploymentMutation.isPending.value" @click="testDeploymentMutation.mutate(item.id)"><LoaderCircle v-if="testDeploymentMutation.isPending.value && testDeploymentMutation.variables.value===item.id" :size="14" class="animate-spin" /><PlugZap v-else :size="14" />测试连接</button><button class="h-8 w-8 inline-grid place-items-center rounded-8px border border-white/8 bg-transparent text-[#77867c] hover:text-red-300" aria-label="删除部署" @click="removeDeployment(item)"><Trash2 :size="15" /></button></div></td>
             </tr>
           </tbody>
         </table>

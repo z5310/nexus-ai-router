@@ -1,5 +1,9 @@
 # 多模型供应商网关选型
 
+## 2026-10-24 实施状态
+
+第一阶段先交付内部 `ProviderGateway` 的 OpenAI 兼容直连 Adapter，以便后台已有 Provider、Credential、Channel、Deployment 配置立即进入真实执行链。直连受精确域名白名单、HTTPS、禁止重定向、环境隔离和按渠道凭证约束，未配置部署时仍可走 `PROVIDER_GATEWAY_URL` 内部网关。Portkey 保留为第二个 Adapter 选项，不再阻塞 DeepSeek 等 OpenAI 兼容供应商的首个真实验收。详见 [供应商数据面第一阶段开发清单](provider-data-plane-development-checklist.md)。
+
 更新日期：2026-10-22
 
 ## 结论

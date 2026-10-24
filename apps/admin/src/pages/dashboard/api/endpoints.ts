@@ -13,6 +13,7 @@ export const adminEndpoints = {
   channel: (id: string) => `/api/admin/provider-channels/${id}`,
   deployments: '/api/admin/model-deployments',
   deployment: (id: string) => `/api/admin/model-deployments/${id}`,
+  deploymentTest: (id: string) => `/api/admin/model-deployments/${id}/test`,
   rankingSources: '/api/admin/ranking-sources',
   rankingSource: (id: string) => `/api/admin/ranking-sources/${id}`,
   rankingSourceSync: (id: string) => `/api/admin/ranking-sources/${id}/sync`,

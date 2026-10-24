@@ -23,6 +23,7 @@
     "test:admin-billing": "node test/admin-billing.integration.cjs",
     "test:provider-usage": "node --test test/provider-usage.test.cjs",
     "test:providers": "node test/providers.integration.cjs",
+    "test:provider-data-plane": "node --test test/provider-usage.test.cjs && node test/provider-data-plane.integration.cjs",
     "test:ranking-sources": "node test/ranking-sources.integration.cjs",
     "dev": "nest start --watch",
     "start:dev": "nest start --watch",

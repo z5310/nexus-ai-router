@@ -305,6 +305,15 @@ export interface ModelDeployment {
 
 export interface ModelDeploymentListResponse { data: ModelDeployment[] }
 
+export interface ProviderDeploymentTestResult {
+  deploymentId: string
+  channelId: string
+  provider: string
+  upstreamModelId: string
+  latencyMs: number
+  checkedAt: string
+}
+
 export type ApiKeyStatus = 'active' | 'revoked'
 
 export interface ApiKeyRecord {

@@ -18,11 +18,13 @@ import { ProviderEntity } from '../database/entities/provider.entity'
 import { ProvidersController } from './providers.controller'
 import { ProvidersRepository } from './providers.repository'
 import { ProvidersService } from './providers.service'
+import { ProviderConnectivityService } from './provider-connectivity.service'
+import { ProviderRuntimeService } from './provider-runtime.service'
 
 @Module({
   imports: [TypeOrmModule.forFeature([ProviderEntity, ProviderCredentialEntity, ProviderChannelEntity, ModelDeploymentEntity, ModelEntity]), IdentityModule],
   controllers: [ProvidersController, ProviderCredentialsController, ProviderChannelsController, ModelDeploymentsController],
-  providers: [ProvidersRepository, ProvidersService, ProviderCredentialsRepository, ProviderCredentialsService, ProviderChannelsRepository, ModelDeploymentsRepository, ProviderConfigurationService, CredentialCipherService],
-  exports: [ProvidersService, ProviderCredentialsService, ProviderConfigurationService],
+  providers: [ProvidersRepository, ProvidersService, ProviderCredentialsRepository, ProviderCredentialsService, ProviderChannelsRepository, ModelDeploymentsRepository, ProviderConfigurationService, ProviderConnectivityService, ProviderRuntimeService, CredentialCipherService],
+  exports: [ProvidersService, ProviderCredentialsService, ProviderConfigurationService, ProviderRuntimeService],
 })
 export class ProvidersModule {}

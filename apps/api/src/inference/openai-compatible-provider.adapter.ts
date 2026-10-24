@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto'
 import type { OpenAIChatCompletionChunk, OpenAIChatCompletionRequest, OpenAIChatCompletionResponse } from '@gateway/contracts'
 import type { ProviderChatStream, ProviderGateway, ProviderTarget } from './provider-gateway'
 import { ProviderNotDispatchedException } from './provider-gateway'
+import { ProviderDispatchNotStartedError, ProviderRuntimeService } from '../providers/provider-runtime.service'
 
 interface StreamControl {
   controller: AbortController
@@ -15,16 +16,17 @@ interface StreamControl {
 
 @Injectable()
 export class OpenAICompatibleProviderAdapter implements ProviderGateway {
-  constructor(private readonly config: ConfigService) {}
+  constructor(
+    private readonly config: ConfigService,
+    private readonly runtime: ProviderRuntimeService,
+  ) {}
 
   async chat(input: OpenAIChatCompletionRequest, target: ProviderTarget): Promise<OpenAIChatCompletionResponse> {
-    const baseUrl = this.baseUrl()
     const controller = new AbortController()
     const timer = setTimeout(() => controller.abort(), target.timeoutMs ?? this.config.get<number>('PROVIDER_GATEWAY_TIMEOUT_MS', 60_000))
     try {
-      const response = await fetch(`${baseUrl}/chat/completions`, {
+      const response = await this.runtime.dispatch(target, 'chat/completions', {
         method: 'POST',
-        headers: this.headers(target),
         body: JSON.stringify({ ...input, model: target.model, stream: false }),
         signal: controller.signal,
       })
@@ -51,6 +53,7 @@ export class OpenAICompatibleProviderAdapter implements ProviderGateway {
         },
       }
     } catch (error) {
+      if (error instanceof ProviderDispatchNotStartedError) throw new ProviderNotDispatchedException(error.message)
       if (error instanceof Error && error.name === 'AbortError') throw new GatewayTimeoutException('模型供应商响应超时')
       throw error
     } finally {
@@ -62,9 +65,8 @@ export class OpenAICompatibleProviderAdapter implements ProviderGateway {
     if (signal.aborted) throw new ProviderNotDispatchedException('客户端已取消，尚未发送上游请求')
     const control = this.streamControl(signal, target.timeoutMs)
     try {
-      const response = await fetch(`${this.baseUrl()}/chat/completions`, {
+      const response = await this.runtime.dispatch(target, 'chat/completions', {
         method: 'POST',
-        headers: this.headers(target),
         body: JSON.stringify({ ...input, model: target.model, stream: true, stream_options: { include_usage: true } }),
         signal: control.controller.signal,
       })
@@ -83,6 +85,7 @@ export class OpenAICompatibleProviderAdapter implements ProviderGateway {
       }
     } catch (error) {
       control.cleanup()
+      if (error instanceof ProviderDispatchNotStartedError) throw new ProviderNotDispatchedException(error.message)
       throw this.abortError(error, control.timedOut(), signal.aborted)
     }
   }
@@ -182,23 +185,6 @@ export class OpenAICompatibleProviderAdapter implements ProviderGateway {
     if (timedOut) return new GatewayTimeoutException('模型供应商响应超时')
     if (clientAborted) return new RequestTimeoutException('客户端已取消请求')
     return new BadGatewayException('模型供应商流式响应中断')
-  }
-
-  private baseUrl(): string {
-    const baseUrl = this.config.get<string>('PROVIDER_GATEWAY_URL')?.replace(/\/$/, '')
-    if (!baseUrl) throw new ProviderNotDispatchedException('模型数据面尚未配置')
-    return baseUrl
-  }
-
-  private headers(target: ProviderTarget): Record<string, string> {
-    const apiKey = this.config.get<string>('PROVIDER_GATEWAY_API_KEY')
-    return {
-      'content-type': 'application/json',
-      ...(apiKey ? { authorization: `Bearer ${apiKey}` } : {}),
-      'x-portkey-provider': target.provider,
-      ...(target.channelId ? { 'x-nexus-channel-id': target.channelId } : {}),
-      ...(target.deploymentId ? { 'x-nexus-deployment-id': target.deploymentId } : {}),
-    }
   }
 
   private isUpstreamError(value: unknown): value is { error: unknown } {

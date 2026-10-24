@@ -1,4 +1,4 @@
-import type { AdminModel, AdminModelListResponse, AdminModelSummaryResponse, AdminSessionListResponse, AuditLogListResponse, ModelDeployment, ModelDeploymentListResponse, ModelPricingResponse, ProviderChannel, ProviderChannelListResponse, ProviderCredentialListResponse, ProviderDefinition, ProviderDefinitionListResponse, RankingSource, RankingSourceDetailResponse, RankingSourceListResponse, UpdateModelPricingInput, UserListResponse, UserSummaryResponse } from '@gateway/contracts'
+import type { AdminModel, AdminModelListResponse, AdminModelSummaryResponse, AdminSessionListResponse, AuditLogListResponse, ModelDeployment, ModelDeploymentListResponse, ModelPricingResponse, ProviderChannel, ProviderChannelListResponse, ProviderCredentialListResponse, ProviderDefinition, ProviderDefinitionListResponse, ProviderDeploymentTestResult, RankingSource, RankingSourceDetailResponse, RankingSourceListResponse, UpdateModelPricingInput, UserListResponse, UserSummaryResponse } from '@gateway/contracts'
 import { request } from '../../../lib/http'
 import { adminEndpoints } from './endpoints'
 import type { AdminListQuery, CreateModelDeploymentInput, CreateProviderChannelInput, CreateProviderCredentialInput, CreateProviderDefinitionInput, CreateRankingSourceInput } from './types'
@@ -28,6 +28,7 @@ export const deleteProviderChannel = (id: string) => request<void>({ method: 'DE
 export const getModelDeployments = () => request<ModelDeploymentListResponse>({ url: adminEndpoints.deployments })
 export const createModelDeployment = (data: CreateModelDeploymentInput) => request<ModelDeployment>({ method: 'POST', url: adminEndpoints.deployments, data })
 export const updateModelDeployment = (id: string, data: Partial<Pick<ModelDeployment, 'upstreamModelId' | 'priority' | 'weight' | 'enabled'>>) => request<ModelDeployment>({ method: 'PATCH', url: adminEndpoints.deployment(id), data })
+export const testModelDeployment = (id: string) => request<ProviderDeploymentTestResult>({ method: 'POST', url: adminEndpoints.deploymentTest(id) })
 export const deleteModelDeployment = (id: string) => request<void>({ method: 'DELETE', url: adminEndpoints.deployment(id) })
 export const getRankingSources = () => request<RankingSourceListResponse>({ url: adminEndpoints.rankingSources })
 export const getRankingSource = (id: string) => request<RankingSourceDetailResponse>({ url: adminEndpoints.rankingSource(id) })
