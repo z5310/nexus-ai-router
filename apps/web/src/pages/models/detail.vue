@@ -11,7 +11,7 @@ import { getModel } from './api'
 
 const route = useRoute()
 const { t } = useI18n()
-const slug = computed(() => `${route.params.provider}/${route.params.model}`)
+const slug = computed(() => route.params.provider ? `${route.params.provider}/${route.params.model}` : String(route.params.model))
 const modelQuery = useQuery({ queryKey: computed(() => ['model-detail', slug.value]), queryFn: ({ signal }) => getModel(slug.value, signal), staleTime: 60_000, retry: 1 })
 const model = computed(() => modelQuery.data.value ?? null)
 const price = (value: number | null) => value === null ? '—' : `¥${value.toFixed(2)}`

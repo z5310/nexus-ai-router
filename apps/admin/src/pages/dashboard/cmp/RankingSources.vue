@@ -7,6 +7,7 @@ import {
   createRankingSource, getAdminModels, getRankingSource, getRankingSources, mapRankingModel,
   syncRankingSource, unmapRankingModel, updateRankingSource,
 } from '../api'
+import { DataSkeleton, feedback } from '@gateway/ui'
 
 const queryClient = useQueryClient()
 const selectedId = ref('')
@@ -25,6 +26,7 @@ const form = reactive({
   scoreMultiplier: 1, priority: 100, enabled: false, attributionLabel: '',
 })
 const metricLabels: Record<RankingMetric, string> = { overall: '综合能力', coding: '编码能力', cost: '成本效率', speed: '响应速度' }
+const fail = (error: Error, title: string) => { errorMessage.value = error.message; feedback.error(error, title) }
 
 const invalidate = async () => Promise.all([
   queryClient.invalidateQueries({ queryKey: ['admin-ranking-sources'] }),
@@ -32,24 +34,24 @@ const invalidate = async () => Promise.all([
 ])
 const createMutation = useMutation({
   mutationFn: () => createRankingSource(form),
-  onSuccess: async (source) => { selectedId.value = source.id; dialog.value = false; await invalidate() },
-  onError: (error) => { errorMessage.value = error.message },
+  onSuccess: async (source) => { selectedId.value = source.id; dialog.value = false; feedback.success('排行榜数据源已创建'); await invalidate() },
+  onError: (error) => fail(error, '排行榜数据源创建失败'),
 })
 const toggleMutation = useMutation({
   mutationFn: ({ id, enabled }: { id: string; enabled: boolean }) => updateRankingSource(id, { enabled }),
-  onSuccess: invalidate, onError: (error) => { errorMessage.value = error.message },
+  onSuccess: async () => { feedback.success('数据源状态已更新'); await invalidate() }, onError: (error) => fail(error, '数据源状态更新失败'),
 })
 const syncMutation = useMutation({
   mutationFn: syncRankingSource,
-  onSuccess: invalidate, onError: (error) => { errorMessage.value = error.message },
+  onSuccess: async () => { feedback.success('排行榜数据已同步'); await invalidate() }, onError: (error) => fail(error, '排行榜数据同步失败'),
 })
 const mapMutation = useMutation({
   mutationFn: ({ externalModelId, modelId }: { externalModelId: string; modelId: string }) => mapRankingModel(selectedId.value, { externalModelId, modelId }),
-  onSuccess: invalidate, onError: (error) => { errorMessage.value = error.message },
+  onSuccess: async () => { feedback.success('外部模型映射已保存'); await invalidate() }, onError: (error) => fail(error, '模型映射保存失败'),
 })
 const unmapMutation = useMutation({
   mutationFn: unmapRankingModel,
-  onSuccess: invalidate, onError: (error) => { errorMessage.value = error.message },
+  onSuccess: async () => { feedback.success('外部模型映射已移除'); await invalidate() }, onError: (error) => fail(error, '模型映射移除失败'),
 })
 
 function openCreate() {
@@ -76,7 +78,7 @@ function date(value: string | null) { return value ? new Intl.DateTimeFormat('zh
       <div class="overflow-x-auto"><table class="w-full min-w-900px border-collapse">
         <thead><tr class="text-left text-13px text-[#a6b5ab]"><th class="p-14px">来源</th><th>数据集</th><th>指标</th><th>快照 / 映射</th><th>最近同步</th><th>状态</th><th class="pr-14px text-right">操作</th></tr></thead>
         <tbody>
-          <tr v-if="sources.isPending.value"><td colspan="7" class="p-8 text-center text-13px text-[#718078]">正在加载榜单来源…</td></tr>
+          <tr v-if="sources.isPending.value"><td colspan="7" class="p-4"><DataSkeleton compact :rows="3" label="正在加载排行榜数据源" /></td></tr>
           <tr v-for="item in sources.data.value?.data" :key="item.id" :class="['cursor-pointer border-t border-white/6 text-13px text-[#c3d0c7]',selectedId===item.id?'bg-emerald-300/4':'']" @click="selectedId=item.id">
             <td class="p-14px"><div class="flex items-center gap-3"><span class="h-8 w-8 grid place-items-center rounded-8px bg-emerald-300/8 text-emerald-300"><DatabaseZap :size="16" /></span><div class="grid gap-1"><b class="text-white">{{ item.name }}</b><small class="font-mono text-[#6f7e74]">{{ item.code }}</small></div></div></td>
             <td><a :href="item.sourceUrl" target="_blank" rel="noreferrer" class="inline-flex items-center gap-1 text-[#91a097] no-underline hover:text-emerald-300" @click.stop>{{ item.datasetId }}<ExternalLink :size="12" /></a></td>
@@ -91,7 +93,7 @@ function date(value: string | null) { return value ? new Intl.DateTimeFormat('zh
 
     <section v-if="selectedId" class="overflow-hidden rounded-14px border border-white/9 bg-white/2">
       <header class="min-h-68px flex items-center justify-between gap-4 border-b border-white/7 px-18px py-4"><div><h2 class="m-0 text-15px">外部模型映射</h2><p class="mb-0 mt-1 text-13px text-[#647268]">必须由管理员确认外部模型与平台模型的对应关系，系统不会按模糊名称自动绑定。</p></div><span class="text-12px text-[#647268]">{{ detail.data.value?.source.attributionLabel }}</span></header>
-      <div v-if="detail.isPending.value" class="p-8 text-center text-13px text-[#718078]">正在加载最新快照…</div>
+      <div v-if="detail.isPending.value" class="p-4"><DataSkeleton compact :rows="5" label="正在加载排行榜快照" /></div>
       <div v-else-if="!detail.data.value?.snapshots.length" class="p-8 text-center text-13px text-[#718078]">暂无快照，请先点击同步。来源默认关闭，不会影响公开排行榜。</div>
       <div v-else class="max-h-560px overflow-auto"><table class="w-full min-w-800px border-collapse">
         <thead class="bg-[#0c1610]"><tr class="text-left text-13px text-[#a6b5ab]"><th class="p-14px">外部排名</th><th>外部模型</th><th>原始分 / 归一化</th><th>验证</th><th>平台模型映射</th></tr></thead>

@@ -3,7 +3,7 @@ import { computed, onBeforeUnmount, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Code2, ImagePlus, Image as ImageIcon, Video, Upload, X, RotateCcw } from 'lucide-vue-next'
 import type { CatalogModel } from '@gateway/contracts'
-import { authState } from '../../../lib/auth'
+import { authState } from '../../../stores/auth'
 
 const props = defineProps<{ model: CatalogModel }>()
 const route = useRoute()

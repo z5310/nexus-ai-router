@@ -16,6 +16,7 @@
     "ant-design-vue": "^4.2.6",
     "axios": "^1.20.0",
     "lucide-vue-next": "^0.553.0",
+    "pinia": "^4.1.0",
     "vue": "^3.5.24",
     "vue-router": "^4.6.3"
   },

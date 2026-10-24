@@ -2,7 +2,7 @@
 import { LoaderCircle } from 'lucide-vue-next'
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { restoreSession } from '../../lib/auth'
+import { restoreSession } from '../../stores/auth'
 import { safeRedirect } from '../../lib/redirect'
 
 const router = useRouter()

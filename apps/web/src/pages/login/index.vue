@@ -7,7 +7,7 @@ import AInputPassword from 'ant-design-vue/es/input/Password'
 import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { signIn } from '../../lib/auth'
+import { signIn } from '../../stores/auth'
 import { safeRedirect } from '../../lib/redirect'
 import AuthShell from './cmp/AuthShell.vue'
 

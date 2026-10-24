@@ -7,7 +7,7 @@ import type { CatalogModel, OpenAIChatCompletionResponse } from '@gateway/contra
 import AudioPlayground from './AudioPlayground.vue'
 import MediaPlayground from './MediaPlayground.vue'
 import ModelLogo from '../../../components/ModelLogo.vue'
-import { authState } from '../../../lib/auth'
+import { authState } from '../../../stores/auth'
 import { request } from '../../../lib/http'
 
 const props = defineProps<{ model: CatalogModel }>()

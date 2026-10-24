@@ -4,8 +4,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { useRoute, useRouter } from 'vue-router'
 import { AudioLines, Code2, Download, History, RotateCcw, SlidersHorizontal, Volume2 } from 'lucide-vue-next'
 import type { AudioGenerationInput, AudioGenerationTask, AudioResponseFormat, CatalogModel } from '@gateway/contracts'
-import { authState } from '../../../lib/auth'
-import { workspaceQueryKey } from '../../../lib/workspace'
+import { authState } from '../../../stores/auth'
+import { workspaceQueryKey } from '../../../stores/workspace'
 import { cancelAudioGeneration, createAudioGeneration, getAudioGeneration, listAudioGenerations } from '../api'
 
 const props = defineProps<{ model: CatalogModel }>()

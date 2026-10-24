@@ -6,8 +6,8 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import BrandLogo from '../../../components/BrandLogo.vue'
 import UserMenu from './UserMenu.vue'
-import { activeWorkspace, ensureWorkspaceContext, selectWorkspace, workspaceState } from '../../../lib/workspace'
-import { authState } from '../../../lib/auth'
+import { activeWorkspace, ensureWorkspaceContext, selectWorkspace, workspaceState } from '../../../stores/workspace'
+import { authState } from '../../../stores/auth'
 
 defineProps<{ search?: string }>()
 const emit = defineEmits<{ 'update:search': [value: string] }>()

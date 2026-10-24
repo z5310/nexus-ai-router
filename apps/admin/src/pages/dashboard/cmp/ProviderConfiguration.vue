@@ -9,6 +9,7 @@ import {
   testModelDeployment, updateModelDeployment, updateProviderChannel, updateProviderCredential,
 } from '../api'
 import ProviderRegistry from './ProviderRegistry.vue'
+import { DataSkeleton, feedback } from '@gateway/ui'
 
 const queryClient = useQueryClient()
 const dialog = ref<'credential' | 'channel' | 'deployment' | null>(null)
@@ -34,8 +35,8 @@ const invalidate = async () => Promise.all([
 
 const createCredentialMutation = useMutation({
   mutationFn: () => createProviderCredential({ ...credentialForm, enabled: true }),
-  onSuccess: async () => { dialog.value = null; await invalidate() },
-  onError: (error) => { errorMessage.value = error.message },
+  onSuccess: async () => { dialog.value = null; feedback.success('供应商凭证已创建'); await invalidate() },
+  onError: (error) => { errorMessage.value = error.message; feedback.error(error, '供应商凭证创建失败') },
 })
 
 const createChannelMutation = useMutation({
@@ -44,13 +45,13 @@ const createChannelMutation = useMutation({
     if (!credential) throw new Error('请选择供应商凭证')
     return createProviderChannel({ ...channelForm, provider: credential.provider, environment: credential.environment, enabled: true })
   },
-  onSuccess: async () => { dialog.value = null; await invalidate() },
-  onError: (error) => { errorMessage.value = error.message },
+  onSuccess: async () => { dialog.value = null; feedback.success('供应商渠道已创建'); await invalidate() },
+  onError: (error) => { errorMessage.value = error.message; feedback.error(error, '供应商渠道创建失败') },
 })
 const createDeploymentMutation = useMutation({
   mutationFn: () => createModelDeployment({ ...deploymentForm, enabled: true }),
-  onSuccess: async () => { dialog.value = null; await invalidate() },
-  onError: (error) => { errorMessage.value = error.message },
+  onSuccess: async () => { dialog.value = null; feedback.success('模型部署已创建'); await invalidate() },
+  onError: (error) => { errorMessage.value = error.message; feedback.error(error, '模型部署创建失败') },
 })
 const channelMutation = useMutation({ mutationFn: ({ item, enabled }: { item: ProviderChannel; enabled: boolean }) => updateProviderChannel(item.id, { enabled }), onSuccess: invalidate })
 const deploymentMutation = useMutation({ mutationFn: ({ item, enabled }: { item: ModelDeployment; enabled: boolean }) => updateModelDeployment(item.id, { enabled }), onSuccess: invalidate })
@@ -63,9 +64,10 @@ const testDeploymentMutation = useMutation({
   onMutate: () => { errorMessage.value = ''; successMessage.value = '' },
   onSuccess: async (result) => {
     successMessage.value = `${result.provider} / ${result.upstreamModelId} 连接正常，${result.latencyMs}ms`
+    feedback.success('供应商连接测试通过', successMessage.value)
     await invalidate()
   },
-  onError: (error) => { errorMessage.value = error.message },
+  onError: (error) => { errorMessage.value = error.message; feedback.error(error, '供应商连接测试失败') },
 })
 
 function open(value: 'credential' | 'channel' | 'deployment') {
@@ -114,7 +116,7 @@ function removeDeployment(item: ModelDeployment) {
       <div class="overflow-x-auto"><table class="w-full min-w-760px border-collapse">
         <thead><tr class="text-left text-13px text-[#a6b5ab]"><th class="p-14px">名称</th><th>供应商</th><th>环境</th><th>密钥</th><th>轮换时间</th><th>状态</th><th class="pr-14px text-right">操作</th></tr></thead>
         <tbody>
-          <tr v-if="credentials.isPending.value"><td colspan="7" class="p-8 text-center text-13px text-[#718078]">正在加载凭证…</td></tr>
+          <tr v-if="credentials.isPending.value"><td colspan="7" class="p-4"><DataSkeleton compact :rows="3" label="正在加载供应商凭证" /></td></tr>
           <tr v-else-if="!credentials.data.value?.data.length"><td colspan="7" class="p-8 text-center text-13px text-[#718078]">尚未配置供应商凭证。</td></tr>
           <tr v-for="item in credentials.data.value?.data" :key="item.id" class="border-t border-white/6 text-13px text-[#c3d0c7]">
             <td class="p-14px"><div class="flex items-center gap-3"><span class="h-8 w-8 grid place-items-center rounded-8px bg-emerald-300/8 text-emerald-300"><KeyRound :size="16" /></span><b class="text-white">{{ item.name }}</b></div></td>
@@ -134,7 +136,7 @@ function removeDeployment(item: ModelDeployment) {
         <table class="w-full min-w-900px border-collapse">
           <thead><tr class="text-left text-13px text-[#a6b5ab]"><th class="p-14px">渠道</th><th>环境 / 区域</th><th>凭证</th><th>健康度</th><th>超时 / 并发</th><th>状态</th><th class="pr-14px text-right">操作</th></tr></thead>
           <tbody>
-            <tr v-if="channels.isPending.value"><td colspan="7" class="p-8 text-center text-13px text-[#718078]">正在加载渠道…</td></tr>
+            <tr v-if="channels.isPending.value"><td colspan="7" class="p-4"><DataSkeleton compact :rows="3" label="正在加载供应商渠道" /></td></tr>
             <tr v-else-if="!channels.data.value?.data.length"><td colspan="7" class="p-8 text-center text-13px text-[#718078]">尚未配置渠道，请先创建供应商凭证，再新增渠道。</td></tr>
             <tr v-for="item in channels.data.value?.data" :key="item.id" class="border-t border-white/6 text-13px text-[#c3d0c7]">
               <td class="p-14px"><div class="flex items-center gap-3"><span class="h-8 w-8 grid place-items-center rounded-8px bg-emerald-300/8 text-emerald-300"><ServerCog :size="16" /></span><div class="grid gap-1"><b class="text-white">{{ item.name }}</b><small class="text-[#6f7e74]">{{ item.provider }}</small></div></div></td>
@@ -158,7 +160,7 @@ function removeDeployment(item: ModelDeployment) {
         <table class="w-full min-w-900px border-collapse">
           <thead><tr class="text-left text-13px text-[#a6b5ab]"><th class="p-14px">平台模型</th><th>上游模型 ID</th><th>渠道</th><th>优先级 / 权重</th><th>健康度</th><th>状态</th><th class="pr-14px text-right">操作</th></tr></thead>
           <tbody>
-            <tr v-if="deployments.isPending.value"><td colspan="7" class="p-8 text-center text-13px text-[#718078]">正在加载部署…</td></tr>
+            <tr v-if="deployments.isPending.value"><td colspan="7" class="p-4"><DataSkeleton compact :rows="3" label="正在加载模型部署" /></td></tr>
             <tr v-else-if="!deployments.data.value?.data.length"><td colspan="7" class="p-8 text-center text-13px text-[#718078]">暂无模型部署，未配置的模型继续使用兼容数据面默认映射。</td></tr>
             <tr v-for="item in deployments.data.value?.data" :key="item.id" class="border-t border-white/6 text-13px text-[#c3d0c7]">
               <td class="p-14px"><div class="flex items-center gap-3"><span class="h-8 w-8 grid place-items-center rounded-8px bg-emerald-300/8 text-emerald-300"><Boxes :size="16" /></span><div class="grid gap-1"><b class="text-white">{{ item.modelName }}</b><small class="text-[#6f7e74]">{{ item.modelPublicId }}</small></div></div></td>

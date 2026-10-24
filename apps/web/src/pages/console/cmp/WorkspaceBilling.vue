@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { useInfiniteQuery, useQuery } from '@tanstack/vue-query'
 import { RefreshCw } from 'lucide-vue-next'
-import { activeWorkspaceId, workspaceQueryKey } from '../../../lib/workspace'
+import { activeWorkspaceId, workspaceQueryKey } from '../../../stores/workspace'
 import { getBillingLedger, getBillingSummary } from '../api/billing'
 
 const enabled = computed(() => Boolean(activeWorkspaceId.value))

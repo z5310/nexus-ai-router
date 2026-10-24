@@ -5,8 +5,9 @@ import { useI18n } from 'vue-i18n'
 import { useQuery } from '@tanstack/vue-query'
 import ConsoleShell from './cmp/ConsoleShell.vue'
 import { getDashboardOverview } from './api'
-import { workspaceQueryKey } from '../../lib/workspace'
-import { authState } from '../../lib/auth'
+import { workspaceQueryKey } from '../../stores/workspace'
+import { authState } from '../../stores/auth'
+import { DataSkeleton } from '@gateway/ui'
 
 const { t } = useI18n()
 const search = ref('')
@@ -46,7 +47,7 @@ const hasChange = (value: number, change: number) => value > 0 && change !== 0
 <template>
   <ConsoleShell v-model:search="search">
     <div class="console-title"><div><p>{{ t('dashboard.greeting', { name: authState.user?.name ?? '' }) }}</p><h1>{{ t('dashboard.title') }}</h1></div></div>
-    <div v-if="overviewQuery.isLoading.value" class="console-state" role="status">{{ t('common.loading') }}</div>
+    <DataSkeleton v-if="overviewQuery.isLoading.value" :rows="6" label="正在加载控制台概览" />
     <div v-else-if="overviewQuery.isError.value" class="console-state error" role="alert">
       <div><b>概览加载失败</b><span>没有使用演示数据覆盖错误，请检查服务后重试。</span></div>
       <button class="console-secondary-action" @click="overviewQuery.refetch()"><RefreshCw :size="15" />重试</button>

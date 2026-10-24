@@ -15,21 +15,15 @@ async function copySecret() { if (!props.secret) return; await navigator.clipboa
 
 <template>
   <ModalShell v-if="open" :title="secret ? 'API 密钥创建成功' : '创建 API 密钥'" :description="secret ? '请立即复制保存，关闭后将无法再次查看完整密钥。' : '给密钥设置一个容易识别的名称，便于后续审计和撤销。'" :busy="busy" @close="emit('close')">
-    <div v-if="secret" class="key-result">
-      <span><KeyRound :size="18" /> 仅显示一次</span>
-      <code>{{ secret }}</code>
-      <AButton class="white-action" @click="copySecret"><Check v-if="copied" :size="16" /><Copy v-else :size="16" />{{ copied ? '已复制' : '复制密钥' }}</AButton>
+    <div v-if="secret" class="flex flex-col gap-3.5 px-[22px] pb-[22px] pt-[21px]">
+      <span class="flex items-center gap-1.75 text-[11px] text-[#8ce5aa]"><KeyRound :size="18" /> 仅显示一次</span>
+      <code class="overflow-wrap-anywhere rounded-2.5 border border-[rgba(99,228,149,.15)] bg-[#09110c] p-3.75 text-xs leading-[1.6] text-[#dff2e5]">{{ secret }}</code>
+      <AButton class="self-end" @click="copySecret"><Check v-if="copied" :size="16" /><Copy v-else :size="16" />{{ copied ? '已复制' : '复制密钥' }}</AButton>
     </div>
-    <form v-else class="modal-form" @submit.prevent="emit('submit', name)">
-      <label>密钥名称<AInput v-model:value="name" minlength="2" :maxlength="80" autofocus placeholder="例如：生产环境、后端服务" /></label>
-      <p v-if="error" class="form-error">{{ error }}</p>
-      <footer><AButton ghost :disabled="busy" @click="emit('close')">取消</AButton><AButton html-type="submit" :loading="busy" :disabled="name.trim().length < 2"><KeyRound :size="16" />{{ busy ? '正在创建…' : '创建密钥' }}</AButton></footer>
+    <form v-else class="px-[22px] pb-[22px] pt-[21px]" @submit.prevent="emit('submit', name)">
+      <label class="flex flex-col gap-2 text-[11px] text-[#9caaa1]">密钥名称<AInput v-model:value="name" class="!h-11 text-[13px]" minlength="2" :maxlength="80" autofocus placeholder="例如：生产环境、后端服务" /></label>
+      <p v-if="error" class="mb-0 mt-2.5 text-[10px] text-[#ef9292]">{{ error }}</p>
+      <footer class="mt-[22px] flex justify-end gap-2.25"><AButton ghost :disabled="busy" @click="emit('close')">取消</AButton><AButton html-type="submit" :loading="busy" :disabled="name.trim().length < 2"><KeyRound :size="16" />{{ busy ? '正在创建…' : '创建密钥' }}</AButton></footer>
     </form>
   </ModalShell>
 </template>
-
-<style scoped>
-.modal-form,.key-result { padding: 21px 22px 22px; }.modal-form label { display: flex; flex-direction: column; gap: 8px; color: #9caaa1; font-size: 11px; }.modal-form :deep(.ant-input) { height: 44px; font-size: 13px; }.modal-form footer { display: flex; justify-content: flex-end; gap: 9px; margin-top: 22px; }
-.white-action,.ghost-action { min-height: 40px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 0 15px; border-radius: 9px; font-size: 11px; font-weight: 700; }.white-action { color: #08110b; border: 0; background: var(--nexus-button); }.white-action:disabled { opacity: .45; }.ghost-action { color: #9aa79e; border: 1px solid rgba(255,255,255,.09); background: transparent; }.form-error { margin: 10px 0 0; color: #ef9292; font-size: 10px; }
-.key-result { display: flex; flex-direction: column; gap: 14px; }.key-result > span { display: flex; align-items: center; gap: 7px; color: #8ce5aa; font-size: 11px; }.key-result code { padding: 15px; overflow-wrap: anywhere; color: #dff2e5; border: 1px solid rgba(99,228,149,.15); border-radius: 10px; background: #09110c; font-size: 12px; line-height: 1.6; }.key-result button { align-self: flex-end; }
-</style>

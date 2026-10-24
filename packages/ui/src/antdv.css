@@ -131,6 +131,41 @@
   border-color: rgba(99,228,149,.34);
 }
 
+.nexus-ant-app .ant-skeleton .ant-skeleton-title,
+.nexus-ant-app .ant-skeleton .ant-skeleton-paragraph > li {
+  background: linear-gradient(90deg, rgba(255,255,255,.035) 25%, rgba(99,228,149,.09) 37%, rgba(255,255,255,.035) 63%);
+  background-size: 400% 100%;
+}
+
+.ant-message .ant-message-notice-content,
+.ant-notification .ant-notification-notice {
+  color: #dce7de;
+  background: rgba(11,21,16,.94);
+  border: 1px solid rgba(255,255,255,.1);
+  box-shadow: 0 20px 65px rgba(0,0,0,.42);
+  backdrop-filter: blur(18px);
+}
+
+.ant-notification .ant-notification-notice-message {
+  color: #edf6f0;
+  font-weight: 700;
+}
+
+.ant-notification .ant-notification-notice-description,
+.ant-notification .ant-notification-notice-close {
+  color: #91a097;
+}
+
+.ant-message .anticon-check-circle,
+.ant-notification .ant-notification-notice-icon-success {
+  color: #63e495;
+}
+
+.ant-message .anticon-close-circle,
+.ant-notification .ant-notification-notice-icon-error {
+  color: #ef9292;
+}
+
 .nexus-ant-app :where(.ant-input, .ant-input-affix-wrapper, .ant-input-number, .ant-select-selector, .ant-picker, .ant-btn):focus-visible {
   outline: 2px solid rgba(99,228,149,.72);
   outline-offset: 2px;

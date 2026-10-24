@@ -15,7 +15,8 @@ import ModelConfigModal from './cmp/ModelConfigModal.vue'
 import RouteRuleModal from './cmp/RouteRuleModal.vue'
 import { createApiKey, createConsoleModel, createRouteRule, getApiKeys, getCatalogModels, getConsoleModels, getRequestLogs, getRouteRules, removeConsoleModel, removeRouteRule, revokeApiKey, updateConsoleModel, updateRouteRule } from './api'
 import type { CreateRouteRuleInput, CreateWorkspaceModelInput } from './api/types'
-import { activeWorkspace, workspaceQueryKey } from '../../lib/workspace'
+import { activeWorkspace, workspaceQueryKey } from '../../stores/workspace'
+import { DataSkeleton, feedback } from '@gateway/ui'
 
 type ConsoleSection = 'models' | 'routes' | 'keys' | 'logs' | 'billing' | 'members' | 'settings'
 const route = useRoute()
@@ -60,28 +61,37 @@ const canManageResources = computed(() => ['owner', 'admin', 'developer'].includ
 
 const keyMutation = useMutation({
   mutationFn: (name: string) => createApiKey({ name }),
-  onSuccess: async (key) => { createdKey.value = key; await queryClient.invalidateQueries({ queryKey: workspaceQueryKey('api-keys') }) },
-  onError: (error) => { keyError.value = error instanceof Error ? error.message : t('consoleSections.saveFailed') },
+  onSuccess: async (key) => { createdKey.value = key; feedback.success('API 密钥已创建', '请立即复制并妥善保管，关闭后将无法再次查看完整密钥。'); await queryClient.invalidateQueries({ queryKey: workspaceQueryKey('api-keys') }) },
+  onError: (error) => { keyError.value = error instanceof Error ? error.message : t('consoleSections.saveFailed'); feedback.error(error, 'API 密钥创建失败') },
 })
 const modelMutation = useMutation({
   mutationFn: (value: CreateWorkspaceModelInput) => editingModel.value ? updateConsoleModel(editingModel.value.id, value) : createConsoleModel(value),
-  onSuccess: async () => { modelModalOpen.value = false; editingModel.value = null; await queryClient.invalidateQueries({ queryKey: workspaceQueryKey('console-models') }) },
-  onError: (error) => { modelError.value = error instanceof Error ? error.message : t('consoleSections.saveFailed') },
+  onSuccess: async () => { const wasEditing = !!editingModel.value; modelModalOpen.value = false; editingModel.value = null; feedback.success(wasEditing ? '模型配置已更新' : '模型已添加'); await queryClient.invalidateQueries({ queryKey: workspaceQueryKey('console-models') }) },
+  onError: (error) => { modelError.value = error instanceof Error ? error.message : t('consoleSections.saveFailed'); feedback.error(error, '模型配置保存失败') },
 })
-const removeModelMutation = useMutation({ mutationFn: (id: string) => removeConsoleModel(id), onSuccess: async () => { modelModalOpen.value = false; editingModel.value = null; await queryClient.invalidateQueries({ queryKey: workspaceQueryKey('console-models') }) } })
+const removeModelMutation = useMutation({ mutationFn: (id: string) => removeConsoleModel(id), onSuccess: async () => { modelModalOpen.value = false; editingModel.value = null; feedback.success('模型已移除'); await queryClient.invalidateQueries({ queryKey: workspaceQueryKey('console-models') }) }, onError: (error) => feedback.error(error, '模型移除失败') })
 const routeMutation = useMutation({
   mutationFn: (value: CreateRouteRuleInput) => editingRoute.value ? updateRouteRule(editingRoute.value.id, value) : createRouteRule(value),
-  onSuccess: async () => { routeModalOpen.value = false; editingRoute.value = null; await queryClient.invalidateQueries({ queryKey: workspaceQueryKey('console-routes') }) },
-  onError: (error) => { routeError.value = error instanceof Error ? error.message : t('consoleSections.saveFailed') },
+  onSuccess: async () => { const wasEditing = !!editingRoute.value; routeModalOpen.value = false; editingRoute.value = null; feedback.success(wasEditing ? '路由规则已更新' : '路由规则已创建'); await queryClient.invalidateQueries({ queryKey: workspaceQueryKey('console-routes') }) },
+  onError: (error) => { routeError.value = error instanceof Error ? error.message : t('consoleSections.saveFailed'); feedback.error(error, '路由规则保存失败') },
 })
-const removeRouteMutation = useMutation({ mutationFn: (id: string) => removeRouteRule(id), onSuccess: async () => { routeModalOpen.value = false; editingRoute.value = null; await queryClient.invalidateQueries({ queryKey: workspaceQueryKey('console-routes') }) } })
+const removeRouteMutation = useMutation({ mutationFn: (id: string) => removeRouteRule(id), onSuccess: async () => { routeModalOpen.value = false; editingRoute.value = null; feedback.success('路由规则已移除'); await queryClient.invalidateQueries({ queryKey: workspaceQueryKey('console-routes') }) }, onError: (error) => feedback.error(error, '路由规则移除失败') })
 
 function openKeyModal() { createdKey.value = null; keyError.value = ''; keyModalOpen.value = true }
 function closeKeyModal() { keyModalOpen.value = false; createdKey.value = null }
 function openModelModal(model?: WorkspaceModelConfig) { editingModel.value = model ?? null; modelError.value = ''; modelModalOpen.value = true }
 function openRouteModal(rule?: RouteRule) { editingRoute.value = rule ?? null; routeError.value = ''; routeModalOpen.value = true }
 function handleSectionAction() { if (section.value === 'keys') openKeyModal(); else if (section.value === 'models') openModelModal(); else if (section.value === 'routes') openRouteModal() }
-function revokeKey(id: string) { if (window.confirm(t('consoleSections.revokeKeyConfirm'))) revokeApiKey(id).then(() => queryClient.invalidateQueries({ queryKey: workspaceQueryKey('api-keys') })) }
+async function revokeKey(id: string) {
+  if (!window.confirm(t('consoleSections.revokeKeyConfirm'))) return
+  try {
+    await revokeApiKey(id)
+    await queryClient.invalidateQueries({ queryKey: workspaceQueryKey('api-keys') })
+    feedback.success('API 密钥已撤销')
+  } catch (error) {
+    feedback.error(error, 'API 密钥撤销失败')
+  }
+}
 function removeModel() { if (editingModel.value && window.confirm(t('consoleSections.removeModelConfirm'))) removeModelMutation.mutate(editingModel.value.id) }
 function removeRoute() { if (editingRoute.value && window.confirm(t('consoleSections.removeRouteConfirm'))) removeRouteMutation.mutate(editingRoute.value.id) }
 const shortDate = (value: string | null) => value ? new Intl.DateTimeFormat(undefined, { year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(value)) : '—'
@@ -96,7 +106,7 @@ function refetchSection() {
 <template>
   <ConsoleShell v-model:search="search">
     <div class="console-title console-section-title"><div><p>NEXUS CONSOLE</p><h1>{{ title }}</h1><span>{{ description }}</span></div><button v-if="canManageResources && (section === 'models' || section === 'routes' || section === 'keys')" class="console-primary-action" @click="handleSectionAction"><Plus :size="15" /> {{ t(`consoleSections.${section}.action`) }}</button></div>
-    <div v-if="isLoading" class="console-state" role="status">{{ t('common.loading') }}</div><div v-else-if="isError" class="console-state error" role="alert"><div><b>数据加载失败</b><span>页面未使用演示数据，请检查服务后重试。</span></div><button class="console-secondary-action" @click="refetchSection">重试</button></div>
+    <DataSkeleton v-if="isLoading" :rows="6" :label="`正在加载${title}`" /><div v-else-if="isError" class="console-state error" role="alert"><div><b>数据加载失败</b><span>页面未使用演示数据，请检查服务后重试。</span></div><button class="console-secondary-action" @click="refetchSection">重试</button></div>
 
     <section v-if="section === 'models' && !isError" class="console-surface"><div class="panel-heading"><div><h2>{{ t('consoleSections.modelAccess') }}</h2><p>{{ t('consoleSections.modelAccessDesc') }}</p></div></div><div class="request-table console-data-table responsive-table"><table><thead><tr><th>{{ t('dashboard.model') }}</th><th>{{ t('catalog.provider') }}</th><th>{{ t('consoleSections.type') }}</th><th>{{ t('consoleSections.priority') }}</th><th>{{ t('consoleSections.rateLimit') }}</th><th>{{ t('consoleSections.budget') }}</th><th>{{ t('dashboard.status') }}</th><th /></tr></thead><tbody><tr v-if="!filteredModels.length"><td colspan="8" class="empty-row">{{ t('consoleSections.noWorkspaceModels') }}</td></tr><tr v-for="model in filteredModels" :key="model.id"><td :data-label="t('dashboard.model')"><b>{{ model.alias || model.name }}</b><code>{{ model.alias ? model.name + ' · ' : '' }}{{ model.slug }}</code></td><td :data-label="t('catalog.provider')">{{ model.provider }}</td><td :data-label="t('consoleSections.type')">{{ t(`common.types.${model.type}`) }}</td><td :data-label="t('consoleSections.priority')">{{ model.priority }}</td><td :data-label="t('consoleSections.rateLimit')">{{ model.rateLimitRpm }} RPM</td><td :data-label="t('consoleSections.budget')">{{ model.dailyBudgetCny == null ? t('consoleSections.unlimited') : `¥${model.dailyBudgetCny.toFixed(2)}` }}</td><td :data-label="t('dashboard.status')"><span :class="['success-dot', { muted: !model.enabled }]"><i />{{ model.enabled ? t('consoleSections.enabled') : t('consoleSections.disabled') }}</span></td><td data-label="操作"><button v-if="canManageResources" class="icon-action" :aria-label="t('consoleSections.configureModel')" @click="openModelModal(model)"><Pencil :size="14" /></button></td></tr></tbody></table></div></section>
 

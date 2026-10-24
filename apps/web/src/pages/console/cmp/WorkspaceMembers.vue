@@ -3,10 +3,11 @@ import { computed, ref } from 'vue'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import type { CreateWorkspaceInvitationInput, WorkspaceInvitation, WorkspaceInvitationSecret, WorkspaceMemberSummary, UpdateWorkspaceMemberInput } from '@gateway/contracts'
 import { Plus, RefreshCw, ShieldCheck, Trash2 } from 'lucide-vue-next'
-import { authState } from '../../../lib/auth'
+import { authState } from '../../../stores/auth'
 import { createWorkspaceInvitation, getWorkspaceInvitations, getWorkspaceMembers, changeWorkspaceMember, removeWorkspaceMember, resendWorkspaceInvitation, revokeWorkspaceInvitation, transferWorkspaceOwnership } from '../api'
-import { activeWorkspace, ensureWorkspaceContext, resetWorkspaceContext, workspaceQueryKey } from '../../../lib/workspace'
+import { activeWorkspace, ensureWorkspaceContext, resetWorkspaceContext, workspaceQueryKey } from '../../../stores/workspace'
 import WorkspaceInvitationModal from './WorkspaceInvitationModal.vue'
+import { DataSkeleton, feedback } from '@gateway/ui'
 
 const query = useQuery({ queryKey: computed(() => workspaceQueryKey('workspace-members')), queryFn: ({ signal }) => getWorkspaceMembers(signal) })
 const roles: Record<string, string> = { owner: '所有者', admin: '管理员', developer: '开发者', billing: '财务', viewer: '只读成员' }
@@ -19,28 +20,33 @@ const invitationSecret = ref<WorkspaceInvitationSecret | null>(null)
 const invitationError = ref('')
 const mutation = useMutation({
   mutationFn: ({ id, role }: { id: string; role: UpdateWorkspaceMemberInput['role'] | null }) => role ? changeWorkspaceMember(id, { role }) : removeWorkspaceMember(id),
-  onSuccess: () => client.invalidateQueries({ queryKey: workspaceQueryKey('workspace-members') }),
+  onSuccess: () => { feedback.success('成员权限已更新'); return client.invalidateQueries({ queryKey: workspaceQueryKey('workspace-members') }) },
+  onError: (error) => feedback.error(error, '成员操作失败'),
 })
 const invitationMutation = useMutation({
   mutationFn: (input: CreateWorkspaceInvitationInput) => createWorkspaceInvitation(input),
-  onSuccess: async (result) => { invitationSecret.value = result; await client.invalidateQueries({ queryKey: workspaceQueryKey('workspace-invitations') }) },
-  onError: (error) => { invitationError.value = error instanceof Error ? error.message : '邀请创建失败' },
+  onSuccess: async (result) => { invitationSecret.value = result; feedback.success('成员邀请已创建'); await client.invalidateQueries({ queryKey: workspaceQueryKey('workspace-invitations') }) },
+  onError: (error) => { invitationError.value = error instanceof Error ? error.message : '邀请创建失败'; feedback.error(error, '成员邀请创建失败') },
 })
 const resendMutation = useMutation({
   mutationFn: (id: string) => resendWorkspaceInvitation(id),
   onSuccess: async (result) => {
     invitationSecret.value = result
     invitationOpen.value = true
+    feedback.success('邀请链接已重新生成')
     await client.invalidateQueries({ queryKey: workspaceQueryKey('workspace-invitations') })
   },
+  onError: (error) => feedback.error(error, '邀请重新发送失败'),
 })
-const revokeMutation = useMutation({ mutationFn: (id: string) => revokeWorkspaceInvitation(id), onSuccess: () => client.invalidateQueries({ queryKey: workspaceQueryKey('workspace-invitations') }) })
+const revokeMutation = useMutation({ mutationFn: (id: string) => revokeWorkspaceInvitation(id), onSuccess: () => { feedback.success('邀请已撤销'); return client.invalidateQueries({ queryKey: workspaceQueryKey('workspace-invitations') }) }, onError: (error) => feedback.error(error, '邀请撤销失败') })
 const transferMutation = useMutation({
   mutationFn: (memberId: string) => transferWorkspaceOwnership({ memberId }),
   onSuccess: async () => {
     if (authState.user) { resetWorkspaceContext(); await ensureWorkspaceContext(authState.user.id) }
+    feedback.success('工作区所有权已转移')
     await client.invalidateQueries()
   },
+  onError: (error) => feedback.error(error, '所有权转移失败'),
 })
 const invitationLink = computed(() => invitationSecret.value ? `${window.location.origin}/workspace-invitations/${invitationSecret.value.token}` : undefined)
 function editable(member: WorkspaceMemberSummary) {
@@ -76,7 +82,7 @@ const statusText: Record<WorkspaceInvitation['status'], string> = { pending: '�
     <div class="member-heading"><div><h2>工作区成员</h2><p>通过一次性邀请链接加入；角色变更和移除会立即生效。</p></div><button v-if="canManage" class="invite-button" @click="openInvitation"><Plus :size="15" />邀请成员</button></div>
     <p v-if="mutation.isError.value" role="alert">{{ mutation.error.value?.message }}</p>
     <p v-if="transferMutation.isError.value" role="alert">{{ transferMutation.error.value?.message }}</p>
-    <p v-if="query.isPending.value" role="status">正在加载成员…</p>
+    <DataSkeleton v-if="query.isPending.value" compact :rows="4" label="正在加载工作区成员" />
     <p v-else-if="query.isError.value" role="alert">成员加载失败。<button @click="query.refetch()">重试</button></p>
     <div v-else class="request-table console-data-table responsive-table">
       <table><thead><tr><th>成员</th><th>邮箱</th><th>工作区角色</th><th>成员状态</th><th v-if="canManage">操作</th></tr></thead>
@@ -94,7 +100,7 @@ const statusText: Record<WorkspaceInvitation['status'], string> = { pending: '�
   <section v-if="canManage" class="console-surface invitations-panel">
     <div class="member-heading"><div><h2>成员邀请</h2><p>邀请只显示元数据；原始链接仅在创建或重新发送后展示一次。</p></div></div>
     <p v-if="resendMutation.isError.value || revokeMutation.isError.value" role="alert">{{ resendMutation.error.value?.message || revokeMutation.error.value?.message }}</p>
-    <p v-if="invitationQuery.isPending.value" role="status">正在加载邀请…</p>
+    <DataSkeleton v-if="invitationQuery.isPending.value" compact :rows="3" label="正在加载成员邀请" />
     <p v-else-if="invitationQuery.isError.value" role="alert">邀请加载失败。<button @click="invitationQuery.refetch()">重试</button></p>
     <div v-else class="request-table console-data-table responsive-table"><table><thead><tr><th>邮箱</th><th>角色</th><th>状态</th><th>有效期</th><th>操作</th></tr></thead><tbody>
       <tr v-if="!invitationQuery.data.value?.data.length" class="table-empty"><td colspan="5">暂无邀请</td></tr>

@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { computed, ref } from 'vue'
 import { ChevronLeft, ChevronRight, Search, ShieldX } from 'lucide-vue-next'
 import { getAdminSessions, revokeAdminSession } from '../api'
+import { DataSkeleton, feedback } from '@gateway/ui'
 
 const queryClient = useQueryClient()
 const search = ref('')
@@ -12,7 +13,7 @@ const errorMessage = ref('')
 const params = computed(() => ({ query: search.value || undefined, status: status.value as 'active' | 'revoked' | 'expired' || undefined, page: page.value, pageSize: 30 }))
 const sessions = useQuery({ queryKey: computed(() => ['admin-sessions', params.value]), queryFn: () => getAdminSessions(params.value) })
 const pages = computed(() => sessions.data.value?.pagination.totalPages || 1)
-const revokeMutation = useMutation({ mutationFn: revokeAdminSession, onSuccess: async () => { errorMessage.value = ''; await queryClient.invalidateQueries({ queryKey: ['admin-sessions'] }) }, onError: (error) => { errorMessage.value = error.message } })
+const revokeMutation = useMutation({ mutationFn: revokeAdminSession, onSuccess: async () => { errorMessage.value = ''; feedback.success('登录会话已撤销'); await queryClient.invalidateQueries({ queryKey: ['admin-sessions'] }) }, onError: (error) => { errorMessage.value = error.message; feedback.error(error, '登录会话撤销失败') } })
 function date(value: string) { return new Intl.DateTimeFormat('zh-CN', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value)) }
 function device(value: string | null) { if (!value) return '未知设备'; if (/Mobile|Android|iPhone/i.test(value)) return '移动设备'; if (/Chrome/i.test(value)) return 'Chrome 浏览器'; if (/Safari/i.test(value)) return 'Safari 浏览器'; return value.slice(0, 46) }
 function revoke(id: string, email: string) { if (window.confirm(`确认撤销 ${email} 的这条登录会话？撤销后该设备需要重新登录。`)) revokeMutation.mutate(id) }
@@ -29,7 +30,7 @@ function revoke(id: string, email: string) { if (window.confirm(`确认撤销 ${
     <div class="overflow-x-auto"><table class="w-full min-w-960px border-collapse">
       <thead><tr class="text-left text-13px text-[#a6b5ab]"><th class="p-14px">用户</th><th>设备</th><th>IP 地址</th><th>最近活动</th><th>到期时间</th><th>状态</th><th class="pr-14px text-right">操作</th></tr></thead>
       <tbody>
-        <tr v-if="sessions.isPending.value"><td colspan="7" class="p-10 text-center text-13px text-[#718078]">正在加载登录会话…</td></tr>
+        <tr v-if="sessions.isPending.value"><td colspan="7" class="p-4"><DataSkeleton compact :rows="3" label="正在加载登录会话" /></td></tr>
         <tr v-else-if="sessions.isError.value"><td colspan="7" class="p-10 text-center text-13px text-red-300">{{ sessions.error.value?.message }}</td></tr>
         <tr v-else-if="!sessions.data.value?.data.length"><td colspan="7" class="p-10 text-center text-13px text-[#718078]">暂无符合条件的登录会话</td></tr>
         <tr v-for="item in sessions.data.value?.data" :key="item.id" class="border-t border-white/6 text-13px text-[#c3d0c7]">

@@ -11,19 +11,11 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown))
 
 <template>
   <Teleport to="body">
-    <div class="console-modal-backdrop" @mousedown.self="!busy && emit('close')">
-      <section class="console-modal" role="dialog" aria-modal="true" :aria-label="title">
-        <header><div><h2>{{ title }}</h2><p v-if="description">{{ description }}</p></div><button type="button" :disabled="busy" aria-label="关闭" @click="emit('close')"><X :size="18" /></button></header>
+    <div class="fixed inset-0 z-120 grid place-items-center bg-[rgba(1,7,3,.72)] p-[22px] backdrop-blur-[8px]" @mousedown.self="!busy && emit('close')">
+      <section class="max-h-[calc(100vh-44px)] w-[min(500px,100%)] overflow-auto rounded-[18px] border border-white/10 bg-[#101a13] text-white shadow-[0_30px_90px_rgba(0,0,0,.48)]" role="dialog" aria-modal="true" :aria-label="title">
+        <header class="flex items-start justify-between gap-5 border-b border-white/7 px-[22px] pb-[18px] pt-[21px]"><div><h2 class="m-0 text-lg tracking-[-.02em]">{{ title }}</h2><p v-if="description" class="mb-0 mt-1.5 text-[11px] leading-[1.55] text-[#708077]">{{ description }}</p></div><button class="grid place-items-center rounded-7px border-0 bg-transparent p-1.25 text-[#7d8c82] hover:bg-white/5 hover:text-[#e4eee7]" type="button" :disabled="busy" aria-label="关闭" @click="emit('close')"><X :size="18" /></button></header>
         <slot />
       </section>
     </div>
   </Teleport>
 </template>
-
-<style scoped>
-.console-modal-backdrop { position: fixed; z-index: 120; inset: 0; display: grid; place-items: center; padding: 22px; background: rgba(1,7,3,.72); backdrop-filter: blur(8px); }
-.console-modal { width: min(500px,100%); max-height: calc(100vh - 44px); overflow: auto; color: #ffffff; border: 1px solid rgba(255,255,255,.1); border-radius: 18px; background: #101a13; box-shadow: 0 30px 90px rgba(0,0,0,.48); }
-.console-modal > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; padding: 21px 22px 18px; border-bottom: 1px solid rgba(255,255,255,.07); }
-.console-modal h2 { margin: 0; font-size: 18px; letter-spacing: -.02em; }.console-modal p { margin: 6px 0 0; color: #708077; font-size: 11px; line-height: 1.55; }
-.console-modal header button { display: grid; place-items: center; padding: 5px; color: #7d8c82; border: 0; border-radius: 7px; background: transparent; }.console-modal header button:hover { color: #e4eee7; background: rgba(255,255,255,.05); }
-</style>

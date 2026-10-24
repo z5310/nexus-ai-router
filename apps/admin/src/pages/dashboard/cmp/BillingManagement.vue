@@ -3,7 +3,7 @@ import { computed, nextTick, ref, watch } from 'vue'
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { RefreshCw, X } from 'lucide-vue-next'
 import type { BillingAdminGrantInput, BillingAdminResolutionInput, BillingResolutionPreview } from '@gateway/contracts'
-import { authState } from '../../../lib/auth'
+import { authState } from '../../../stores/auth'
 import { ApiError } from '../../../lib/http'
 import { getBillingWorkspaces, getBillingDetail, getBillingLedger, grantBillingCredit, resolveBilling, previewBilling } from '../api/billing'
 

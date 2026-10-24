@@ -2,7 +2,7 @@
 import { Menu, X, ArrowUpRight, Check, Globe2 } from 'lucide-vue-next'
 import { ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { authState } from '../lib/auth'
+import { authState } from '../stores/auth'
 import UserMenu from '../pages/console/cmp/UserMenu.vue'
 import { useI18n } from 'vue-i18n'
 import BrandLogo from './BrandLogo.vue'
@@ -37,7 +37,7 @@ const chooseLanguage = (code: SupportedLocale) => {
             <button v-for="language in languages" :key="language.code" :class="{ active: locale === language.code }" @click="chooseLanguage(language.code)"><span>{{ t(language.labelKey) }}</span><Check v-if="locale === language.code" :size="14" /></button>
           </div>
         </div>
-        <div v-if="authState.user" class="site-account"><span>{{ authState.user.name || authState.user.email }}</span><UserMenu /></div>
+        <div v-if="authState.user" class="flex items-center gap-2.5"><span class="max-w-35 overflow-hidden text-ellipsis whitespace-nowrap text-sm text-white max-md:hidden">{{ authState.user.name || authState.user.email }}</span><UserMenu /></div>
         <RouterLink v-else class="login-button" :to="{ path: '/login', query: { redirect: route.fullPath } }">{{ t('common.login') }}</RouterLink>
       </div>
       <button class="menu-button" :aria-expanded="menuOpen" :aria-label="t('common.openNav')" @click="menuOpen = !menuOpen">
@@ -46,9 +46,3 @@ const chooseLanguage = (code: SupportedLocale) => {
     </div>
   </header>
 </template>
-
-<style scoped>
-.site-account { display:flex; align-items:center; gap:10px; }
-.site-account > span { max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#fff; font-size:14px; }
-@media(max-width:760px) { .site-account > span { display:none; } }
-</style>

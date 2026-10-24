@@ -3,7 +3,7 @@ import { ChevronDown, LogOut, Settings, ShieldCheck } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import { authState, signOut } from '../../../lib/auth'
+import { authState, signOut } from '../../../stores/auth'
 
 const { t } = useI18n()
 const router = useRouter()

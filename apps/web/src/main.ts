@@ -2,6 +2,7 @@ import { createApp } from 'vue'
 import { VueQueryPlugin } from '@tanstack/vue-query'
 import App from './App.vue'
 import router from './router'
+import { pinia } from './stores/pinia'
 import { i18n } from './i18n'
 import scrollReveal from './directives/reveal'
 import 'virtual:uno.css'
@@ -13,4 +14,11 @@ import './styles/index.css'
 
 document.body.classList.add('nexus-ant-app')
 
-createApp(App).use(VueQueryPlugin).use(router).use(i18n).directive('reveal', scrollReveal).mount('#app')
+createApp(App).use(pinia).use(VueQueryPlugin, {
+  queryClientConfig: {
+    defaultOptions: {
+      queries: { staleTime: 30_000, gcTime: 5 * 60_000, retry: 1, refetchOnWindowFocus: false },
+      mutations: { retry: 0 },
+    },
+  },
+}).use(router).use(i18n).directive('reveal', scrollReveal).mount('#app')

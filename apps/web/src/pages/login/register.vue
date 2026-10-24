@@ -3,7 +3,7 @@ import { Eye, EyeOff, LoaderCircle, LockKeyhole, Mail, UserRound } from 'lucide-
 import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { safeRedirect } from '../../lib/redirect'
-import { signUp } from '../../lib/auth'
+import { signUp } from '../../stores/auth'
 import AuthShell from './cmp/AuthShell.vue'
 
 const router = useRouter()
