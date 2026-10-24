@@ -35,7 +35,8 @@
     "migration:revert": "typeorm-ts-node-commonjs migration:revert -d src/database/data-source.ts",
     "test:audio-generation-tasks": "node test/audio-generation-tasks.integration.cjs",
     "test:admin-security": "node test/admin-security.integration.cjs && node test/admin-security-http.integration.cjs",
-    "test:workspace-invitations": "node test/workspace-invitations.integration.cjs && node test/workspace-invitations-http.integration.cjs"
+    "test:workspace-invitations": "node test/workspace-invitations.integration.cjs && node test/workspace-invitations-http.integration.cjs",
+    "test:inference-idempotency": "node test/inference-idempotency.integration.cjs"
   },
   "dependencies": {
     "@fastify/cookie": "^11.1.3",

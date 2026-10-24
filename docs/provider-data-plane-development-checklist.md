@@ -18,12 +18,15 @@
 - 直接供应商不会收到 `x-nexus-channel-id`、`x-nexus-deployment-id` 等内部标识；这些头只发送给受控内部网关。
 - 新增 `POST /api/admin/model-deployments/:id/test`，通过供应商 `/models` 验证鉴权和上游模型可见性，不生成内容、不消耗推理 Token。
 - 管理端模型部署列表新增“测试连接”，成功显示供应商、模型和延迟，失败返回脱敏错误并更新渠道健康状态。
+- 非流式 `POST /v1/chat/completions` 支持 `Idempotency-Key`：同一工作区、同一请求体在 24 小时内复用原始响应和 `x-request-id`，并返回 `idempotency-replayed: true`。键只保存 SHA-256 摘要；相同键用于不同载荷、处理中重复请求或失败后重试均返回 409，避免重复上游调用和重复计费。后续幂等请求会分批清理过期记录，避免响应表无限增长。
+- 流式请求携带 `Idempotency-Key` 会明确返回 400；SSE 结果持久化与安全重放不属于本阶段能力。
 
 ## 验收
 
 - 单元测试覆盖 JSON 可信用量、SSE 完整结束、流式中断和未发送异常。
 - PostgreSQL 端到端测试覆盖真实加密存储、按渠道解密、`Bearer` 认证、连接测试、JSON/SSE、模型映射、内部头隔离和出站域名阻断。
 - 原渠道熔断、路由 fallback、尝试链和 Chat 计费回归测试通过。
+- PostgreSQL 集成测试覆盖成功重放、JSON 键顺序无关、载荷冲突、并发占位、失败保护、24 小时过期复用与原始键不落库。
 - 全仓 typecheck、lint 和 build 通过后方可提交。
 
 ## 上线前剩余工作
@@ -32,5 +35,5 @@
 2. 完成 DeepSeek JSON、SSE、客户端取消、429、401、5xx、超时和用量字段的真实商业接口验收。
 3. 接入 Anthropic 与 Google 原生协议适配器，或评估固定版本 Portkey 作为第二个 Adapter。
 4. 增加 BullMQ 周期主动探测、严格半开恢复、供应商配额同步和错误率告警。
-5. 增加公开请求 `Idempotency-Key`，避免客户端重试导致重复调用和重复计费。
+5. 扩展流式请求的安全恢复语义；当前只对非流式 Chat 提供 `Idempotency-Key` 重放保护。
 6. 生产环境将本地 AES 主密钥替换为 KMS envelope encryption，并配置出站网络策略。

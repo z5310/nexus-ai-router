@@ -18,6 +18,7 @@ import { PlaygroundController } from './playground.controller'
 import { RoutingExecutorService } from './routing-executor.service'
 import { ProvidersModule } from '../providers/providers.module'
 import { BillingModule } from '../billing/billing.module'
+import { InferenceIdempotencyService } from './inference-idempotency.service'
 
 @Module({
   imports: [IdentityModule, ProvidersModule, BillingModule, TypeOrmModule.forFeature([ApiKeyEntity, WorkspaceModelEntity, RouteRuleEntity, RequestLogEntity, InferenceAttemptEntity, UsageBucketEntity])],
@@ -25,6 +26,7 @@ import { BillingModule } from '../billing/billing.module'
   providers: [
     InferenceRepository,
     InferenceService,
+    InferenceIdempotencyService,
     RoutingExecutorService,
     ApiKeyAuthGuard,
     OpenAIErrorFilter,

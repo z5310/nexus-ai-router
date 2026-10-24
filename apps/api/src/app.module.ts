@@ -55,6 +55,7 @@ import { CreateAuditLogs1760000022000 } from './database/migrations/176000002200
 import { AuditModule } from './audit/audit.module'
 import { WorkspaceInvitationEntity } from './database/entities/workspace-invitation.entity'
 import { WorkspaceInvitations1760000023000 } from './database/migrations/1760000023000-WorkspaceInvitations'
+import { InferenceIdempotency1760000024000 } from './database/migrations/1760000024000-InferenceIdempotency'
 import { DashboardModule } from './dashboard/dashboard.module'
 import { HealthController } from './health/health.controller'
 import { ModelsModule } from './models/models.module'
@@ -91,7 +92,7 @@ import { AudioGenerationModule } from './audio-generation/audio-generation.modul
         type: 'postgres',
         url: config.getOrThrow<string>('DATABASE_URL'),
         entities: [ModelEntity, ModelPriceVersionEntity, RequestLogEntity, InferenceAttemptEntity, UsageBucketEntity, UserEntity, AuthSessionEntity, AuthActionTokenEntity, ApiKeyEntity, WorkspaceModelEntity, RouteRuleEntity, WorkspaceEntity, WorkspaceMemberEntity, WorkspaceInvitationEntity, ProjectEntity, ProviderEntity, ProviderCredentialEntity, ProviderChannelEntity, ModelDeploymentEntity, RankingSourceEntity, ModelBenchmarkMappingEntity, BenchmarkSnapshotEntity, AudioGenerationTaskEntity, AuditLogEntity],
-        migrations: [CreateModels1760000000000, ExpandCatalogAndUsage1760000001000, CreateIdentity1760000002000, HardenIdentity1760000003000, CreateWorkspaceConfiguration1760000004000, CreateRouteRulesAndScopeUsage1760000005000, CreateWorkspaceTenancy1760000006000, CreateProviderCredentials1760000007000, SessionRotation1760000008000, WorkspaceIpPolicy1760000009000, CreateInferenceAttempts1760000010000, CreateProviderChannels1760000011000, CreateModelPriceVersions1760000012000, CreateProviders1760000013000, CreateRankingSources1760000014000, AddModelTags1760000015000, CreateAudioGenerationTasks1760000016000, SeedDemoAudioWorkspaceModel1760000017000, RequestPriceSnapshot1760000018000, BillingLedger1760000019000, ChatBilling1760000020000, BillingAdminAudit1760000021000, CreateAuditLogs1760000022000, WorkspaceInvitations1760000023000],
+        migrations: [CreateModels1760000000000, ExpandCatalogAndUsage1760000001000, CreateIdentity1760000002000, HardenIdentity1760000003000, CreateWorkspaceConfiguration1760000004000, CreateRouteRulesAndScopeUsage1760000005000, CreateWorkspaceTenancy1760000006000, CreateProviderCredentials1760000007000, SessionRotation1760000008000, WorkspaceIpPolicy1760000009000, CreateInferenceAttempts1760000010000, CreateProviderChannels1760000011000, CreateModelPriceVersions1760000012000, CreateProviders1760000013000, CreateRankingSources1760000014000, AddModelTags1760000015000, CreateAudioGenerationTasks1760000016000, SeedDemoAudioWorkspaceModel1760000017000, RequestPriceSnapshot1760000018000, BillingLedger1760000019000, ChatBilling1760000020000, BillingAdminAudit1760000021000, CreateAuditLogs1760000022000, WorkspaceInvitations1760000023000, InferenceIdempotency1760000024000],
         synchronize: false,
         migrationsRun: false,
         retryAttempts: 10,

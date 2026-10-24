@@ -1,11 +1,12 @@
-import { Body, Controller, HttpCode, Post, Req, Res, UseFilters, UseGuards } from '@nestjs/common'
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger'
+import { BadRequestException, Body, Controller, Headers, HttpCode, Post, Req, Res, UseFilters, UseGuards } from '@nestjs/common'
+import { ApiBearerAuth, ApiHeader, ApiOperation, ApiTags } from '@nestjs/swagger'
 import type { OpenAIChatCompletionResponse } from '@gateway/contracts'
 import type { FastifyReply } from 'fastify'
 import { ApiKeyAuthGuard, type ApiKeyRequest } from './api-key-auth.guard'
 import { ChatCompletionDto } from './dto/chat-completion.dto'
 import { InferenceService, type InferenceChatStream } from './inference.service'
 import { OpenAIErrorFilter } from './openai-error.filter'
+import { InferenceIdempotencyService } from './inference-idempotency.service'
 
 @ApiTags('openai-compatible')
 @ApiBearerAuth()
@@ -13,18 +14,27 @@ import { OpenAIErrorFilter } from './openai-error.filter'
 @UseFilters(OpenAIErrorFilter)
 @Controller('v1/chat/completions')
 export class ChatCompletionsController {
-  constructor(private readonly inference: InferenceService) {}
+  constructor(private readonly inference: InferenceService, private readonly idempotency: InferenceIdempotencyService) {}
 
   @Post()
   @HttpCode(200)
   @ApiOperation({ summary: 'Create an OpenAI-compatible chat completion with optional SSE streaming' })
+  @ApiHeader({ name: 'Idempotency-Key', required: false, description: '非流式请求的 8–128 位幂等键，结果保留 24 小时' })
   async create(
     @Req() request: ApiKeyRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
     @Body() input: ChatCompletionDto,
+    @Headers('idempotency-key') idempotencyKey?: string,
   ): Promise<OpenAIChatCompletionResponse | void> {
     reply.header('x-request-id', request.id)
+    if (input.stream && idempotencyKey) throw new BadRequestException('流式请求暂不支持 Idempotency-Key')
     if (input.stream) return this.stream(request, reply, input)
+    if (idempotencyKey) {
+      const result = await this.idempotency.execute(request.apiKey.workspaceId, idempotencyKey, input, request.id, (requestId) => this.inference.chat(input, request.apiKey, requestId))
+      reply.header('x-request-id', result.requestId)
+      if (result.replayed) reply.header('idempotency-replayed', 'true')
+      return result.response
+    }
     return this.inference.chat(input, request.apiKey, request.id)
   }
 
