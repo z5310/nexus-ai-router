@@ -7,10 +7,10 @@
 .login-card h1 { margin: 6px 0; font-size: 1.95rem; }
 .login-card > p { margin-bottom: 17px; font-size: var(--text-label); line-height: 1.55; }
 .login-card form > label { margin-top: 12px; font-size: var(--text-label); font-weight: 600; }
-.login-card form > label > span { height: 46px; gap: 10px; margin-top: 6px; padding: 0 13px; border-radius: 10px; }
+.login-card form > label > .ant-input-affix-wrapper { height: 46px; margin-top: 6px; }
 .login-card input { font-size: var(--text-label); }
 .login-options { margin: 13px 0; font-size: var(--text-label); }
-.login-options input { width: 15px; height: 15px; accent-color: var(--green); }
+.login-options .ant-checkbox-wrapper { font-size: var(--text-label); }
 .login-submit { height: 46px; border-radius: 10px; font-size: var(--text-ui); }
 .login-submit { display: flex; align-items: center; justify-content: center; gap: 8px; }
 .login-submit:disabled { cursor: wait; opacity: .7; }
@@ -37,7 +37,7 @@
   .login-card h1 { font-size: 1.7rem; }
   .login-card > p { margin-bottom: 10px; }
   .login-card form > label { margin-top: 9px; }
-  .login-card form > label > span { height: 42px; }
+  .login-card form > label > .ant-input-affix-wrapper { height: 42px; }
   .login-options { margin: 10px 0; }
   .login-submit { height: 42px; }
   .login-divider { margin: 11px 0; }

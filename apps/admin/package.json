@@ -13,6 +13,7 @@
     "@gateway/contracts": "*",
     "@gateway/ui": "*",
     "@tanstack/vue-query": "^5.90.7",
+    "ant-design-vue": "^4.2.6",
     "axios": "^1.20.0",
     "lucide-vue-next": "^0.553.0",
     "vue": "^3.5.24",

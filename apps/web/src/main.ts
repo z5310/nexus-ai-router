@@ -5,8 +5,12 @@ import router from './router'
 import { i18n } from './i18n'
 import scrollReveal from './directives/reveal'
 import 'virtual:uno.css'
+import 'ant-design-vue/dist/reset.css'
 import '@gateway/ui/tokens.css'
 import '@gateway/ui/scrollbars.css'
+import '@gateway/ui/antdv.css'
 import './styles/index.css'
+
+document.body.classList.add('nexus-ant-app')
 
 createApp(App).use(VueQueryPlugin).use(router).use(i18n).directive('reveal', scrollReveal).mount('#app')

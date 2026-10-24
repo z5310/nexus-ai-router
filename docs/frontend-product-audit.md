@@ -77,8 +77,8 @@
 
 1. **拆分页面模块。** `apps/admin/src/pages/dashboard/index.vue` 应拆成 `overview`、`models`、`users`、`providers` 页面目录；Console 的 `section.vue` 同样拆成每个路由独立页面及本页 `cmp/api`。这能让权限、请求状态和测试边界与业务页面一致。
 2. **共享 HTTP 深模块。** Web 与 Admin 的 Axios、Token 刷新、错误映射目前几乎完全重复；下沉到独立 `packages/http-client`，由两个应用注入 base URL、令牌存储和未授权跳转策略。
-3. **完成 UnoCSS 迁移。** UnoCSS 已安装并接入 Vite，但 Console、Admin 和弹窗仍依赖大段页面 CSS。新页面使用共享 tokens、shortcuts 和原子类；旧样式按页面迭代迁移，避免再次形成全局 CSS 单体。
-4. **路由按需加载。** 当前 Web 和 Admin 路由均同步 import，生产构建的 Web 主包已约 645 KB。公开站、Console、Docs 与模型详情应使用动态 import；Admin 各模块也应独立 chunk。
+3. **统一业务组件与 UnoCSS 边界。** Console/Admin 已接入 Ant Design Vue 4 和共享 Nexus 主题，UnoCSS 负责布局与页面组合。登录和 Console 高频配置表单已完成首批迁移；Admin 运营表单、数据表和分页继续按页面迁移，旧样式随迁移删除，避免再次形成全局 CSS 单体。详见 [组件体系说明](frontend-component-system.md)。
+4. **继续细化路由拆包。** Web 与 Admin 顶层路由已改为动态 import，官网、认证、Console、Docs 和 Admin 页面形成独立 chunk；下一步把体积较大的 Console `section.vue` 与 Admin Dashboard 继续拆成每个业务模块的独立路由组件，并建立性能预算。
 5. **查询缓存必须包含租户。** `['dashboard-overview']`、`['console-models']` 等 key 需要加入 workspace ID；分页、搜索和过滤参数也进入 key，避免切换后串数据。
 6. **建立权限感知组件。** 根据服务端返回的工作区角色控制创建、编辑、删除按钮；后端继续作为最终授权边界。禁止只靠点击后返回 403 来表达权限。
 7. **统一真实状态组件。** 共享 Loading、Empty、Error、PermissionDenied、Unavailable 和 Retry，禁止在认证产品页面用 fallback 数据掩盖错误。

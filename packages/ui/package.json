@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./antdv.css": "./src/antdv.css",
     "./tokens.css": "./src/tokens.css",
     "./scrollbars.css": "./src/scrollbars.css"
   },

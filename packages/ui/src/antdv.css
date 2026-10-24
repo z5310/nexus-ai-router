@@ -1,0 +1,144 @@
+/* Nexus theme bridge for Ant Design Vue. Keep component overrides here, not in pages. */
+.nexus-ant-app {
+  min-height: 100%;
+  color: var(--ant-color-text, #dce7de);
+}
+
+.nexus-ant-app .ant-input,
+.nexus-ant-app .ant-input-affix-wrapper,
+.nexus-ant-app .ant-input-number,
+.nexus-ant-app .ant-picker,
+.nexus-ant-app .ant-select-selector {
+  color: #e8f1eb;
+  background: rgba(255,255,255,.03) !important;
+  border-color: rgba(255,255,255,.11) !important;
+}
+
+.nexus-ant-app .ant-input-affix-wrapper .ant-input {
+  background: transparent !important;
+}
+
+.nexus-ant-app .ant-input-prefix,
+.nexus-ant-app .ant-input-suffix,
+.nexus-ant-app .ant-select-arrow,
+.nexus-ant-app .ant-picker-suffix {
+  color: #718078;
+}
+
+.nexus-ant-app .ant-input::placeholder,
+.nexus-ant-app .ant-select-selection-placeholder,
+.nexus-ant-app .ant-picker-input > input::placeholder {
+  color: #647268;
+}
+
+.nexus-ant-app .ant-btn {
+  box-shadow: none;
+  letter-spacing: 0;
+}
+
+.nexus-ant-app .ant-btn-default {
+  color: #07100a;
+  background: #DCE7DE;
+  border-color: transparent;
+}
+
+.nexus-ant-app .ant-btn-background-ghost,
+.nexus-ant-app .ant-btn-text {
+  color: #aab8af;
+  background: transparent;
+  border-color: rgba(255,255,255,.11);
+}
+
+.nexus-ant-app .ant-btn-dangerous {
+  color: #ffabab;
+  background: rgba(239,146,146,.07);
+  border-color: rgba(239,146,146,.16);
+}
+
+.nexus-ant-app .ant-table-wrapper {
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 14px;
+}
+
+.nexus-ant-app .ant-table,
+.nexus-ant-app .ant-table-container,
+.nexus-ant-app .ant-table-content,
+.nexus-ant-app .ant-table-cell {
+  background: transparent;
+}
+
+.nexus-ant-app .ant-table-thead > tr > th {
+  color: #718078;
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: .02em;
+}
+
+.nexus-ant-app .ant-table-tbody > tr > td {
+  color: #bdcbc2;
+  font-size: 13px;
+}
+
+.nexus-ant-app .ant-form-item-label > label {
+  color: #91a097;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.nexus-ant-app .ant-form-item-explain-error {
+  color: #ef9292;
+  font-size: 12px;
+}
+
+.nexus-ant-app .ant-modal-content,
+.nexus-ant-app .ant-drawer-content,
+.nexus-ant-app .ant-popover-inner {
+  border: 1px solid rgba(255,255,255,.1);
+  box-shadow: 0 26px 80px rgba(0,0,0,.48);
+}
+
+.nexus-ant-app .ant-modal-mask,
+.nexus-ant-app .ant-drawer-mask {
+  background: rgba(1,7,3,.72) !important;
+  backdrop-filter: blur(8px);
+}
+
+.ant-select-dropdown,
+.ant-dropdown-menu,
+.ant-picker-dropdown .ant-picker-panel-container {
+  color: #dce7de;
+  background: #101a13 !important;
+  border: 1px solid rgba(255,255,255,.1);
+  box-shadow: 0 22px 65px rgba(0,0,0,.48) !important;
+}
+
+.ant-select-dropdown .ant-select-item-option-selected:not(.ant-select-item-option-disabled) {
+  color: #baf4ce;
+  background: rgba(99,228,149,.12);
+}
+
+.ant-select-dropdown .ant-select-item-option-active:not(.ant-select-item-option-disabled),
+.ant-dropdown-menu-item:hover {
+  background: rgba(255,255,255,.055) !important;
+}
+
+.nexus-ant-app .ant-checkbox-wrapper {
+  color: #91a097;
+}
+
+.nexus-ant-app .ant-pagination .ant-pagination-item-active {
+  border-color: rgba(99,228,149,.34);
+}
+
+.nexus-ant-app :where(.ant-input, .ant-input-affix-wrapper, .ant-input-number, .ant-select-selector, .ant-picker, .ant-btn):focus-visible {
+  outline: 2px solid rgba(99,228,149,.72);
+  outline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+  .nexus-ant-app .ant-modal {
+    max-width: calc(100vw - 24px);
+    margin: 12px auto;
+  }
+}

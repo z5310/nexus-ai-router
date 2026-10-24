@@ -1,5 +1,9 @@
 <script setup lang="ts">
-import { Eye, EyeOff, LoaderCircle, LockKeyhole, Mail } from 'lucide-vue-next'
+import { LockKeyhole, Mail } from 'lucide-vue-next'
+import AButton from 'ant-design-vue/es/button'
+import ACheckbox from 'ant-design-vue/es/checkbox'
+import AInput from 'ant-design-vue/es/input'
+import AInputPassword from 'ant-design-vue/es/input/Password'
 import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
@@ -10,7 +14,6 @@ import AuthShell from './cmp/AuthShell.vue'
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
-const showPassword = ref(false)
 const remember = ref(true)
 const loading = ref(false)
 const error = ref(route.query.error === 'oauth_not_configured'
@@ -34,12 +37,12 @@ async function submit() {
 <template>
   <AuthShell kicker="NEXUS CONSOLE" :title="t('auth.title')" :description="t('auth.description')">
       <form @submit.prevent="submit">
-        <label>{{ t('auth.email') }}<span><Mail :size="18" /><input v-model="email" type="email" autocomplete="email" required /></span></label>
-        <label>{{ t('auth.password') }}<span><LockKeyhole :size="18" /><input v-model="password" :type="showPassword ? 'text' : 'password'" autocomplete="current-password" required /><button type="button" :aria-label="t('auth.togglePassword')" @click="showPassword = !showPassword"><EyeOff v-if="showPassword" :size="18" /><Eye v-else :size="18" /></button></span></label>
-        <div class="login-options"><label><input v-model="remember" type="checkbox" />{{ t('auth.remember') }}</label><RouterLink to="/forgot-password">{{ t('auth.forgot') }}</RouterLink></div>
+        <label>{{ t('auth.email') }}<AInput v-model:value="email" size="large" type="email" autocomplete="email" required><template #prefix><Mail :size="17" /></template></AInput></label>
+        <label>{{ t('auth.password') }}<AInputPassword v-model:value="password" size="large" autocomplete="current-password" required><template #prefix><LockKeyhole :size="17" /></template></AInputPassword></label>
+        <div class="login-options"><ACheckbox v-model:checked="remember">{{ t('auth.remember') }}</ACheckbox><RouterLink to="/forgot-password">{{ t('auth.forgot') }}</RouterLink></div>
         <p v-if="message" class="auth-message" role="status">{{ message }}</p>
         <p v-if="error" class="login-error" role="alert">{{ error }}</p>
-        <button class="login-submit" type="submit" :disabled="loading"><LoaderCircle v-if="loading" class="spin" :size="18" />{{ loading ? t('auth.signingIn') : t('common.login') }}</button>
+        <AButton class="login-submit" html-type="submit" size="large" :loading="loading" :disabled="!email || !password">{{ loading ? t('auth.signingIn') : t('common.login') }}</AButton>
       </form>
       <div class="login-divider"><span>{{ t('auth.or') }}</span></div>
       <div class="oauth-buttons">
