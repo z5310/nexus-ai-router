@@ -14,6 +14,7 @@ export const adminEndpoints = {
   deployments: '/api/admin/model-deployments',
   deployment: (id: string) => `/api/admin/model-deployments/${id}`,
   deploymentTest: (id: string) => `/api/admin/model-deployments/${id}/test`,
+  deploymentAcceptance: (id: string) => `/api/admin/model-deployments/${id}/acceptance`,
   rankingSources: '/api/admin/ranking-sources',
   rankingSource: (id: string) => `/api/admin/ranking-sources/${id}`,
   rankingSourceSync: (id: string) => `/api/admin/ranking-sources/${id}/sync`,

@@ -314,6 +314,24 @@ export interface ProviderDeploymentTestResult {
   checkedAt: string
 }
 
+export interface ProviderAcceptanceStep {
+  latencyMs: number
+  inputTokens?: number
+  outputTokens?: number
+}
+
+export interface ProviderDeploymentAcceptanceResult {
+  deploymentId: string
+  channelId: string
+  provider: string
+  upstreamModelId: string
+  checkedAt: string
+  modelDiscovery: ProviderAcceptanceStep
+  jsonCompletion: ProviderAcceptanceStep
+  streamCompletion: ProviderAcceptanceStep & { firstTokenLatencyMs: number }
+  cancellation: ProviderAcceptanceStep & { propagated: true }
+}
+
 export type ApiKeyStatus = 'active' | 'revoked'
 
 export interface ApiKeyRecord {

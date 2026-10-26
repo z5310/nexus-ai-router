@@ -12,7 +12,7 @@ import { computed, reactive, ref } from 'vue'
 import { Activity, Boxes, KeyRound, LoaderCircle, PlugZap, Plus, ServerCog, Trash2 } from 'lucide-vue-next'
 import type { ModelDeployment, ProviderChannel, ProviderCredential } from '../api'
 import {
-  createModelDeployment, createProviderChannel, createProviderCredential, deleteModelDeployment, deleteProviderChannel, deleteProviderCredential,
+  acceptModelDeployment, createModelDeployment, createProviderChannel, createProviderCredential, deleteModelDeployment, deleteProviderChannel, deleteProviderCredential,
   getAdminModels, getModelDeployments, getProviderChannels, getProviderCredentials, getProviders,
   testModelDeployment, updateModelDeployment, updateProviderChannel, updateProviderCredential,
 } from '../api'
@@ -76,6 +76,16 @@ const testDeploymentMutation = useMutation({
     await invalidate()
   },
   onError: (error) => { errorMessage.value = error.message; feedback.error(error, '供应商连接测试失败') },
+})
+const acceptDeploymentMutation = useMutation({
+  mutationFn: acceptModelDeployment,
+  onMutate: () => { errorMessage.value = ''; successMessage.value = '' },
+  onSuccess: async (result) => {
+    successMessage.value = `${result.provider} 真实验收通过：JSON ${result.jsonCompletion.latencyMs}ms，SSE 首 Token ${result.streamCompletion.firstTokenLatencyMs}ms，取消已传播`
+    feedback.success('供应商真实验收通过', successMessage.value)
+    await invalidate()
+  },
+  onError: (error) => { errorMessage.value = error.message; feedback.error(error, '供应商真实验收失败') },
 })
 
 function open(value: 'credential' | 'channel' | 'deployment') {
@@ -175,7 +185,7 @@ function removeDeployment(item: ModelDeployment) {
               <td class="font-mono">{{ item.upstreamModelId }}</td><td>{{ item.channelName }} · {{ item.region }}</td><td>{{ item.priority }} / {{ item.weight }}</td>
               <td><span class="inline-flex items-center gap-1 text-[#91a097]"><Activity :size="14" />{{ statusLabel(item.healthStatus) }}</span></td>
               <td><ASwitch :checked="item.enabled" checked-children="路由" un-checked-children="停用" @change="(enabled) => deploymentMutation.mutate({item, enabled: Boolean(enabled)})" /></td>
-              <td class="pr-14px text-right"><div class="inline-flex items-center gap-2"><AButton type="primary" class="h-8 flex items-center gap-1.5 px-3 text-12px" :disabled="testDeploymentMutation.isPending.value" @click="testDeploymentMutation.mutate(item.id)"><LoaderCircle v-if="testDeploymentMutation.isPending.value && testDeploymentMutation.variables.value===item.id" :size="14" class="animate-spin" /><PlugZap v-else :size="14" />测试连接</AButton><AButton type="text" danger aria-label="删除部署" @click="removeDeployment(item)"><Trash2 :size="15" /></AButton></div></td>
+              <td class="pr-14px text-right"><div class="inline-flex items-center gap-2"><AButton class="h-8 flex items-center gap-1.5 px-3 text-12px" :disabled="testDeploymentMutation.isPending.value || acceptDeploymentMutation.isPending.value" @click="testDeploymentMutation.mutate(item.id)"><LoaderCircle v-if="testDeploymentMutation.isPending.value && testDeploymentMutation.variables.value===item.id" :size="14" class="animate-spin" /><PlugZap v-else :size="14" />连接检查</AButton><AButton type="primary" class="h-8 px-3 text-12px" :loading="acceptDeploymentMutation.isPending.value && acceptDeploymentMutation.variables.value===item.id" :disabled="testDeploymentMutation.isPending.value || acceptDeploymentMutation.isPending.value" @click="acceptDeploymentMutation.mutate(item.id)">真实验收</AButton><AButton type="text" danger aria-label="删除部署" @click="removeDeployment(item)"><Trash2 :size="15" /></AButton></div></td>
             </tr>
           </tbody>
         </table>

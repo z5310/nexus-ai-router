@@ -1,4 +1,4 @@
-import type { AdminModel, AdminModelListResponse, AdminModelSummaryResponse, AdminSessionListResponse, AuditLogListResponse, ModelDeployment, ModelDeploymentListResponse, ModelPricingResponse, ProviderChannel, ProviderChannelListResponse, ProviderCredentialListResponse, ProviderDefinition, ProviderDefinitionListResponse, ProviderDeploymentTestResult, RankingSource, RankingSourceDetailResponse, RankingSourceListResponse, UpdateModelPricingInput, UserListResponse, UserSummaryResponse } from '@gateway/contracts'
+import type { AdminModel, AdminModelListResponse, AdminModelSummaryResponse, AdminSessionListResponse, AuditLogListResponse, ModelDeployment, ModelDeploymentListResponse, ModelPricingResponse, ProviderChannel, ProviderChannelListResponse, ProviderCredentialListResponse, ProviderDefinition, ProviderDefinitionListResponse, ProviderDeploymentAcceptanceResult, ProviderDeploymentTestResult, RankingSource, RankingSourceDetailResponse, RankingSourceListResponse, UpdateModelPricingInput, UserListResponse, UserSummaryResponse } from '@gateway/contracts'
 import { request } from '../../../lib/http'
 import { adminEndpoints } from './endpoints'
 import type { AdminListQuery, CreateModelDeploymentInput, CreateProviderChannelInput, CreateProviderCredentialInput, CreateProviderDefinitionInput, CreateRankingSourceInput } from './types'
@@ -29,6 +29,7 @@ export const getModelDeployments = () => request<ModelDeploymentListResponse>({ 
 export const createModelDeployment = (data: CreateModelDeploymentInput) => request<ModelDeployment>({ method: 'POST', url: adminEndpoints.deployments, data })
 export const updateModelDeployment = (id: string, data: Partial<Pick<ModelDeployment, 'upstreamModelId' | 'priority' | 'weight' | 'enabled'>>) => request<ModelDeployment>({ method: 'PATCH', url: adminEndpoints.deployment(id), data })
 export const testModelDeployment = (id: string) => request<ProviderDeploymentTestResult>({ method: 'POST', url: adminEndpoints.deploymentTest(id) })
+export const acceptModelDeployment = (id: string) => request<ProviderDeploymentAcceptanceResult>({ method: 'POST', url: adminEndpoints.deploymentAcceptance(id), timeout: 100_000 })
 export const deleteModelDeployment = (id: string) => request<void>({ method: 'DELETE', url: adminEndpoints.deployment(id) })
 export const getRankingSources = () => request<RankingSourceListResponse>({ url: adminEndpoints.rankingSources })
 export const getRankingSource = (id: string) => request<RankingSourceDetailResponse>({ url: adminEndpoints.rankingSource(id) })

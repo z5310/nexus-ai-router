@@ -121,9 +121,12 @@ async function main() {
     const adapter = new OpenAICompatibleProviderAdapter(config, runtime)
     const target = { provider: providerCode, model: upstreamModelId, channelId, deploymentId, timeoutMs: 5_000 }
 
-    const probe = await connectivity.testDeployment(deploymentId)
-    assert.equal(probe.provider, providerCode)
-    assert.equal(probe.upstreamModelId, upstreamModelId)
+    const acceptance = await connectivity.acceptDeployment(deploymentId)
+    assert.equal(acceptance.provider, providerCode)
+    assert.equal(acceptance.upstreamModelId, upstreamModelId)
+    assert.equal(acceptance.jsonCompletion.inputTokens, 3)
+    assert.equal(acceptance.streamCompletion.outputTokens, 1)
+    assert.equal(acceptance.cancellation.propagated, true)
 
     const input = { model: model.publicId, messages: [{ role: 'user', content: 'hello' }] }
     const response = await adapter.chat(input, target)
@@ -136,17 +139,20 @@ async function main() {
     assert.equal(chunks.length, 2)
     assert.equal(chunks[1].usage.total_tokens, 5)
 
-    assert.equal(requests.length, 3)
+    assert.equal(requests.length, 6)
     assert.ok(requests.every((request) => request.authorization === `Bearer ${secret}`))
     assert.ok(requests.every((request) => request.internalChannel === undefined), 'internal routing identifiers must not be sent to a direct provider')
     assert.equal(requests[1].body.model, upstreamModelId)
     assert.equal(requests[2].body.stream_options.include_usage, true)
+    assert.equal(requests[3].body.stream, true)
+    assert.equal(requests[4].body.model, upstreamModelId)
+    assert.equal(requests[5].body.stream_options.include_usage, true)
 
     provider.baseUrl = 'https://not-allowed.invalid/v1'
     await providerRepository.save(provider)
     await assert.rejects(adapter.chat(input, target), ProviderNotDispatchedException)
-    assert.equal(requests.length, 3, 'blocked outbound host must fail before network dispatch')
-    console.log('PASS: encrypted channel credential powers trusted direct JSON/SSE calls, probe, model mapping and outbound blocking')
+    assert.equal(requests.length, 6, 'blocked outbound host must fail before network dispatch')
+    console.log('PASS: encrypted channel credential powers real acceptance, trusted JSON/SSE calls, cancellation, model mapping and outbound blocking')
   } finally {
     if (deploymentId) await source.getRepository(ModelDeploymentEntity).delete(deploymentId)
     if (channelId) await source.getRepository(ProviderChannelEntity).delete(channelId)
