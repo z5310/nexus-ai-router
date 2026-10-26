@@ -18,6 +18,19 @@
   background: transparent !important;
 }
 
+.nexus-ant-app .ant-input-number {
+  width: 100%;
+}
+
+.nexus-ant-app .ant-input-number-input,
+.nexus-ant-app .ant-select-single .ant-select-selector {
+  min-height: 40px;
+}
+
+.nexus-ant-app .ant-select-single .ant-select-selector {
+  align-items: center;
+}
+
 .nexus-ant-app .ant-input-prefix,
 .nexus-ant-app .ant-input-suffix,
 .nexus-ant-app .ant-select-arrow,
@@ -98,6 +111,21 @@
   box-shadow: 0 26px 80px rgba(0,0,0,.48);
 }
 
+.nexus-ant-app .ant-modal-content {
+  color: #dce7de;
+  background: #0b1510;
+}
+
+.nexus-ant-app .ant-modal-title,
+.nexus-ant-app .ant-modal-confirm-title {
+  color: #edf6f0;
+}
+
+.nexus-ant-app .ant-modal-confirm-content,
+.nexus-ant-app .ant-modal-close {
+  color: #91a097;
+}
+
 .nexus-ant-app .ant-modal-mask,
 .nexus-ant-app .ant-drawer-mask {
   background: rgba(1,7,3,.72) !important;
@@ -129,6 +157,31 @@
 
 .nexus-ant-app .ant-pagination .ant-pagination-item-active {
   border-color: rgba(99,228,149,.34);
+}
+
+.nexus-ant-app .ant-pagination,
+.nexus-ant-app .ant-pagination a,
+.nexus-ant-app .ant-pagination button {
+  color: #91a097;
+}
+
+.nexus-ant-app .ant-pagination .ant-pagination-item,
+.nexus-ant-app .ant-pagination .ant-pagination-prev .ant-pagination-item-link,
+.nexus-ant-app .ant-pagination .ant-pagination-next .ant-pagination-item-link {
+  background: rgba(255,255,255,.025);
+  border-color: rgba(255,255,255,.09);
+}
+
+.nexus-ant-app .ant-pagination .ant-pagination-item-active a {
+  color: #9deab6;
+}
+
+.nexus-ant-app .ant-switch {
+  background: rgba(255,255,255,.16);
+}
+
+.nexus-ant-app .ant-switch.ant-switch-checked {
+  background: #63e495;
 }
 
 .nexus-ant-app .ant-skeleton .ant-skeleton-title,
