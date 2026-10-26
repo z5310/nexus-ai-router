@@ -572,6 +572,9 @@ export interface InferenceAttemptItem {
 export interface RequestPriceSnapshot {
   versionId: string | null
   modelId: string
+  modelPublicId?: string
+  modelName?: string
+  providerName?: string
   currency: 'CNY'
   priceUnit: 'million_tokens' | 'image' | 'second' | '10k_chars'
   inputPrice: string
@@ -593,6 +596,11 @@ export interface BillingLedgerEntry {
   id: string
   kind: 'grant' | 'reserve' | 'settle' | 'release'
   reference: string
+  requestId: string | null
+  model: { id: string; publicId: string; name: string; provider: string } | null
+  inputTokens: number | null
+  outputTokens: number | null
+  priceSnapshot: RequestPriceSnapshot | null
   availableDelta: string
   reservedDelta: string
   availableAfter: string

@@ -85,7 +85,8 @@ export class InferenceRepository {
   async capturePrice(modelId: string): Promise<RequestPriceSnapshot> {
     // One statement sees either side of an atomic price publication, never mixed fields.
     const [row] = await this.dataSource.query(`
-      SELECT m.id AS "modelId", v.id AS "versionId", m.price_unit AS "priceUnit",
+      SELECT m.id AS "modelId", m.public_id AS "modelPublicId", m.name AS "modelName",
+        m.owner AS "providerName", v.id AS "versionId", m.price_unit AS "priceUnit",
         m.input_price AS "inputPrice", m.output_price AS "outputPrice",
         m.original_input_price AS "originalInputPrice", m.original_output_price AS "originalOutputPrice",
         m.discount_percent AS "discountPercent", m.price_effective_from AS "effectiveFrom"

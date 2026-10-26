@@ -59,6 +59,9 @@ async function main() {
     await service.chat({ model: model.publicId, messages: [] }, key, jsonId)
     const log = await db.getRepository(RequestLogEntity).findOneByOrFail({ requestId: jsonId })
     assert.equal(log.priceSnapshot.versionId, first.versions[0].id)
+    assert.equal(log.priceSnapshot.modelPublicId, model.publicId)
+    assert.equal(log.priceSnapshot.modelName, model.name)
+    assert.equal(log.priceSnapshot.providerName, model.owner)
     assert.equal(log.priceSnapshot.inputPrice, '10.0000')
     assert.equal(log.costCny, '0.002000')
     const streamId = `price-stream-${randomUUID()}`

@@ -109,12 +109,27 @@ export class BillingService {
 
   async ledger(workspaceId: string, cursor?: string): Promise<BillingLedgerResponse> {
     if (cursor && (!/^[1-9]\d{0,18}$/.test(cursor) || BigInt(cursor) > 9_223_372_036_854_775_807n)) throw new BadRequestException('账本游标无效')
-    const rows = await this.source.query(`SELECT * FROM billing_ledger WHERE workspace_id = $1
-      AND ($2::bigint IS NULL OR id < $2::bigint) ORDER BY id DESC LIMIT 51`, [workspaceId, cursor ?? null])
+    const rows = await this.source.query(`SELECT ledger.*, reservation.parent_request_id, reservation.input_tokens,
+        reservation.output_tokens, reservation.price_snapshot,
+        COALESCE(reservation.price_snapshot->>'modelPublicId', model.public_id) AS model_public_id,
+        COALESCE(reservation.price_snapshot->>'modelName', model.name) AS model_name,
+        COALESCE(reservation.price_snapshot->>'providerName', model.owner) AS provider_name,
+        COALESCE(reservation.price_snapshot->>'modelId', model.id::text) AS model_id
+      FROM billing_ledger ledger
+      LEFT JOIN billing_reservations reservation
+        ON reservation.workspace_id = ledger.workspace_id AND reservation.request_id = ledger.reference
+      LEFT JOIN models model ON model.id::text = reservation.price_snapshot->>'modelId'
+      WHERE ledger.workspace_id = $1 AND ($2::bigint IS NULL OR ledger.id < $2::bigint)
+      ORDER BY ledger.id DESC LIMIT 51`, [workspaceId, cursor ?? null])
     const page = rows.slice(0, 50)
     return {
-      data: page.map((row: { id: string; kind: 'grant' | 'reserve' | 'settle' | 'release'; reference: string; amount_micros: string; available_delta: string; reserved_delta: string; available_after: string; reserved_after: string; created_at: Date }) => ({
+      data: page.map((row: { id: string; kind: 'grant' | 'reserve' | 'settle' | 'release'; reference: string; amount_micros: string; available_delta: string; reserved_delta: string; available_after: string; reserved_after: string; created_at: Date; parent_request_id: string | null; model_id: string | null; model_public_id: string | null; model_name: string | null; provider_name: string | null; input_tokens: number | null; output_tokens: number | null; price_snapshot: RequestPriceSnapshot | null }) => ({
         id: row.id, kind: row.kind, reference: row.reference, amount: fromMicros(row.amount_micros),
+        requestId: row.parent_request_id,
+        model: row.model_id && row.model_public_id && row.model_name && row.provider_name
+          ? { id: row.model_id, publicId: row.model_public_id, name: row.model_name, provider: row.provider_name }
+          : null,
+        inputTokens: row.input_tokens, outputTokens: row.output_tokens, priceSnapshot: row.price_snapshot,
         availableDelta: fromMicros(row.available_delta), reservedDelta: fromMicros(row.reserved_delta),
         availableAfter: fromMicros(row.available_after), reservedAfter: fromMicros(row.reserved_after),
         createdAt: row.created_at.toISOString(),

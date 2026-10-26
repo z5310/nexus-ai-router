@@ -51,6 +51,20 @@ async function main() {
     assert.equal((await billing.balance(workspaceId)).reserved, '1.000000')
     await billing.settle(workspaceId, 'overage', '2')
     assert.equal((await billing.balance(workspaceId)).available, '6.000000')
+    const billedModel = {
+      versionId: randomUUID(), modelId: randomUUID(), modelPublicId: 'provider/model-billed', modelName: 'Billed Model', providerName: 'Provider',
+      currency: 'CNY', priceUnit: 'million_tokens', inputPrice: '1.0000', outputPrice: '2.0000',
+      originalInputPrice: '1.0000', originalOutputPrice: '2.0000', discountPercent: '0.00', effectiveFrom: new Date().toISOString(),
+    }
+    await billing.reserve(workspaceId, 'model-call:1', '0.100000', { parentRequestId: 'model-call', priceSnapshot: billedModel })
+    await isolated.query(`UPDATE billing_reservations SET input_tokens = 10, output_tokens = 5 WHERE workspace_id = $1 AND request_id = 'model-call:1'`, [workspaceId])
+    await billing.settle(workspaceId, 'model-call:1', '0.000020')
+    const modelLedger = (await billing.ledger(workspaceId)).data.filter((row) => row.reference === 'model-call:1')
+    assert.equal(modelLedger.length, 2)
+    assert.ok(modelLedger.every((row) => row.requestId === 'model-call'))
+    assert.ok(modelLedger.every((row) => row.model?.publicId === 'provider/model-billed' && row.model.name === 'Billed Model'))
+    assert.ok(modelLedger.every((row) => row.inputTokens === 10 && row.outputTokens === 5))
+    assert.ok(modelLedger.every((row) => row.priceSnapshot?.versionId === billedModel.versionId))
     await billing.reserve(workspaceId, 'race', '2')
     const terminal = await Promise.allSettled([billing.settle(workspaceId, 'race', '1'), billing.release(workspaceId, 'race')])
     assert.equal(terminal.filter((item) => item.status === 'fulfilled').length, 1)
