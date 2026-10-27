@@ -27,6 +27,8 @@ const envSchema = z.object({
   BILLING_PREPAID_WORKSPACE_IDS: z.string().default('').refine((value) => value.trim() === '' || value.split(',').every((id) => z.string().uuid().safeParse(id.trim()).success), '计费工作区必须为逗号分隔的 UUID'),
   TRUSTED_PROXY_CIDRS: z.string().optional(),
   REQUEST_BODY_LIMIT_BYTES: z.coerce.number().int().min(16_384).max(10_485_760).default(1_048_576),
+  READINESS_TIMEOUT_MS: z.coerce.number().int().min(100).max(30_000).default(2_000),
+  METRICS_COLLECTION_TIMEOUT_MS: z.coerce.number().int().min(100).max(10_000).default(1_000),
   GLOBAL_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().min(10).max(1_000_000).default(600),
   LOGIN_RATE_LIMIT_PER_15_MINUTES: z.coerce.number().int().min(3).max(10_000).default(20),
   INFERENCE_MAX_CONCURRENCY_PER_WORKSPACE: z.coerce.number().int().min(1).max(10_000).default(20),
