@@ -1,4 +1,4 @@
-import type { BillingBalance, BillingLedgerResponse, BillingPendingListResponse, BillingStatus } from '@gateway/contracts'
+import type { BillingBalance, BillingLedgerResponse, BillingPendingListResponse, BillingStatus, BillingUsageReport } from '@gateway/contracts'
 import { request } from '../../../lib/http'
 
 export async function getBillingSummary(signal?: AbortSignal) {
@@ -9,4 +9,6 @@ export async function getBillingSummary(signal?: AbortSignal) {
   ])
   return { status, balance, pending }
 }
-export const getBillingLedger = (cursor?: string, signal?: AbortSignal) => request<BillingLedgerResponse>({ url: '/api/billing/ledger', params: { cursor }, signal })
+export type BillingPeriod = { from: string; to: string }
+export const getBillingLedger = (period: BillingPeriod, cursor?: string, signal?: AbortSignal) => request<BillingLedgerResponse>({ url: '/api/billing/ledger', params: { cursor, ...period }, signal })
+export const getBillingUsage = (period: BillingPeriod, signal?: AbortSignal) => request<BillingUsageReport>({ url: '/api/billing/usage', params: period, signal })

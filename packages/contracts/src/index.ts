@@ -613,6 +613,35 @@ export interface BillingLedgerResponse {
   nextCursor: string | null
 }
 
+export interface BillingUsageModel {
+  id: string
+  publicId: string
+  name: string
+  provider: string
+  spent: string
+  requests: number
+  inputTokens: number
+  outputTokens: number
+}
+
+export interface BillingUsagePoint {
+  start: string
+  models: Array<{
+    modelId: string
+    spent: string
+    requests: number
+    inputTokens: number
+    outputTokens: number
+  }>
+}
+
+export interface BillingUsageReport {
+  period: { from: string; to: string; bucket: 'hour' | 'day' }
+  totals: { spent: string; requests: number; inputTokens: number; outputTokens: number }
+  models: BillingUsageModel[]
+  timeline: BillingUsagePoint[]
+}
+
 export interface BillingReservation {
   requestId: string
   status: 'held' | 'settled' | 'released'
