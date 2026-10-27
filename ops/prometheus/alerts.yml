@@ -54,3 +54,21 @@ groups:
         annotations:
           summary: A Nexus scrape-time metrics collector is failing
           description: Queue or provider health metrics may be stale until the collector recovers.
+
+      - alert: NexusMeteringOutboxBacklog
+        expr: nexus_metering_outbox_events{status="pending"} > 100
+        for: 10m
+        labels:
+          severity: page
+        annotations:
+          summary: Durable metering backlog exceeds 100 events
+          description: Check Redis, metering workers and PostgreSQL transaction latency before replaying events.
+
+      - alert: NexusMeteringDeadLetters
+        expr: nexus_metering_outbox_events{status="dead"} > 0
+        for: 2m
+        labels:
+          severity: page
+        annotations:
+          summary: Durable metering events entered the dead letter state
+          description: Inspect the admin metering event endpoint, repair the cause and replay the event.

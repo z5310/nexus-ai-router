@@ -19,9 +19,10 @@ import { RoutingExecutorService } from './routing-executor.service'
 import { ProvidersModule } from '../providers/providers.module'
 import { BillingModule } from '../billing/billing.module'
 import { InferenceIdempotencyService } from './inference-idempotency.service'
+import { MeteringModule } from '../metering/metering.module'
 
 @Module({
-  imports: [IdentityModule, ProvidersModule, BillingModule, TypeOrmModule.forFeature([ApiKeyEntity, WorkspaceModelEntity, RouteRuleEntity, RequestLogEntity, InferenceAttemptEntity, UsageBucketEntity])],
+  imports: [IdentityModule, ProvidersModule, BillingModule, MeteringModule, TypeOrmModule.forFeature([ApiKeyEntity, WorkspaceModelEntity, RouteRuleEntity, RequestLogEntity, InferenceAttemptEntity, UsageBucketEntity])],
   controllers: [ChatCompletionsController, PlaygroundController],
   providers: [
     InferenceRepository,

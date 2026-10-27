@@ -16,6 +16,7 @@
 ## 专项文档
 
 - [可观测性与告警基线](observability-operations.md)
+- [持久化计量 Outbox 运维说明](metering-outbox-operations.md)
 - [计费账本开发清单](billing-development-checklist.md)
 - [供应商数据面开发清单](provider-data-plane-development-checklist.md)
 - [音频生成任务开发清单](audio-generation-development-checklist.md)

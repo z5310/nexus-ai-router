@@ -44,6 +44,11 @@ export class ObservabilityService {
     }
   }
 
+  recordMeteringOutcome(outcome: string, durationSeconds?: number): void {
+    this.increment('nexus_metering_events_total', { outcome: this.clean(outcome) })
+    if (durationSeconds !== undefined) this.observe('nexus_metering_processing_duration_seconds', {}, durationSeconds)
+  }
+
   setDependencyReady(dependency: string, ready: boolean): void {
     this.setGauge('nexus_dependency_ready', { dependency: this.clean(dependency) }, ready ? 1 : 0)
   }
@@ -62,6 +67,14 @@ export class ObservabilityService {
 
   setCollectorSuccess(collector: string, success: boolean): void {
     this.setGauge('nexus_collector_success', { collector: this.clean(collector) }, success ? 1 : 0)
+  }
+
+  resetMeteringOutbox(): void {
+    this.gauges.delete('nexus_metering_outbox_events')
+  }
+
+  setMeteringOutbox(status: string, value: number): void {
+    this.setGauge('nexus_metering_outbox_events', { status: this.clean(status) }, value)
   }
 
   render(): string {
@@ -102,6 +115,15 @@ export class ObservabilityService {
       '# HELP nexus_collector_success Whether a scrape-time collector completed successfully.',
       '# TYPE nexus_collector_success gauge',
       ...this.renderValues('nexus_collector_success', this.gauges),
+      '# HELP nexus_metering_events_total Durable metering event processing outcomes.',
+      '# TYPE nexus_metering_events_total counter',
+      ...this.renderValues('nexus_metering_events_total', this.counters),
+      '# HELP nexus_metering_processing_duration_seconds Durable metering consumer transaction duration.',
+      '# TYPE nexus_metering_processing_duration_seconds histogram',
+      ...this.renderHistograms('nexus_metering_processing_duration_seconds'),
+      '# HELP nexus_metering_outbox_events Durable metering outbox events by state.',
+      '# TYPE nexus_metering_outbox_events gauge',
+      ...this.renderValues('nexus_metering_outbox_events', this.gauges),
     ]
     return `${lines.join('\n')}\n`
   }

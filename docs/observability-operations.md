@@ -25,6 +25,9 @@
 | `nexus_queue_jobs` | 音频队列 waiting、active、delayed、failed 数量 |
 | `nexus_provider_channels` | 启用渠道按供应商和持久健康状态的数量 |
 | `nexus_collector_success` | 抓取时队列和渠道采集是否成功 |
+| `nexus_metering_events_total` | 持久化计量处理、重复、失败、死信及投递失败次数 |
+| `nexus_metering_processing_duration_seconds` | 计量消费事务耗时 |
+| `nexus_metering_outbox_events` | 待处理、死信及最近一小时处理数量 |
 
 HTTP 指标使用 Nest/Fastify 的路由模板，例如 `/api/console/audio-generations/:id`，不会把资源 ID 写入标签。推理指标只使用目录中的公开模型 ID；供应商尝试不使用渠道 ID、部署 ID或工作区 ID。
 
@@ -39,6 +42,6 @@ HTTP 指标使用 Nest/Fastify 的路由模板，例如 `/api/console/audio-gene
 
 ## 告警
 
-Prometheus 规则位于 `ops/prometheus/alerts.yml`，覆盖 API 5xx、依赖不可用、首 Token P95、供应商失败率、音频队列积压和采集失败。阈值是首版基线，接入真实生产流量后应按 SLO 和容量测试校准。规则文件只定义告警条件，Alertmanager 路由与通知接收人由部署环境配置。
+Prometheus 规则位于 `ops/prometheus/alerts.yml`，覆盖 API 5xx、依赖不可用、首 Token P95、供应商失败率、音频队列积压、计量 Outbox 积压/死信和采集失败。阈值是首版基线，接入真实生产流量后应按 SLO 和容量测试校准。规则文件只定义告警条件，Alertmanager 路由与通知接收人由部署环境配置。计量事件恢复和人工重放见 [持久化计量 Outbox 运维说明](metering-outbox-operations.md)。
 
 当前尚未接入跨服务 OpenTelemetry trace，也未实现供应商周期主动探测；供应商渠道指标反映验收和真实调用写入的最近持久状态。
