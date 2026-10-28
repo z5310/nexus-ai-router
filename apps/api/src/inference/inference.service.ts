@@ -13,6 +13,7 @@ import { ConfigService } from '@nestjs/config'
 import { TrafficControlService, type TrafficLease } from '../traffic-control/traffic-control.service'
 import { RoutingExecutorService, type RoutingDecision } from './routing-executor.service'
 import { ProviderConfigurationService, type ResolvedProviderTarget } from '../providers/provider-configuration.service'
+import { ObservabilityService } from '../observability/observability.service'
 
 export interface InferenceChatStream {
   chunks: AsyncIterable<OpenAIChatCompletionChunk>
@@ -31,6 +32,7 @@ export class InferenceService {
     private readonly routing: RoutingExecutorService,
     private readonly deployments: ProviderConfigurationService,
     @Optional() private readonly chatBilling?: ChatBillingService,
+    @Optional() private readonly metrics?: ObservabilityService,
   ) {}
 
   async chat(input: ChatCompletionDto, key: Pick<ApiKeyEntity, 'workspaceId' | 'userId'>, requestId: string = randomUUID()): Promise<OpenAIChatCompletionResponse> {
@@ -79,12 +81,14 @@ export class InferenceService {
       }
 
       if (!response) {
-        await this.safeRecord(this.recordInput({ decision, key, requestId, selected, priceSnapshot, attempts, status: 'failed', startedAt, error: lastError }))
+        const recorded = this.recordInput({ decision, key, requestId, selected, priceSnapshot, attempts, status: 'failed', startedAt, error: lastError })
+        await this.safeRecord(recorded)
+        this.metrics?.recordInference(recorded)
         throw lastError ?? new ServiceUnavailableException('模型无可用渠道')
       }
 
       const costCny = chatSnapshotCost(response.usage.prompt_tokens, response.usage.completion_tokens, priceSnapshot!)
-      await this.inference.record(this.recordInput({
+      const recorded = this.recordInput({
         decision,
         priceSnapshot,
         key,
@@ -96,7 +100,9 @@ export class InferenceService {
         inputTokens: response.usage.prompt_tokens,
         outputTokens: response.usage.completion_tokens,
         costCny,
-      }))
+      })
+      await this.inference.record(recorded)
+      this.metrics?.recordInference(recorded)
       return { ...response, model: selected.model.publicId }
     } finally {
       await lease.release()
@@ -177,7 +183,9 @@ export class InferenceService {
       }
     }
 
-    await this.safeRecord(this.recordInput({ decision, key, requestId, selected, priceSnapshot, attempts, status: 'failed', startedAt, error: lastError }))
+    const recorded = this.recordInput({ decision, key, requestId, selected, priceSnapshot, attempts, status: 'failed', startedAt, error: lastError })
+    await this.safeRecord(recorded)
+    this.metrics?.recordInference(recorded)
     throw lastError ?? new ServiceUnavailableException('模型无可用渠道')
     } finally {
       if (!transferred) await lease.release()
@@ -231,7 +239,7 @@ export class InferenceService {
       context.attempts.push(this.attempt(context.selected, context.target, attemptStatus, context.attemptStartedAt, streamError))
       if (completed) await this.safeRecordResult(context.target)
       else if (!context.signal.aborted) await this.safeRecordResult(context.target, this.errorInfo(streamError).code)
-      await this.safeRecord(this.recordInput({
+      const recorded = this.recordInput({
         decision: context.decision,
         priceSnapshot: context.priceSnapshot,
         key: context.key,
@@ -247,7 +255,9 @@ export class InferenceService {
         costCny: completed
           ? chatSnapshotCost(inputTokens, outputTokens, context.priceSnapshot)
           : 0,
-      }))
+      })
+      await this.safeRecord(recorded)
+      this.metrics?.recordInference(recorded)
     }
   }
 

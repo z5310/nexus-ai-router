@@ -24,5 +24,8 @@ export class BillingController {
   balance(@Req() request: WorkspaceRequest) { return this.billing.balance(request.workspace.id) }
 
   @Get('ledger')
-  ledger(@Req() request: WorkspaceRequest, @Query('cursor') cursor?: string) { return this.billing.ledger(request.workspace.id, cursor) }
+  ledger(@Req() request: WorkspaceRequest, @Query('cursor') cursor?: string, @Query('from') from?: string, @Query('to') to?: string) { return this.billing.ledger(request.workspace.id, cursor, from, to) }
+
+  @Get('usage')
+  usage(@Req() request: WorkspaceRequest, @Query('from') from?: string, @Query('to') to?: string) { return this.billing.usage(request.workspace.id, from, to) }
 }

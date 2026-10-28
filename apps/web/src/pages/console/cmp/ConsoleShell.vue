@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Activity, Blocks, ChevronDown, CircleDollarSign, Code2, KeyRound, LayoutDashboard, Menu, Route, Search, Settings, Users, X } from 'lucide-vue-next'
+import { Activity, Blocks, ChevronDown, CircleDollarSign, Code2, KeyRound, LayoutDashboard, Menu, Rocket, Route, Search, Settings, Users, X } from 'lucide-vue-next'
 import { useQueryClient } from '@tanstack/vue-query'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -20,6 +20,7 @@ const roleNames = { owner: '所有者', admin: '管理员', developer: '开发�
 const navigation = computed(() => [
   { groupKey: 'dashboard.workspace', links: [
     { to: '/console', labelKey: 'dashboard.overview', icon: LayoutDashboard, exact: true },
+    { to: '/console/getting-started', label: '首次调用', icon: Rocket },
     { to: '/console/models', labelKey: 'dashboard.models', icon: Blocks },
     { to: '/console/routes', labelKey: 'dashboard.routes', icon: Route },
     { to: '/console/keys', labelKey: 'dashboard.keys', icon: KeyRound },
@@ -69,7 +70,7 @@ async function retryWorkspace() {
       <label class="workspace-switch"><span>{{ activeWorkspace?.name?.slice(0, 1).toUpperCase() || 'N' }}</span><div><small>{{ t('dashboard.currentWorkspace') }}</small><b>{{ activeWorkspace?.name ?? (workspaceState.ready ? '暂无工作区' : '加载中…') }}</b><select :value="workspaceState.activeId ?? ''" aria-label="切换工作区" :disabled="workspaceState.items.length < 2" @change="changeWorkspace"><option v-for="workspace in workspaceState.items" :key="workspace.id" :value="workspace.id">{{ workspace.name }}</option></select></div><ChevronDown v-if="workspaceState.items.length > 1" :size="15" /></label>
       <nav v-for="group in navigation" :key="group.groupKey">
         <span>{{ t(group.groupKey) }}</span>
-        <RouterLink v-for="link in group.links" :key="link.to" :to="link.to" :active-class="link.exact ? '' : 'active'" :class="{ active: link.exact && $route.path === link.to }" @click="sideOpen = false"><component :is="link.icon" :size="17" /> {{ t(link.labelKey) }}</RouterLink>
+        <RouterLink v-for="link in group.links" :key="link.to" :to="link.to" :active-class="link.exact ? '' : 'active'" :class="{ active: link.exact && $route.path === link.to }" @click="sideOpen = false"><component :is="link.icon" :size="17" /> {{ link.label ?? t(link.labelKey ?? '') }}</RouterLink>
       </nav>
       <div v-if="activeWorkspace" class="workspace-context-card"><small>当前权限</small><strong>{{ roleNames[activeWorkspace.role] }}</strong><p>{{ activeWorkspace.slug }}</p></div>
     </aside>

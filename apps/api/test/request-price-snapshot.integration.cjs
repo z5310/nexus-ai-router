@@ -35,7 +35,8 @@ async function main() {
       originalInputPrice: input, originalOutputPrice: input * 2, discountPercent: 0, priceUnit: 'million_tokens',
     })
     const first = await publish(10)
-    const repository = new InferenceRepository(db.getRepository(ApiKeyEntity), db.getRepository(WorkspaceModelEntity), db)
+    const testMetering = { append: async () => randomUUID(), notify: () => {} }
+    const repository = new InferenceRepository(db.getRepository(ApiKeyEntity), db.getRepository(WorkspaceModelEntity), db, testMetering)
     const selected = { id: randomUUID(), model, rateLimitRpm: 60 }
     const key = { workspaceId: workspace.id, userId: workspace.created_by_user_id }
     const response = { id: 'test', object: 'chat.completion', created: 1, model: model.publicId, choices: [], usage: { prompt_tokens: 100, completion_tokens: 50, total_tokens: 150 } }
@@ -59,6 +60,9 @@ async function main() {
     await service.chat({ model: model.publicId, messages: [] }, key, jsonId)
     const log = await db.getRepository(RequestLogEntity).findOneByOrFail({ requestId: jsonId })
     assert.equal(log.priceSnapshot.versionId, first.versions[0].id)
+    assert.equal(log.priceSnapshot.modelPublicId, model.publicId)
+    assert.equal(log.priceSnapshot.modelName, model.name)
+    assert.equal(log.priceSnapshot.providerName, model.owner)
     assert.equal(log.priceSnapshot.inputPrice, '10.0000')
     assert.equal(log.costCny, '0.002000')
     const streamId = `price-stream-${randomUUID()}`

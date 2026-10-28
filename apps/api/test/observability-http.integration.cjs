@@ -1,0 +1,41 @@
+require('ts-node').register({ files: true, project: require('node:path').join(__dirname, '../tsconfig.json') })
+require('reflect-metadata')
+const assert = require('node:assert/strict')
+const { config } = require('dotenv')
+config({ path: require('node:path').join(__dirname, '../../../.env'), quiet: true })
+const { NestFactory } = require('@nestjs/core')
+const { FastifyAdapter } = require('@nestjs/platform-fastify')
+const { AppModule } = require('../src/app.module')
+
+async function main() {
+  const app = await NestFactory.create(AppModule, new FastifyAdapter(), { logger: false })
+  try {
+    await app.init()
+    const server = app.getHttpAdapter().getInstance()
+    await server.ready()
+    const health = await server.inject({ method: 'GET', url: '/api/health', headers: { 'x-request-id': 'external-value' } })
+    assert.equal(health.statusCode, 200)
+    assert.ok(health.headers['x-request-id'])
+    assert.notEqual(health.headers['x-request-id'], 'external-value', 'the app-generated request ID is returned')
+    const ready = await server.inject({ method: 'GET', url: '/api/ready' })
+    assert.equal(ready.statusCode, 200)
+    assert.equal(ready.json().dependencies.postgres.status, 'ok')
+    assert.equal(ready.json().dependencies.redis.status, 'ok')
+    assert.equal((await server.inject({ method: 'GET', url: '/definitely-missing' })).statusCode, 404)
+    assert.equal((await server.inject({ method: 'GET', url: '/api/billing/balance' })).statusCode, 401)
+    const response = await server.inject({ method: 'GET', url: '/metrics' })
+    assert.equal(response.statusCode, 200)
+    assert.match(response.headers['content-type'], /^text\/plain/)
+    assert.match(response.body, /nexus_http_requests_total\{method="GET",route="\/api\/health",status_code="200"\} 1/)
+    assert.match(response.body, /nexus_http_requests_total\{method="GET",route="unmatched",status_code="404"\} 1/)
+    assert.match(response.body, /nexus_http_requests_total\{method="GET",route="\/api\/billing\/balance",status_code="401"\} 1/)
+    assert.match(response.body, /nexus_dependency_ready\{dependency="postgres"\} 1/)
+    assert.match(response.body, /nexus_queue_jobs\{queue="audio-generation",state="waiting"\}/)
+    assert.match(response.body, /nexus_collector_success\{collector="audio_queue"\} 1/)
+    console.log('PASS: health, bounded dependency readiness, request correlation and Prometheus scrape endpoint')
+  } finally {
+    await app.close()
+  }
+}
+
+main().catch((error) => { console.error(error); process.exitCode = 1 })

@@ -1,10 +1,10 @@
 # Nexus AI Router 产品盘点与路线图
 
-更新日期：2026-10-24
+更新日期：2026-10-27
 
 状态说明：本文件同步产品方向和阶段进展；逐项开发状态、限制与交付顺序统一参见 [开发清单](development-checklist.md)。
 
-本轮已完成 OpenAI 兼容供应商数据面第一阶段：模型部署可绑定具体渠道与加密凭证，JSON/SSE 推理按部署直连上游，管理端可执行无计费的模型可用性探测，并以 HTTPS、精确域名允许列表、禁止重定向和凭证延迟解密约束出站边界。真实商业供应商仍需在部署环境配置低额度密钥并完成上线前验证。
+OpenAI 兼容供应商数据面第一阶段已完成：模型部署可绑定具体渠道与加密凭证，JSON/SSE 推理按部署直连上游，管理端可执行无计费连接检查和真实验收，并以 HTTPS、精确域名允许列表、禁止重定向和凭证延迟解密约束出站边界。DeepSeek 低额度商业 Key 已完成模型发现、JSON、SSE、取消、首次调用和计费对平验收。
 
 ## 1. 产品定位
 
@@ -38,12 +38,12 @@ Nexus AI Router 是面向 AI 应用团队的多模型接入、路由、观测与
 
 | 领域 | 已有内容 | 缺口 |
 | --- | --- | --- |
-| OpenAI 兼容层 | `GET /v1/models`、`POST /v1/chat/completions` JSON/SSE、统一错误映射 | 缺少请求幂等、主动取消传播与更多模型协议 |
-| 工作区模型 | 客户侧配置已绑定供应商模型部署、渠道、加密凭证和健康度 | 缺少区域与并发治理、凭证轮换流程和商业供应商上线验证 |
-| 路由 | 规则 CRUD、真实执行器、故障转移和渠道尝试记录 | 缺少权重分流、熔断与主动健康调度 |
-| 请求日志 | 有查询与概览 | 缺少 trace、错误详情、上游渠道、首字耗时、导出与保留策略 |
-| 管理端用户 | 有真实 API 和列表 | 缺少创建/编辑弹窗、批量操作、详情、会话与审计视图 |
-| 管理端模型 | 有基础状态管理 | 缺少模型新建、完整字段编辑、供应商与价格版本管理 |
+| OpenAI 兼容层 | `GET /v1/models`、Chat JSON/SSE、取消传播、统一错误、非流式 24 小时幂等 | 流式幂等、供应商用量回查与更多原生协议 |
+| 工作区模型 | 已绑定部署、渠道、加密凭证、区域、并发和健康度；DeepSeek 已真实验收 | 凭证轮换、配额同步和更多商业供应商上线验证 |
+| 路由 | 规则执行、模型与渠道故障转移、稳定权重、健康熔断和尝试记录 | 主动健康调度、严格半开、配置版本与运营统计 |
+| 请求日志 | 请求详情含规则、供应商尝试、错误、Token、首 Token 与总耗时 | OpenTelemetry trace、上游请求 ID、导出与保留策略 |
+| 管理端用户 | 有真实 API、列表、平台会话与审计视图 | 缺少创建/编辑弹窗、批量操作和完整详情运营流程 |
+| 管理端模型 | 有基础状态管理、供应商配置和价格版本发布 | 缺少模型新建、完整字段/能力编辑、预约发布和发布审核 |
 | 多租户 | Workspace、WorkspaceMember、Project、邀请和角色授权已落库并进入主要业务链路 | 缺少 Project 级资源隔离、企业组织层与自定义角色 |
 
 ### 尚需补齐的产品闭环
@@ -59,13 +59,13 @@ Nexus AI Router 是面向 AI 应用团队的多模型接入、路由、观测与
 - 供应商治理：区域、并发配额、凭证轮换、主动健康检查、熔断和自动恢复。
 - 商业计费：支付、发票、退款、欠费停机和财务对账。
 - 多租户深化：Project 级隔离、细粒度 RBAC 与企业 SSO/SCIM。
-- 网关与运维：幂等、内容风控、告警、指标监控、分布式追踪、备份恢复和 CI/CD。
+- 网关与运维：Prometheus 与基础告警已完成；继续内容风控、OpenTelemetry、备份恢复、容量压测和 CI/CD。
 
 ## 3. 当前接口清单
 
 ### 公共与模型目录
 
-- `GET /api/health`、`GET /api/ready`
+- `GET /api/health`、`GET /api/ready`、`GET /metrics`
 - `GET /v1/models`
 - `GET /api/models`、`GET /api/models/:publicId`
 - `GET /api/rankings`
@@ -81,6 +81,10 @@ Nexus AI Router 是面向 AI 应用团队的多模型接入、路由、观测与
 ### 客户控制台
 
 - `GET /api/dashboard/overview`、`GET /api/dashboard/requests`
+- `GET /api/dashboard/requests/:requestId`
+- `GET /api/billing/balance`、`status`、`pending`、`ledger`、`usage`
+- 工作区成员、邀请、设置与所有权转移接口
+- `GET/POST /api/console/audio-generations` 及详情/取消
 - `GET/POST /api/console/models`
 - `PATCH/DELETE /api/console/models/:id`
 - `GET/POST /api/console/routes`
@@ -99,6 +103,7 @@ Nexus AI Router 是面向 AI 应用团队的多模型接入、路由、观测与
 - `PATCH /api/admin/models/:id`
 - `GET/POST/PATCH/DELETE /api/admin/providers` 及渠道、凭证和模型部署管理接口
 - `POST /api/admin/model-deployments/:id/test`
+- 管理端财务授予/人工对账、审计日志与平台会话接口
 
 ## 4. 产品路线图
 
@@ -108,7 +113,7 @@ Nexus AI Router 是面向 AI 应用团队的多模型接入、路由、观测与
 
 1. Workspace、Project、WorkspaceMember、邀请和默认工作区迁移已完成；继续把资源权限细化到 Project。
 2. Provider、ProviderChannel、ProviderCredential 与 ModelDeployment 已进入真实链路；凭证轮换流程待补齐。
-3. API Key 鉴权和 `/v1/chat/completions` 已支持 JSON/SSE、超时、故障转移和统一错误码；幂等与主动取消待补齐。
+3. API Key 鉴权和 `/v1/chat/completions` 已支持 JSON/SSE、超时、故障转移、主动取消、统一错误码及非流式幂等；流式幂等待设计。
 4. 路由规则已进入真实执行链路，并记录命中规则、上游渠道、尝试次数和最终结果。
 5. 价格版本、余额账本、用量明细和原子预扣/结算已完成；支付、退款和财务对账待补齐。
 6. 补齐平台端供应商、渠道、价格、路由和用户详情管理。
@@ -119,10 +124,10 @@ Nexus AI Router 是面向 AI 应用团队的多模型接入、路由、观测与
 
 1. 工作区成员邀请、Owner/Admin/Developer/Billing/Viewer 权限已完成第一阶段；邮件投递、成员分页、所有权转移二次认证与 Project 隔离待开发。
 2. 请求详情、失败原因、trace、导出、日志保留策略。
-3. 账单、充值、交易、发票和低余额提醒。
-4. 路由权重、A/B 分流、灰度发布、健康检查和熔断。
+3. 账单与交易流水已完成第一阶段；继续充值支付、发票、退款和低余额提醒。
+4. 稳定权重、健康降级和熔断已进入运行链路；继续 A/B 运营统计、灰度发布和主动健康探测。
 5. 管理端审计日志与全局会话查询/单会话撤销已完成第一阶段；封禁原因、批量操作、工作区领域事件审计和合规归档待开发。
-6. Dashboard 时间范围、模型/项目筛选、成本与收入分析。
+6. 账单时间范围和模型消费分析已完成；项目/密钥筛选、收入与利润分析待开发。
 
 ### P2：企业与规模化能力
 
@@ -144,4 +149,4 @@ Nexus AI Router 是面向 AI 应用团队的多模型接入、路由、观测与
 
 ## 6. 当前迭代结果
 
-本轮完成供应商可信数据面第一阶段：推理执行器根据模型部署解析供应商渠道和加密凭证，通过精确域名允许列表向 OpenAI 兼容上游发送 JSON/SSE 请求；管理端新增模型部署连接测试，测试不会产生推理费用并会回写渠道健康度。集成测试使用本地模拟供应商验证凭证加密、Bearer 注入、模型映射、流式用量解析与未授权出站拦截。真实 DeepSeek 等商业渠道仍需配置低额度密钥后进行上线验证。
+供应商可信数据面第一阶段已经过模拟网关与 DeepSeek 官方接口双重验证：模型发现、JSON、SSE、取消传播、用量解析、首次调用、价格快照、账本预占/结算/释放及账单展示均已跑通。最新增量还完成 Prometheus 指标、有界 readiness、队列/渠道健康采集和基础告警规则。下一步是持久化计量 Outbox、CI/生产发布、主动渠道探测与 OpenTelemetry trace。

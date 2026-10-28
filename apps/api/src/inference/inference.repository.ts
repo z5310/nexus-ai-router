@@ -8,6 +8,7 @@ import { InferenceAttemptEntity, type InferenceAttemptStatus } from '../database
 import { WorkspaceModelEntity } from '../database/entities/workspace-model.entity'
 import { WorkspaceEntity } from '../database/entities/workspace.entity'
 import { WorkspaceMemberEntity } from '../database/entities/workspace-member.entity'
+import { MeteringOutboxService } from '../metering/metering-outbox.service'
 
 export interface RecordedInference {
   priceSnapshot?: RequestPriceSnapshot | null
@@ -44,6 +45,7 @@ export class InferenceRepository {
     @InjectRepository(ApiKeyEntity) private readonly keys: Repository<ApiKeyEntity>,
     @InjectRepository(WorkspaceModelEntity) private readonly workspaceModels: Repository<WorkspaceModelEntity>,
     private readonly dataSource: DataSource,
+    private readonly metering: MeteringOutboxService,
   ) {}
 
   findActiveKey(keyHash: string): Promise<ApiKeyEntity | null> {
@@ -85,7 +87,8 @@ export class InferenceRepository {
   async capturePrice(modelId: string): Promise<RequestPriceSnapshot> {
     // One statement sees either side of an atomic price publication, never mixed fields.
     const [row] = await this.dataSource.query(`
-      SELECT m.id AS "modelId", v.id AS "versionId", m.price_unit AS "priceUnit",
+      SELECT m.id AS "modelId", m.public_id AS "modelPublicId", m.name AS "modelName",
+        m.owner AS "providerName", v.id AS "versionId", m.price_unit AS "priceUnit",
         m.input_price AS "inputPrice", m.output_price AS "outputPrice",
         m.original_input_price AS "originalInputPrice", m.original_output_price AS "originalOutputPrice",
         m.discount_percent AS "discountPercent", m.price_effective_from AS "effectiveFrom"
@@ -97,8 +100,7 @@ export class InferenceRepository {
   }
 
   async record(input: RecordedInference): Promise<void> {
-    const bucketStart = new Date()
-    bucketStart.setUTCMinutes(0, 0, 0)
+    let eventId: string | undefined
     await this.dataSource.transaction(async (manager) => {
       const requestLogRepository = manager.getRepository(RequestLogEntity)
       const requestLog = await requestLogRepository.save(requestLogRepository.create({
@@ -127,21 +129,8 @@ export class InferenceRepository {
           ...attempt,
         })))
       }
-      await manager.query(`
-        INSERT INTO "usage_buckets" (
-          "workspace_id", "user_id", "bucket_start", "request_count", "token_count",
-          "average_latency_ms", "cost_cny", "created_at", "updated_at"
-        ) VALUES ($1, $2, $3, 1, $4, $5, $6, now(), now())
-        ON CONFLICT ("workspace_id", "bucket_start") DO UPDATE SET
-          "request_count" = "usage_buckets"."request_count" + 1,
-          "token_count" = "usage_buckets"."token_count" + EXCLUDED."token_count",
-          "average_latency_ms" = round(
-            (("usage_buckets"."average_latency_ms" * "usage_buckets"."request_count") + EXCLUDED."average_latency_ms")::numeric
-            / ("usage_buckets"."request_count" + 1)
-          ),
-          "cost_cny" = "usage_buckets"."cost_cny" + EXCLUDED."cost_cny",
-          "updated_at" = now()
-      `, [input.workspaceId, input.userId, bucketStart, input.inputTokens + input.outputTokens, input.latencyMs, input.costCny])
+      eventId = await this.metering.append(manager, requestLog.id, input)
     })
+    if (eventId) this.metering.notify(eventId)
   }
 }

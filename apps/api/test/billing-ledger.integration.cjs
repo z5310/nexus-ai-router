@@ -51,6 +51,33 @@ async function main() {
     assert.equal((await billing.balance(workspaceId)).reserved, '1.000000')
     await billing.settle(workspaceId, 'overage', '2')
     assert.equal((await billing.balance(workspaceId)).available, '6.000000')
+    const billedModel = {
+      versionId: randomUUID(), modelId: randomUUID(), modelPublicId: 'provider/model-billed', modelName: 'Billed Model', providerName: 'Provider',
+      currency: 'CNY', priceUnit: 'million_tokens', inputPrice: '1.0000', outputPrice: '2.0000',
+      originalInputPrice: '1.0000', originalOutputPrice: '2.0000', discountPercent: '0.00', effectiveFrom: new Date().toISOString(),
+    }
+    await billing.reserve(workspaceId, 'model-call:1', '0.100000', { parentRequestId: 'model-call', priceSnapshot: billedModel })
+    await isolated.query(`UPDATE billing_reservations SET input_tokens = 10, output_tokens = 5 WHERE workspace_id = $1 AND request_id = 'model-call:1'`, [workspaceId])
+    await billing.settle(workspaceId, 'model-call:1', '0.000020')
+    const modelLedger = (await billing.ledger(workspaceId)).data.filter((row) => row.reference === 'model-call:1')
+    assert.equal(modelLedger.length, 2)
+    assert.ok(modelLedger.every((row) => row.requestId === 'model-call'))
+    assert.ok(modelLedger.every((row) => row.model?.publicId === 'provider/model-billed' && row.model.name === 'Billed Model'))
+    assert.ok(modelLedger.every((row) => row.inputTokens === 10 && row.outputTokens === 5))
+    assert.ok(modelLedger.every((row) => row.priceSnapshot?.versionId === billedModel.versionId))
+    const rangeFrom = new Date(Date.now() - 86_400_000).toISOString()
+    const rangeTo = new Date(Date.now() + 86_400_000).toISOString()
+    const usage = await billing.usage(workspaceId, rangeFrom, rangeTo)
+    assert.equal(usage.period.bucket, 'hour')
+    assert.ok(BigInt(usage.totals.spent.replace('.', '')) > 0n)
+    assert.ok(usage.totals.requests >= 1)
+    const modelUsage = usage.models.find((item) => item.id === billedModel.modelId)
+    assert.deepEqual(modelUsage, { id: billedModel.modelId, publicId: 'provider/model-billed', name: 'Billed Model', provider: 'Provider', spent: '0.000020', requests: 1, inputTokens: 10, outputTokens: 5 })
+    assert.ok(usage.timeline.some((point) => point.models.some((item) => item.modelId === billedModel.modelId && item.spent === '0.000020')))
+    assert.equal((await billing.ledger(workspaceId, undefined, rangeFrom, rangeTo)).data.some((row) => row.reference === 'model-call:1'), true)
+    assert.equal((await billing.ledger(workspaceId, undefined, new Date(Date.now() + 172_800_000).toISOString(), new Date(Date.now() + 259_200_000).toISOString())).data.length, 0)
+    await assert.rejects(billing.usage(workspaceId, rangeTo, rangeFrom), { status: 400 })
+    await assert.rejects(billing.usage(workspaceId, rangeFrom, new Date(Date.now() + 93 * 86_400_000).toISOString()), { status: 400 })
     await billing.reserve(workspaceId, 'race', '2')
     const terminal = await Promise.allSettled([billing.settle(workspaceId, 'race', '1'), billing.release(workspaceId, 'race')])
     assert.equal(terminal.filter((item) => item.status === 'fulfilled').length, 1)

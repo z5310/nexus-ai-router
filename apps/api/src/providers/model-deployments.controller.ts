@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query, UseGuards } from '@nestjs/common'
 import { ApiBearerAuth, ApiNoContentResponse, ApiOperation, ApiTags } from '@nestjs/swagger'
-import type { ModelDeployment, ModelDeploymentListResponse, ProviderDeploymentTestResult } from '@gateway/contracts'
+import type { ModelDeployment, ModelDeploymentListResponse, ProviderDeploymentAcceptanceResult, ProviderDeploymentTestResult } from '@gateway/contracts'
 import { JwtAuthGuard } from '../identity/auth.guard'
 import { Roles, RolesGuard } from '../identity/roles.guard'
 import { CreateModelDeploymentDto, ListModelDeploymentsQuery, UpdateModelDeploymentDto } from './dto/model-deployments.dto'
@@ -31,6 +31,10 @@ export class ModelDeploymentsController {
   @Post(':id/test')
   @ApiOperation({ summary: 'Verify deployment authentication and upstream model visibility without generating content' })
   test(@Param('id') id: string): Promise<ProviderDeploymentTestResult> { return this.connectivity.testDeployment(id) }
+
+  @Post(':id/acceptance')
+  @ApiOperation({ summary: 'Run a low-token JSON, SSE and cancellation acceptance against a real provider deployment' })
+  accept(@Param('id') id: string): Promise<ProviderDeploymentAcceptanceResult> { return this.connectivity.acceptDeployment(id) }
 
   @Delete(':id')
   @HttpCode(204)

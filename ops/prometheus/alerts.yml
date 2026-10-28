@@ -1,0 +1,74 @@
+groups:
+  - name: nexus-api
+    rules:
+      - alert: NexusApiHighErrorRate
+        expr: sum(rate(nexus_http_requests_total{status_code=~"5.."}[5m])) / clamp_min(sum(rate(nexus_http_requests_total[5m])), 0.001) > 0.05
+        for: 10m
+        labels:
+          severity: page
+        annotations:
+          summary: Nexus API 5xx rate exceeds 5%
+          description: Check structured logs by x-request-id and inspect dependency readiness.
+
+      - alert: NexusDependencyUnavailable
+        expr: nexus_dependency_ready == 0
+        for: 2m
+        labels:
+          severity: page
+        annotations:
+          summary: A required Nexus API dependency is unavailable
+          description: The dependency label identifies PostgreSQL or Redis.
+
+      - alert: NexusInferenceFirstTokenP95Slow
+        expr: histogram_quantile(0.95, sum by (le) (rate(nexus_inference_first_token_duration_seconds_bucket[10m]))) > 3
+        for: 10m
+        labels:
+          severity: ticket
+        annotations:
+          summary: P95 inference time to first token exceeds 3 seconds
+          description: Compare provider attempt latency and failure rate before changing routing.
+
+      - alert: NexusProviderAttemptFailureRate
+        expr: sum by (provider) (rate(nexus_provider_attempts_total{status="failed"}[10m])) / clamp_min(sum by (provider) (rate(nexus_provider_attempts_total[10m])), 0.001) > 0.2
+        for: 10m
+        labels:
+          severity: ticket
+        annotations:
+          summary: Provider attempt failure rate exceeds 20%
+          description: The provider label identifies the affected upstream.
+
+      - alert: NexusAudioQueueBacklog
+        expr: sum(nexus_queue_jobs{queue="audio-generation",state=~"waiting|delayed"}) > 100
+        for: 10m
+        labels:
+          severity: ticket
+        annotations:
+          summary: Audio generation queue backlog exceeds 100 jobs
+          description: Inspect worker availability, provider latency and failed jobs.
+
+      - alert: NexusMetricsCollectorFailed
+        expr: nexus_collector_success == 0
+        for: 5m
+        labels:
+          severity: ticket
+        annotations:
+          summary: A Nexus scrape-time metrics collector is failing
+          description: Queue or provider health metrics may be stale until the collector recovers.
+
+      - alert: NexusMeteringOutboxBacklog
+        expr: nexus_metering_outbox_events{status="pending"} > 100
+        for: 10m
+        labels:
+          severity: page
+        annotations:
+          summary: Durable metering backlog exceeds 100 events
+          description: Check Redis, metering workers and PostgreSQL transaction latency before replaying events.
+
+      - alert: NexusMeteringDeadLetters
+        expr: nexus_metering_outbox_events{status="dead"} > 0
+        for: 2m
+        labels:
+          severity: page
+        annotations:
+          summary: Durable metering events entered the dead letter state
+          description: Inspect the admin metering event endpoint, repair the cause and replay the event.

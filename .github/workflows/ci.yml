@@ -1,0 +1,105 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: corepack npm ci
+      - run: corepack npm run lint
+      - run: corepack npm run typecheck
+      - run: corepack npm run build
+      - run: corepack npm audit --omit=dev --audit-level=high --registry=https://registry.npmjs.org
+
+  integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: gateway
+          POSTGRES_PASSWORD: gateway
+          POSTGRES_DB: gateway
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U gateway -d gateway"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+      redis:
+        image: redis:8-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://gateway:gateway@127.0.0.1:5432/gateway
+      REDIS_URL: redis://127.0.0.1:6379
+      JWT_SECRET: ci-only-jwt-secret-at-least-32-characters
+      ENCRYPTION_KEY: ci-only-encryption-key-at-least-32-characters
+      ENCRYPTION_KEY_VERSION: ci-v1
+      WEB_ORIGIN: http://localhost:5173
+      ADMIN_ORIGIN: http://localhost:5174
+      OAUTH_CALLBACK_ORIGIN: http://localhost:3000
+      PROVIDER_CREDENTIAL_ENV: development
+      PROVIDER_OUTBOUND_HOSTS: 127.0.0.1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: corepack npm ci
+      - run: corepack npm run db:migrate
+      - run: corepack npm run db:migrate
+      - run: corepack npm run test:ci
+      - name: Verify latest migration down and up
+        run: |
+          corepack npm run migration:revert -w @gateway/api
+          corepack npm run db:migrate
+
+  containers:
+    runs-on: ubuntu-latest
+    needs: [quality, integration]
+    strategy:
+      matrix:
+        include:
+          - name: api
+            file: Dockerfile.api
+            args: ""
+          - name: web
+            file: Dockerfile.frontend
+            args: APP=web
+          - name: admin
+            file: Dockerfile.frontend
+            args: APP=admin
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.file }}
+          build-args: ${{ matrix.args }}
+          push: false
+          tags: nexus-ai-router-${{ matrix.name }}:ci

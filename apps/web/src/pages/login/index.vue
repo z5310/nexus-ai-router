@@ -42,7 +42,7 @@ async function submit() {
         <div class="login-options"><ACheckbox v-model:checked="remember">{{ t('auth.remember') }}</ACheckbox><RouterLink to="/forgot-password">{{ t('auth.forgot') }}</RouterLink></div>
         <p v-if="message" class="auth-message" role="status">{{ message }}</p>
         <p v-if="error" class="login-error" role="alert">{{ error }}</p>
-        <AButton class="login-submit" html-type="submit" size="large" :loading="loading" :disabled="!email || !password">{{ loading ? t('auth.signingIn') : t('common.login') }}</AButton>
+        <AButton class="login-submit" type="primary" html-type="submit" size="large" :loading="loading" :disabled="!email || !password">{{ loading ? t('auth.signingIn') : t('common.login') }}</AButton>
       </form>
       <div class="login-divider"><span>{{ t('auth.or') }}</span></div>
       <div class="oauth-buttons">

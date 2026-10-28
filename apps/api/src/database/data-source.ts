@@ -50,13 +50,16 @@ import { CreateAuditLogs1760000022000 } from './migrations/1760000022000-CreateA
 import { WorkspaceInvitationEntity } from './entities/workspace-invitation.entity'
 import { WorkspaceInvitations1760000023000 } from './migrations/1760000023000-WorkspaceInvitations'
 import { InferenceIdempotency1760000024000 } from './migrations/1760000024000-InferenceIdempotency'
+import { BillingUsageIndex1760000025000 } from './migrations/1760000025000-BillingUsageIndex'
+import { MeteringOutbox1760000026000 } from './migrations/1760000026000-MeteringOutbox'
+import { MeteringOutboxEventEntity } from './entities/metering-outbox-event.entity'
 
 config({ path: resolve(__dirname, '../../../../.env') })
 
 export default new DataSource({
   type: 'postgres',
   url: process.env.DATABASE_URL,
-  entities: [ModelEntity, ModelPriceVersionEntity, RequestLogEntity, InferenceAttemptEntity, UsageBucketEntity, UserEntity, AuthSessionEntity, AuthActionTokenEntity, ApiKeyEntity, WorkspaceModelEntity, RouteRuleEntity, WorkspaceEntity, WorkspaceMemberEntity, WorkspaceInvitationEntity, ProjectEntity, ProviderEntity, ProviderCredentialEntity, ProviderChannelEntity, ModelDeploymentEntity, RankingSourceEntity, ModelBenchmarkMappingEntity, BenchmarkSnapshotEntity, AudioGenerationTaskEntity, AuditLogEntity],
-  migrations: [CreateModels1760000000000, ExpandCatalogAndUsage1760000001000, CreateIdentity1760000002000, HardenIdentity1760000003000, CreateWorkspaceConfiguration1760000004000, CreateRouteRulesAndScopeUsage1760000005000, CreateWorkspaceTenancy1760000006000, CreateProviderCredentials1760000007000, SessionRotation1760000008000, WorkspaceIpPolicy1760000009000, CreateInferenceAttempts1760000010000, CreateProviderChannels1760000011000, CreateModelPriceVersions1760000012000, CreateProviders1760000013000, CreateRankingSources1760000014000, AddModelTags1760000015000, CreateAudioGenerationTasks1760000016000, SeedDemoAudioWorkspaceModel1760000017000, RequestPriceSnapshot1760000018000, BillingLedger1760000019000, ChatBilling1760000020000, BillingAdminAudit1760000021000, CreateAuditLogs1760000022000, WorkspaceInvitations1760000023000, InferenceIdempotency1760000024000],
+  entities: [ModelEntity, ModelPriceVersionEntity, RequestLogEntity, InferenceAttemptEntity, UsageBucketEntity, MeteringOutboxEventEntity, UserEntity, AuthSessionEntity, AuthActionTokenEntity, ApiKeyEntity, WorkspaceModelEntity, RouteRuleEntity, WorkspaceEntity, WorkspaceMemberEntity, WorkspaceInvitationEntity, ProjectEntity, ProviderEntity, ProviderCredentialEntity, ProviderChannelEntity, ModelDeploymentEntity, RankingSourceEntity, ModelBenchmarkMappingEntity, BenchmarkSnapshotEntity, AudioGenerationTaskEntity, AuditLogEntity],
+  migrations: [CreateModels1760000000000, ExpandCatalogAndUsage1760000001000, CreateIdentity1760000002000, HardenIdentity1760000003000, CreateWorkspaceConfiguration1760000004000, CreateRouteRulesAndScopeUsage1760000005000, CreateWorkspaceTenancy1760000006000, CreateProviderCredentials1760000007000, SessionRotation1760000008000, WorkspaceIpPolicy1760000009000, CreateInferenceAttempts1760000010000, CreateProviderChannels1760000011000, CreateModelPriceVersions1760000012000, CreateProviders1760000013000, CreateRankingSources1760000014000, AddModelTags1760000015000, CreateAudioGenerationTasks1760000016000, SeedDemoAudioWorkspaceModel1760000017000, RequestPriceSnapshot1760000018000, BillingLedger1760000019000, ChatBilling1760000020000, BillingAdminAudit1760000021000, CreateAuditLogs1760000022000, WorkspaceInvitations1760000023000, InferenceIdempotency1760000024000, BillingUsageIndex1760000025000, MeteringOutbox1760000026000],
   synchronize: false,
 })

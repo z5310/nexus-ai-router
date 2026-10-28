@@ -1,6 +1,6 @@
 import { BadRequestException, ConflictException, ForbiddenException, HttpException, Injectable, NotFoundException } from '@nestjs/common'
 import { DataSource, type EntityManager } from 'typeorm'
-import type { BillingAdminActionInput, BillingAdminActionResult, BillingAdminGrantInput, BillingAdminResolutionInput, BillingBalance, BillingLedgerResponse, BillingReservation, BillingResolutionPreview, RequestPriceSnapshot } from '@gateway/contracts'
+import type { BillingAdminActionInput, BillingAdminActionResult, BillingAdminGrantInput, BillingAdminResolutionInput, BillingBalance, BillingLedgerResponse, BillingReservation, BillingResolutionPreview, BillingUsageReport, RequestPriceSnapshot } from '@gateway/contracts'
 import { fromMicros, toMicros } from './money'
 import { isUUID } from 'class-validator'
 import { chatSnapshotMicros } from '../inference/price-snapshot'
@@ -107,20 +107,111 @@ export class BillingService {
     return this.mapBalance(account ?? { available_micros: '0', reserved_micros: '0' })
   }
 
-  async ledger(workspaceId: string, cursor?: string): Promise<BillingLedgerResponse> {
+  async ledger(workspaceId: string, cursor?: string, from?: string, to?: string): Promise<BillingLedgerResponse> {
     if (cursor && (!/^[1-9]\d{0,18}$/.test(cursor) || BigInt(cursor) > 9_223_372_036_854_775_807n)) throw new BadRequestException('账本游标无效')
-    const rows = await this.source.query(`SELECT * FROM billing_ledger WHERE workspace_id = $1
-      AND ($2::bigint IS NULL OR id < $2::bigint) ORDER BY id DESC LIMIT 51`, [workspaceId, cursor ?? null])
+    const period = from || to ? this.period(from, to) : null
+    const rows = await this.source.query(`SELECT ledger.*, reservation.parent_request_id, reservation.input_tokens,
+        reservation.output_tokens, reservation.price_snapshot,
+        COALESCE(reservation.price_snapshot->>'modelPublicId', model.public_id) AS model_public_id,
+        COALESCE(reservation.price_snapshot->>'modelName', model.name) AS model_name,
+        COALESCE(reservation.price_snapshot->>'providerName', model.owner) AS provider_name,
+        COALESCE(reservation.price_snapshot->>'modelId', model.id::text) AS model_id
+      FROM billing_ledger ledger
+      LEFT JOIN billing_reservations reservation
+        ON reservation.workspace_id = ledger.workspace_id AND reservation.request_id = ledger.reference
+      LEFT JOIN models model ON model.id::text = reservation.price_snapshot->>'modelId'
+      WHERE ledger.workspace_id = $1 AND ($2::bigint IS NULL OR ledger.id < $2::bigint)
+        AND ($3::timestamptz IS NULL OR ledger.created_at >= $3::timestamptz)
+        AND ($4::timestamptz IS NULL OR ledger.created_at < $4::timestamptz)
+      ORDER BY ledger.id DESC LIMIT 51`, [workspaceId, cursor ?? null, period?.from.toISOString() ?? null, period?.to.toISOString() ?? null])
     const page = rows.slice(0, 50)
     return {
-      data: page.map((row: { id: string; kind: 'grant' | 'reserve' | 'settle' | 'release'; reference: string; amount_micros: string; available_delta: string; reserved_delta: string; available_after: string; reserved_after: string; created_at: Date }) => ({
+      data: page.map((row: { id: string; kind: 'grant' | 'reserve' | 'settle' | 'release'; reference: string; amount_micros: string; available_delta: string; reserved_delta: string; available_after: string; reserved_after: string; created_at: Date; parent_request_id: string | null; model_id: string | null; model_public_id: string | null; model_name: string | null; provider_name: string | null; input_tokens: number | null; output_tokens: number | null; price_snapshot: RequestPriceSnapshot | null }) => ({
         id: row.id, kind: row.kind, reference: row.reference, amount: fromMicros(row.amount_micros),
+        requestId: row.parent_request_id,
+        model: row.model_id && row.model_public_id && row.model_name && row.provider_name
+          ? { id: row.model_id, publicId: row.model_public_id, name: row.model_name, provider: row.provider_name }
+          : null,
+        inputTokens: row.input_tokens, outputTokens: row.output_tokens, priceSnapshot: row.price_snapshot,
         availableDelta: fromMicros(row.available_delta), reservedDelta: fromMicros(row.reserved_delta),
         availableAfter: fromMicros(row.available_after), reservedAfter: fromMicros(row.reserved_after),
         createdAt: row.created_at.toISOString(),
       })),
       nextCursor: rows.length > 50 ? page.at(-1).id : null,
     }
+  }
+
+  async usage(workspaceId: string, from?: string, to?: string): Promise<BillingUsageReport> {
+    const period = this.period(from, to)
+    const bucket = period.to.getTime() - period.from.getTime() <= 2 * 86_400_000 ? 'hour' : 'day'
+    const interval = bucket === 'hour' ? '1 hour' : '1 day'
+    const identity = `COALESCE(reservation.price_snapshot->>'modelId', model.id::text, 'unknown')`
+    const publicId = `COALESCE(reservation.price_snapshot->>'modelPublicId', model.public_id, 'unknown')`
+    const name = `COALESCE(reservation.price_snapshot->>'modelName', model.name, '未知模型')`
+    const provider = `COALESCE(reservation.price_snapshot->>'providerName', model.owner, '未知供应商')`
+    const base = `FROM billing_ledger ledger
+      LEFT JOIN billing_reservations reservation
+        ON reservation.workspace_id = ledger.workspace_id AND reservation.request_id = ledger.reference
+      LEFT JOIN models model ON model.id::text = reservation.price_snapshot->>'modelId'
+      WHERE ledger.workspace_id = $1 AND ledger.kind = 'settle'
+        AND ledger.created_at >= $2::timestamptz AND ledger.created_at < $3::timestamptz`
+    const [totalsRows, modelRows, groupedRows] = await Promise.all([
+      this.source.query(`SELECT COALESCE(sum(ledger.amount_micros), 0)::text AS spent_micros,
+          count(DISTINCT COALESCE(reservation.parent_request_id, ledger.reference))::int AS requests,
+          COALESCE(sum(reservation.input_tokens), 0)::text AS input_tokens,
+          COALESCE(sum(reservation.output_tokens), 0)::text AS output_tokens ${base}`,
+      [workspaceId, period.from.toISOString(), period.to.toISOString()]),
+      this.source.query(`SELECT ${identity} AS model_id, ${publicId} AS model_public_id,
+          ${name} AS model_name, ${provider} AS provider_name,
+          sum(ledger.amount_micros)::text AS spent_micros,
+          count(DISTINCT COALESCE(reservation.parent_request_id, ledger.reference))::int AS requests,
+          COALESCE(sum(reservation.input_tokens), 0)::text AS input_tokens,
+          COALESCE(sum(reservation.output_tokens), 0)::text AS output_tokens
+        ${base}
+        GROUP BY ${identity}, ${publicId}, ${name}, ${provider}
+        ORDER BY sum(ledger.amount_micros) DESC`,
+      [workspaceId, period.from.toISOString(), period.to.toISOString()]),
+      this.source.query(`SELECT date_bin($4::interval, ledger.created_at, $2::timestamptz) AS bucket_start,
+          ${identity} AS model_id, ${publicId} AS model_public_id, ${name} AS model_name, ${provider} AS provider_name,
+          sum(ledger.amount_micros)::text AS spent_micros,
+          count(DISTINCT COALESCE(reservation.parent_request_id, ledger.reference))::int AS requests,
+          COALESCE(sum(reservation.input_tokens), 0)::text AS input_tokens,
+          COALESCE(sum(reservation.output_tokens), 0)::text AS output_tokens
+        ${base}
+        GROUP BY bucket_start, ${identity}, ${publicId}, ${name}, ${provider}
+        ORDER BY bucket_start ASC, sum(ledger.amount_micros) DESC`,
+      [workspaceId, period.from.toISOString(), period.to.toISOString(), interval]),
+    ])
+    type ModelRow = { model_id: string; model_public_id: string; model_name: string; provider_name: string; spent_micros: string; requests: number; input_tokens: string; output_tokens: string }
+    type Grouped = ModelRow & { bucket_start: Date }
+    const models = (modelRows as ModelRow[]).map((row) => ({
+      id: row.model_id, publicId: row.model_public_id, name: row.model_name, provider: row.provider_name,
+      spent: fromMicros(row.spent_micros), requests: row.requests,
+      inputTokens: Number(row.input_tokens), outputTokens: Number(row.output_tokens),
+    }))
+    const timelineMap = new Map<string, BillingUsageReport['timeline'][number]>()
+    for (const row of groupedRows as Grouped[]) {
+      const start = row.bucket_start.toISOString()
+      const point = timelineMap.get(start) ?? { start, models: [] }
+      point.models.push({ modelId: row.model_id, spent: fromMicros(row.spent_micros), requests: row.requests, inputTokens: Number(row.input_tokens), outputTokens: Number(row.output_tokens) })
+      timelineMap.set(start, point)
+    }
+    const totals = totalsRows[0] as { spent_micros: string; requests: number; input_tokens: string; output_tokens: string }
+    return {
+      period: { from: period.from.toISOString(), to: period.to.toISOString(), bucket },
+      totals: { spent: fromMicros(totals.spent_micros), requests: totals.requests, inputTokens: Number(totals.input_tokens), outputTokens: Number(totals.output_tokens) },
+      models,
+      timeline: [...timelineMap.values()],
+    }
+  }
+
+  private period(from?: string, to?: string): { from: Date; to: Date } {
+    if (!from || !to) throw new BadRequestException('请选择完整的统计时间范围')
+    const start = new Date(from)
+    const end = new Date(to)
+    if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) || start >= end) throw new BadRequestException('统计时间范围无效')
+    if (end.getTime() - start.getTime() > 92 * 86_400_000) throw new BadRequestException('统计时间范围不能超过 92 天')
+    return { from: start, to: end }
   }
 
   /** Internal funding seam only; no public top-up or unverified payment callback. */

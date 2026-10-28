@@ -23,7 +23,7 @@ export class GlobalRateLimitGuard implements CanActivate {
     const request = http.getRequest<FastifyRequest>()
     const reply = http.getResponse<FastifyReply>()
     const path = request.url.split('?')[0]
-    if (path === '/api/health' || path === '/api/ready' || path.startsWith('/docs')) return true
+    if (path === '/api/health' || path === '/api/ready' || path === '/metrics' || path.startsWith('/docs')) return true
 
     try {
       const global = await this.traffic.consume('global-ip', request.ip, this.globalLimit, 60_000)

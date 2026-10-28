@@ -12,8 +12,11 @@
 .login-options { margin: 13px 0; font-size: var(--text-label); }
 .login-options .ant-checkbox-wrapper { font-size: var(--text-label); }
 .login-submit { height: 46px; border-radius: 10px; font-size: var(--text-ui); }
-.login-submit { display: flex; align-items: center; justify-content: center; gap: 8px; }
-.login-submit:disabled { cursor: wait; opacity: .7; }
+.login-submit { display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 700; }
+.login-card .ant-btn-primary.login-submit { color: #07130c; border-color: #63e495; background: #63e495; }
+.login-card .ant-btn-primary.login-submit:not(:disabled):hover,
+.login-card .ant-btn-primary.login-submit:not(:disabled):focus-visible { color: #07130c; border-color: #83edaa; background: #83edaa; }
+.login-card .ant-btn-primary.login-submit:disabled { color: #8d9b92; border-color: #2b3a30; background: #17221b; cursor: not-allowed; opacity: 1; }
 .login-divider { margin: 15px 0; font-size: var(--text-label); }
 .oauth-buttons { display: grid; grid-template-columns: 1fr; gap: 9px; }
 .oauth-buttons a { height: 43px; display: flex; align-items: center; justify-content: center; gap: 10px; color: #aab6ae; border: 1px solid rgba(255,255,255,.09); border-radius: 10px; background: rgba(255,255,255,.025); font-size: var(--text-label); font-weight: 600; transition: border-color .2s ease,background .2s ease,color .2s ease; }

@@ -314,6 +314,24 @@ export interface ProviderDeploymentTestResult {
   checkedAt: string
 }
 
+export interface ProviderAcceptanceStep {
+  latencyMs: number
+  inputTokens?: number
+  outputTokens?: number
+}
+
+export interface ProviderDeploymentAcceptanceResult {
+  deploymentId: string
+  channelId: string
+  provider: string
+  upstreamModelId: string
+  checkedAt: string
+  modelDiscovery: ProviderAcceptanceStep
+  jsonCompletion: ProviderAcceptanceStep
+  streamCompletion: ProviderAcceptanceStep & { firstTokenLatencyMs: number }
+  cancellation: ProviderAcceptanceStep & { propagated: true }
+}
+
 export type ApiKeyStatus = 'active' | 'revoked'
 
 export interface ApiKeyRecord {
@@ -554,6 +572,9 @@ export interface InferenceAttemptItem {
 export interface RequestPriceSnapshot {
   versionId: string | null
   modelId: string
+  modelPublicId?: string
+  modelName?: string
+  providerName?: string
   currency: 'CNY'
   priceUnit: 'million_tokens' | 'image' | 'second' | '10k_chars'
   inputPrice: string
@@ -575,6 +596,11 @@ export interface BillingLedgerEntry {
   id: string
   kind: 'grant' | 'reserve' | 'settle' | 'release'
   reference: string
+  requestId: string | null
+  model: { id: string; publicId: string; name: string; provider: string } | null
+  inputTokens: number | null
+  outputTokens: number | null
+  priceSnapshot: RequestPriceSnapshot | null
   availableDelta: string
   reservedDelta: string
   availableAfter: string
@@ -585,6 +611,35 @@ export interface BillingLedgerEntry {
 export interface BillingLedgerResponse {
   data: BillingLedgerEntry[]
   nextCursor: string | null
+}
+
+export interface BillingUsageModel {
+  id: string
+  publicId: string
+  name: string
+  provider: string
+  spent: string
+  requests: number
+  inputTokens: number
+  outputTokens: number
+}
+
+export interface BillingUsagePoint {
+  start: string
+  models: Array<{
+    modelId: string
+    spent: string
+    requests: number
+    inputTokens: number
+    outputTokens: number
+  }>
+}
+
+export interface BillingUsageReport {
+  period: { from: string; to: string; bucket: 'hour' | 'day' }
+  totals: { spent: string; requests: number; inputTokens: number; outputTokens: number }
+  models: BillingUsageModel[]
+  timeline: BillingUsagePoint[]
 }
 
 export interface BillingReservation {

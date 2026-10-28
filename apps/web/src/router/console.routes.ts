@@ -4,6 +4,7 @@ const ConsoleSectionView = () => import('../pages/console/section.vue')
 
 export const consoleRoutes: RouteRecordRaw[] = [
   { path: '/console', component: () => import('../pages/console/index.vue'), meta: { titleKey: 'pageTitles.console', requiresAuth: true } },
+  { path: '/console/getting-started', component: () => import('../pages/console/getting-started.vue'), meta: { titleKey: 'pageTitles.console', requiresAuth: true } },
   { path: '/console/models', component: ConsoleSectionView, meta: { titleKey: 'pageTitles.consoleModels', section: 'models', requiresAuth: true } },
   { path: '/console/routes', component: ConsoleSectionView, meta: { titleKey: 'pageTitles.consoleRoutes', section: 'routes', requiresAuth: true } },
   { path: '/console/keys', component: ConsoleSectionView, meta: { titleKey: 'pageTitles.consoleKeys', section: 'keys', requiresAuth: true } },

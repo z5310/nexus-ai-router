@@ -15,6 +15,7 @@
     "build": "turbo run build",
     "typecheck": "turbo run typecheck",
     "lint": "turbo run lint",
+    "test:ci": "npm run test:refresh -w @gateway/ui && npm run test:ci -w @gateway/api",
     "db:migrate": "npm run migration:run -w @gateway/api",
     "docker:up": "docker compose up -d postgres redis minio",
     "docker:down": "docker compose down"

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import WorkspaceBilling from './cmp/WorkspaceBilling.vue'
 import { Pencil, Plus, Route as RouteIcon, ShieldCheck, Trash2 } from 'lucide-vue-next'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
@@ -24,6 +24,9 @@ const { t } = useI18n()
 const queryClient = useQueryClient()
 const search = ref('')
 const section = computed(() => route.meta.section as ConsoleSection)
+watch([section, () => route.query.requestId], ([current, requestId]) => {
+  if (current === 'logs' && typeof requestId === 'string') search.value = requestId
+}, { immediate: true })
 const modelQuery = useQuery({ queryKey: computed(() => workspaceQueryKey('console-models')), queryFn: ({ signal }) => getConsoleModels(signal), staleTime: 60_000, enabled: computed(() => section.value === 'models' || section.value === 'routes'), retry: 1 })
 const catalogQuery = useQuery({ queryKey: ['catalog-models'], queryFn: ({ signal }) => getCatalogModels(signal), staleTime: 60_000, enabled: computed(() => section.value === 'models'), retry: 1 })
 const keyQuery = useQuery({ queryKey: computed(() => workspaceQueryKey('api-keys')), queryFn: ({ signal }) => getApiKeys(signal), staleTime: 30_000, enabled: computed(() => section.value === 'keys'), retry: 1 })
