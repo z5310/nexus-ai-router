@@ -26,7 +26,7 @@ cp ops/production.env.example ops/production.env
 chmod 600 ops/production.env
 ```
 
-必须替换数据库密码、`DATABASE_URL`、JWT 密钥、加密密钥、公开域名、供应商出站白名单和可信代理网段。Web 与 Admin 默认只绑定 `127.0.0.1`，应由主机上的 TLS 反向代理转发；Admin 建议再受 VPN 或 Zero Trust 访问策略保护。`TRUSTED_PROXY_CIDRS` 只填写实际反向代理到 API 的受信网络。
+必须替换数据库密码、`DATABASE_URL`、JWT 密钥、加密密钥、公开域名、供应商出站白名单和可信代理网段。生产校验会拒绝 HTTP 公开地址、示例/CI 密钥、非 32 字节 Base64 加密密钥、`local-v1` 密钥版本、开发供应商凭证环境和空可信代理配置。Web 与 Admin 默认只绑定 `127.0.0.1`，应由主机上的 TLS 反向代理转发；Admin 建议再受 VPN 或 Zero Trust 访问策略保护。`TRUSTED_PROXY_CIDRS` 只填写实际反向代理到 API 的受信网络。
 
 数据库和 Redis 使用持久卷。生产数据库应另行配置加密备份、PITR、异地副本和恢复演练；Compose 卷本身不构成备份。
 
@@ -38,7 +38,7 @@ chmod 600 ops/production.env
 ./ops/scripts/deploy.sh sha-<完整提交 SHA>
 ```
 
-脚本先校验 Compose 配置并拉取同一不可变标签，然后启动 PostgreSQL/Redis、运行一次性迁移容器。只有迁移成功才会启动或更新 API、Web、Admin，并等待全部健康检查通过。API 进程不会在启动时隐式执行迁移。
+脚本先校验 Compose 配置并拉取同一不可变标签，然后启动 PostgreSQL/Redis、运行一次性迁移容器。生产迁移会停用早期迁移留下的固定演示身份及其工作区，替换已知密码哈希，并撤销对应会话和 API Key。只有迁移成功且 API 二次确认不存在启用的演示身份，才会启动或更新 API、Web、Admin，并等待全部健康检查通过。API 进程不会在启动时隐式执行迁移。
 
 生产发布前还应确认外部 TLS 探测、登录、首个低额度模型调用、账本对平、Prometheus 抓取和告警通知。当前脚本负责单机 Compose 发布，不会自动登录远程主机，也不替代变更审批。
 

@@ -37,6 +37,42 @@ const envSchema = z.object({
   INFERENCE_MAX_CONCURRENCY_PER_WORKSPACE: z.coerce.number().int().min(1).max(10_000).default(20),
   INFERENCE_CONCURRENCY_LEASE_MS: z.coerce.number().int().min(30_000).max(3_600_000).default(600_000),
   TRAFFIC_CONTROL_KEY_PREFIX: z.string().regex(/^[A-Za-z0-9_.:-]{1,64}$/).default('nexus'),
+}).superRefine((environment, context) => {
+  if (environment.NODE_ENV !== 'production') return
+
+  // 生产环境必须在 TLS 入口之后运行。这里集中校验三个公开地址，避免登录回调、
+  // Cookie 和跨域策略因为某个单独配置遗漏而退回明文 HTTP。
+  for (const key of ['WEB_ORIGIN', 'ADMIN_ORIGIN', 'OAUTH_CALLBACK_ORIGIN'] as const) {
+    if (new URL(environment[key]).protocol !== 'https:') {
+      context.addIssue({ code: 'custom', path: [key], message: '生产环境必须使用 HTTPS 地址' })
+    }
+  }
+
+  if (environment.PROVIDER_CREDENTIAL_ENV !== 'production') {
+    context.addIssue({ code: 'custom', path: ['PROVIDER_CREDENTIAL_ENV'], message: '生产环境只能读取 production 供应商凭证' })
+  }
+  if (!environment.TRUSTED_PROXY_CIDRS?.trim()) {
+    context.addIssue({ code: 'custom', path: ['TRUSTED_PROXY_CIDRS'], message: '生产环境必须显式配置可信代理网段' })
+  }
+  if (environment.ENCRYPTION_KEY_VERSION === 'local-v1') {
+    context.addIssue({ code: 'custom', path: ['ENCRYPTION_KEY_VERSION'], message: '生产环境必须使用独立的加密密钥版本' })
+  }
+
+  // 供应商凭证使用 AES-256-GCM；生产环境只接受可解码为 32 字节的 Base64 密钥，
+  // 从源头避免把示例文本或低熵口令经 SHA-256 派生后误当作主密钥。
+  const decodedKey = Buffer.from(environment.ENCRYPTION_KEY, 'base64')
+  const canonicalKey = decodedKey.toString('base64').replace(/=+$/, '')
+  if (decodedKey.length !== 32 || canonicalKey !== environment.ENCRYPTION_KEY.replace(/=+$/, '')) {
+    context.addIssue({ code: 'custom', path: ['ENCRYPTION_KEY'], message: '生产环境加密密钥必须是 32 字节 Base64' })
+  }
+
+  const unsafeMarker = /replace-with|ci-only|development|example/i
+  if (unsafeMarker.test(environment.JWT_SECRET)) {
+    context.addIssue({ code: 'custom', path: ['JWT_SECRET'], message: '生产环境不能使用示例或 CI 密钥' })
+  }
+  if (unsafeMarker.test(environment.ENCRYPTION_KEY)) {
+    context.addIssue({ code: 'custom', path: ['ENCRYPTION_KEY'], message: '生产环境不能使用示例或 CI 密钥' })
+  }
 })
 
 export type Environment = z.infer<typeof envSchema>

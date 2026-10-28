@@ -70,6 +70,7 @@ import { ProvidersModule } from './providers/providers.module'
 import { TrafficControlModule } from './traffic-control/traffic-control.module'
 import { AudioGenerationModule } from './audio-generation/audio-generation.module'
 import { ObservabilityModule } from './observability/observability.module'
+import { ProductionSafetyModule } from './config/production-safety.module'
 
 @Module({
   imports: [
@@ -110,6 +111,7 @@ import { ObservabilityModule } from './observability/observability.module'
       }),
     }),
     TrafficControlModule,
+    ProductionSafetyModule,
     ObservabilityModule,
     ModelsModule,
     DashboardModule,
