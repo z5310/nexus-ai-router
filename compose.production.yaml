@@ -1,0 +1,106 @@
+name: nexus-ai-router
+
+x-api-environment: &api-environment
+  NODE_ENV: production
+  PORT: 3000
+  DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
+  REDIS_URL: redis://redis:6379
+  JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+  ENCRYPTION_KEY: ${ENCRYPTION_KEY:?ENCRYPTION_KEY is required}
+  ENCRYPTION_KEY_VERSION: ${ENCRYPTION_KEY_VERSION:-production-v1}
+  WEB_ORIGIN: ${WEB_ORIGIN:?WEB_ORIGIN is required}
+  ADMIN_ORIGIN: ${ADMIN_ORIGIN:?ADMIN_ORIGIN is required}
+  OAUTH_CALLBACK_ORIGIN: ${OAUTH_CALLBACK_ORIGIN:?OAUTH_CALLBACK_ORIGIN is required}
+  PROVIDER_CREDENTIAL_ENV: production
+  PROVIDER_OUTBOUND_HOSTS: ${PROVIDER_OUTBOUND_HOSTS:-}
+  PROVIDER_GATEWAY_URL: ${PROVIDER_GATEWAY_URL:-}
+  PROVIDER_GATEWAY_API_KEY: ${PROVIDER_GATEWAY_API_KEY:-}
+  BILLING_PREPAID_WORKSPACE_IDS: ${BILLING_PREPAID_WORKSPACE_IDS:-}
+  TRUSTED_PROXY_CIDRS: ${TRUSTED_PROXY_CIDRS:-172.16.0.0/12}
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-gateway}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_DB: ${POSTGRES_DB:-gateway}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  redis:
+    image: redis:8-alpine
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  migrate:
+    image: ${API_IMAGE:-ghcr.io/z5310/nexus-ai-router-api}:${IMAGE_TAG:?IMAGE_TAG is required}
+    command: ["node", "apps/api/dist/database/migrate.js"]
+    environment: *api-environment
+    depends_on:
+      postgres:
+        condition: service_healthy
+    profiles: ["tools"]
+    restart: "no"
+
+  api:
+    image: ${API_IMAGE:-ghcr.io/z5310/nexus-ai-router-api}:${IMAGE_TAG:?IMAGE_TAG is required}
+    environment: *api-environment
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/ready').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 15s
+    restart: unless-stopped
+    stop_grace_period: 30s
+
+  web:
+    image: ${WEB_IMAGE:-ghcr.io/z5310/nexus-ai-router-web}:${IMAGE_TAG:?IMAGE_TAG is required}
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "${WEB_BIND_ADDRESS:-127.0.0.1}:${WEB_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/healthz >/dev/null"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+    restart: unless-stopped
+
+  admin:
+    image: ${ADMIN_IMAGE:-ghcr.io/z5310/nexus-ai-router-admin}:${IMAGE_TAG:?IMAGE_TAG is required}
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "${ADMIN_BIND_ADDRESS:-127.0.0.1}:${ADMIN_PORT:-8081}:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/healthz >/dev/null"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:

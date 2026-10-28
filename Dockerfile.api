@@ -1,0 +1,34 @@
+FROM node:24.16.0-alpine AS build
+
+WORKDIR /app
+COPY package.json package-lock.json ./
+COPY apps/api/package.json apps/api/package.json
+COPY apps/web/package.json apps/web/package.json
+COPY apps/admin/package.json apps/admin/package.json
+COPY packages/contracts/package.json packages/contracts/package.json
+COPY packages/ui/package.json packages/ui/package.json
+RUN corepack npm ci
+
+COPY tsconfig.base.json turbo.json ./
+COPY apps/api apps/api
+COPY packages/contracts packages/contracts
+RUN corepack npm run build -w @gateway/contracts \
+    && corepack npm run build -w @gateway/api \
+    && corepack npm prune --omit=dev
+
+FROM node:24.16.0-alpine AS runtime
+
+ENV NODE_ENV=production
+WORKDIR /app
+RUN apk add --no-cache tini
+COPY --from=build --chown=node:node /app/package.json /app/package-lock.json ./
+COPY --from=build --chown=node:node /app/node_modules ./node_modules
+COPY --from=build --chown=node:node /app/apps/api/package.json ./apps/api/package.json
+COPY --from=build --chown=node:node /app/apps/api/dist ./apps/api/dist
+COPY --from=build --chown=node:node /app/packages/contracts/package.json ./packages/contracts/package.json
+COPY --from=build --chown=node:node /app/packages/contracts/dist ./packages/contracts/dist
+
+USER node
+EXPOSE 3000
+ENTRYPOINT ["/sbin/tini", "--"]
+CMD ["node", "apps/api/dist/main.js"]

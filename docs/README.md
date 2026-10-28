@@ -1,6 +1,6 @@
 # 项目文档索引
 
-更新日期：2026-10-27
+更新日期：2026-10-28
 
 ## 当前状态入口
 
@@ -16,6 +16,7 @@
 ## 专项文档
 
 - [可观测性与告警基线](observability-operations.md)
+- [CI 与生产部署基线](production-deployment.md)
 - [持久化计量 Outbox 运维说明](metering-outbox-operations.md)
 - [计费账本开发清单](billing-development-checklist.md)
 - [供应商数据面开发清单](provider-data-plane-development-checklist.md)
